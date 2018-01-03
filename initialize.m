@@ -43,8 +43,8 @@ end
 el = Elements(elements, nodes, numel, numnp, ndof, ndof, nen, props, globl.U);
 
 % Material-related
-if (material == 1)
-    mat = HyperNeo;  
+if (material == 2)
+    mat = HyperNeo(ndm, ndof);  
 end
     
 inpt.BC         = BC;
