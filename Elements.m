@@ -22,12 +22,11 @@ classdef Elements < handle
         ndof
         nen  
         property_num
-        Props
+        props
     end
     properties (Dependent)
         Umt
         coor
-        props
     end
     
     methods
@@ -42,7 +41,7 @@ classdef Elements < handle
             obj.ndof            = ndof;
             obj.nen             = nen;
             obj.property_num    = elements(:,end);
-            obj.Props           = Props;
+            obj.props           = Props;
             obj.U_global        = U_global;
             obj.list            = cell(numel,1);
         end
@@ -68,9 +67,9 @@ classdef Elements < handle
             obj.Fint = zeros(obj.ndof*obj.nen,1);
         end
         
-        function value = get.props(obj)
-            value = obj.Props( obj.property_num(obj.i),:);
-        end
+%         function value = get.props(obj)
+%             value = obj.Props( obj.property_num(obj.i),:);
+%         end
         
     end
 end

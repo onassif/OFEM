@@ -13,7 +13,8 @@ gp.dNdx = gp.dNdX / gp.F ;
 gp.b = gp.F*gp.F';
 
 %   Compute J in both reference and spatial configurations
-gp.J = det(gp.F);
-gp.j = gp.J * gp.det_dXdxi;
+gp.det_F = det(gp.F);
+gp.J = gp.det_dXdxi;
+gp.j = gp.det_F * gp.J;
 end 
     

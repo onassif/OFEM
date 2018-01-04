@@ -44,6 +44,8 @@ el = Elements(elements, nodes, numel, numnp, ndof, ndof, nen, props, globl.U);
 
 % Material-related
 if (material == 2)
+    mat = PlaneStrain(ndm, ndof);
+elseif (material == 3)
     mat = HyperNeo(ndm, ndof);  
 end
     

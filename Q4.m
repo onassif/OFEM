@@ -16,16 +16,18 @@ classdef Q4
         b;
         J;
         j;
+        j0;
         eps;
         sigma;
         ctan;
         D;
+        B;
+        det_F;
     end
     
     properties (Dependent)
         N;
         dNdxi;
-        B;
         w;
         det_dXdxi;
         dNdX;
@@ -64,13 +66,6 @@ classdef Q4
             value = obj.Nmat(obj.i,:);
         end
         
-        function value = get.B(obj)
-            dx = obj.dNdx(:,1);
-            dy = obj.dNdx(:,2);
-            value=[ dx(1),   0.0, dx(2),   0.0, dx(3),   0.0, dx(4),   0.0
-                0.0, dy(1),   0.0, dy(2),   0.0, dy(3),   0.0, dy(4)
-                dy(1), dx(1), dy(2), dx(2), dy(3), dx(3), dy(4), dx(4)];
-        end
         function value = get.w(obj)
             value = obj.weights(obj.i);
         end

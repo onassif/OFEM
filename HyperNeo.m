@@ -12,15 +12,31 @@ classdef HyperNeo
             obj.ndm  = ndm;
             obj.ndof = ndof;
         end
+        %% B
+        function B = Compute_B(~,gp)
+            dx = gp.dNdx(:,1);
+            dy = gp.dNdx(:,2);
+            B  =[ dx(1),   0.0, dx(2),   0.0, dx(3),   0.0, dx(4),   0.0
+                0.0,   dy(1),   0.0, dy(2),   0.0, dy(3),   0.0, dy(4)
+                dy(1), dx(1), dy(2), dx(2), dy(3), dx(3), dy(4), dx(4)];
+        end
         %% Sigma
         function sigma_voigt = Compute_cauchy(obj, gp, props)
+            
+            if strcmp(props{1,1} ,'mu') && strcmp(props{2,1} ,'lambda')
+                mu      = props{1,2};
+                lambda  = props{2,2};
+            elseif strcmp(props{1,1} ,'lambda') && strcmp(props{2,1} ,'mu')
+                mu      = props{1,2};
+                lambda  = props{2,2};
+            else
+                error("You've chosen Plane Strain material but specified incompatible material properties, I'm disapponted");
+            end
             
             if (obj.ndm==2 && obj.ndof ==2)
                 I = eye(obj.ndm);
                 b = gp.b;
-                J = gp.J;
-                mu = props(1);
-                lambda = props(2);
+                J = gp.det_F;
                 
                 sigma  = mu/J* (b-I) + lambda*(J-1)*I;
                 sigma_voigt = [sigma(1,1); sigma(2,2); sigma(1,2)];
@@ -29,11 +45,19 @@ classdef HyperNeo
         %% Tangential stiffness
         function [D, ctan] = Compute_tangentstiffness(~, gp, props)
             
+            if strcmp(props{1,1} ,'mu') && strcmp(props{2,1} ,'lambda')
+                mu      = props{1,2};
+                lambda  = props{2,2};
+            elseif strcmp(props{1,1} ,'lambda') && strcmp(props{2,1} ,'mu')
+                mu      = props{1,2};
+                lambda  = props{2,2};
+            else
+                error("You've chosen Plane Strain material but specified incompatible material properties, I'm disapponted");
+            end
+            
             c = zeros(3,3,3,3);
             I = eye(3);
-            mu = props(1);
-            lambda = props(2);
-            J = gp.J;
+            J = gp.det_F;
             
             for i=1:3
                 for j=1:3

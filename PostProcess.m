@@ -108,7 +108,7 @@ coor = hist.coor;
 title('Undeformed vs Deformed')
 
 patch('Vertices',coor(:,:,1),'Faces',hist.conn,'FaceColor','none',...
-    'EdgeColor','g','Marker', 'o','MarkerFaceColor','g');
+    'EdgeColor','g','Marker', 'o','MarkerFaceColor','g','MarkerSize',3);
 axis equal
 axisH = gca; %
 axisH.XLim = [min(min(hist.coor(:,1,:))) max(max(hist.coor(:,1,:)))];
@@ -126,8 +126,8 @@ axis equal
 X = reshape(hist.coor(hist.conn',1,1),num.nen,num.el);
 Y = reshape(hist.coor(hist.conn',2,1),num.nen,num.el);
 C = reshape(hist.strss.P(3,hist.conn',1),num.nen,num.el);
-patchH = patch(X,Y,C,...
-    'FaceAlpha',.7,'EdgeColor','r','Marker', 'o','MarkerFaceColor','r');
+patchH = patch(X,Y,C, 'FaceAlpha',.7,'EdgeColor','r',...
+    'Marker', 'o','MarkerFaceColor','r','MarkerSize',3);
 cbH = colorbar;
 cbH.Limits = [min(min(hist.strss.P(3, :,:))) max(max(hist.strss.P(3, :,:)))];
 

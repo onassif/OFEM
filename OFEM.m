@@ -40,19 +40,20 @@ for istep=1:num.steps % Steps loop
                 gp = Compute_gp_info(gp, coor, Umt, iel);
                 
                 %%%   3gp. Strain tensor
+                gp.B   = mat.Compute_B(gp);
                 gp.eps = gp.B * Uvc;
                 
                 %%%   4gp. Stress
-                gp.sigma = mat.Compute_cauchy(gp, props);
+                gp.sigma        = mat.Compute_cauchy(gp, props);
                 
                 %%%   5gp. Tangential stifness
                 [gp.D, gp.ctan] = mat.Compute_tangentstiffness(gp, props);
                 
                 %%%   6gp. K
-                el.K = mat.Compute_Kel(el.K, gp, num.gp);
+                el.K            = mat.Compute_Kel(el.K, gp, num.gp);
                 
                 %%%   7gp. Fint
-                el.Fint =  mat.Compute_Fint(el.Fint, gp);
+                el.Fint         = mat.Compute_Fint(el.Fint, gp);
                 
                 % store states
                 hist.eps (:,igp,iel) = gp.eps;
