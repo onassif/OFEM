@@ -5,20 +5,13 @@ classdef HyperNeo
     properties (Hidden, SetAccess = private)
         ndm;
         ndof;
+        finiteDisp = 1;
     end
     %%
     methods
         function obj = HyperNeo(ndm, ndof)
             obj.ndm  = ndm;
             obj.ndof = ndof;
-        end
-        %% B
-        function B = Compute_B(~,gp)
-            dx = gp.dNdx(:,1);
-            dy = gp.dNdx(:,2);
-            B  =[ dx(1),   0.0, dx(2),   0.0, dx(3),   0.0, dx(4),   0.0
-                0.0,   dy(1),   0.0, dy(2),   0.0, dy(3),   0.0, dy(4)
-                dy(1), dx(1), dy(2), dx(2), dy(3), dx(3), dy(4), dx(4)];
         end
         %% Sigma
         function sigma_voigt = Compute_cauchy(obj, gp, props)

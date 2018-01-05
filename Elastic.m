@@ -1,24 +1,22 @@
-classdef PlaneStrain
-    %PlaneStrain Computes Cauchy stress based on 2D plane strain
-    %   Currently only if ndm=2, ndof=2
+classdef Elastic
+    %Elastic 3D elastic class
+    %   Detailed explanation goes here
     
-    properties (Hidden, SetAccess = private)
-        ndm;
+   properties (Hidden, SetAccess = private)
         ndof;
         dNdX;
         finiteDisp = 0;
     end
     %%
     methods
-        function obj = PlaneStrain(ndm, ndof)
-            obj.ndm  = ndm;
+        function obj = Elastic(ndof)
             obj.ndof = ndof;
         end
         %% Sigma
         function sigma_voigt = Compute_cauchy(obj, gp, props)
             [D, ~] = obj.Compute_tangentstiffness( gp, props);
             
-            if (obj.ndm==2 && obj.ndof ==2)
+            if (obj.ndof == 3)
                 sigma_voigt = D *gp.eps;
             end
         end
@@ -37,18 +35,14 @@ classdef PlaneStrain
             
             Eh= E/(1-2*v)/(1+v);
             G = 0.5*E/(1+v);
-            c =[Eh*(1-v)    Eh*v        Eh*v        0 0 0
+            D =[Eh*(1-v)    Eh*v        Eh*v        0 0 0
                 Eh*v        Eh*(1-v)    Eh*v        0 0 0
                 Eh*v        Eh*v        Eh*(1-v)    0 0 0
                 0           0           0           G 0 0
                 0           0           0           0 G 0
                 0           0           0           0 0 G];
             
-            
-            D = [ c(1,1) c(1,2) c(1,4)
-                c(2,1) c(2,2) c(2,4)
-                c(4,1) c(4,2) c(4,4)];
-            ctan = reshape(c([1,4,6,4,2,5,6,5,3],[1,4,6,4,2,5,6,5,3]),3,3,3,3);
+            ctan = reshape(D([1,4,6,4,2,5,6,5,3],[1,4,6,4,2,5,6,5,3]),3,3,3,3);
 
         end
         %% Element K

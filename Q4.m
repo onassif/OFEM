@@ -13,24 +13,14 @@ classdef Q4
         dxdX;
         dNdx;
         F;
+        det_F;
         b;
         J;
         j;
-        j0;
         eps;
         sigma;
         ctan;
         D;
-        B;
-        det_F;
-    end
-    
-    properties (Dependent)
-        N;
-        dNdxi;
-        w;
-        det_dXdxi;
-        dNdX;
     end
     
     properties (Hidden)
@@ -43,19 +33,27 @@ classdef Q4
         dNdxi_3D;
         numel;
         weights = [1 1 1 1];
+        finiteDisp;
     end
     
     properties (SetAccess = private)
         Nmat;
         Ninv;
+        det_dXdxi;
+        dNdX;
+        B;
+        N;
+        w;
+        dNdxi;
     end
     
     methods
-        function obj = Q4(numel)
+        function obj = Q4(numel, finiteDisp)
             obj.dNdxi_3D = obj.compute_dNdxi(obj);
             [obj.Nmat, obj.Ninv] = obj.compute_Nmat(obj);
             obj.det_dXdxi_list = zeros(4,numel);
             obj.dNdX_list = zeros(4,2,4,numel);
+            obj.finiteDisp = finiteDisp;
         end
         
         function value = get.dNdxi(obj)
@@ -77,6 +75,28 @@ classdef Q4
         function value = get.dNdX(obj)
             value = obj.dNdX_list(:,:,obj.i,obj.iel);
         end
+        
+        function value = get.dNdx(obj)
+            value = obj.dNdX / obj.F;
+        end
+        
+        function value = get.b(obj)
+            value = obj.F*obj.F';
+        end
+        
+        function value = get.B(obj)
+            if (obj.finiteDisp)
+                dx = obj.dNdx(:,1);
+                dy = obj.dNdx(:,2);
+            else
+                dx = obj.dNdX(:,1);
+                dy = obj.dNdX(:,2);
+            end
+            value=[ dx(1),   0.0, dx(2),   0.0, dx(3),   0.0, dx(4),   0.0
+                0.0, dy(1),   0.0, dy(2),   0.0, dy(3),   0.0, dy(4)
+                dy(1), dx(1), dy(2), dx(2), dy(3), dx(3), dy(4), dx(4)];
+        end
+        
     end
     
     methods (Static)

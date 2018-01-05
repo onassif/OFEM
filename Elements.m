@@ -7,7 +7,9 @@ classdef Elements < handle
         list
     end    
     properties (SetAccess = private, GetAccess = public)
+        Umt
         Uvc
+        coor
         indices
     end
     properties (SetAccess = public, Hidden)
@@ -23,10 +25,6 @@ classdef Elements < handle
         nen  
         property_num
         props
-    end
-    properties (Dependent)
-        Umt
-        coor
     end
     
     methods
@@ -66,10 +64,6 @@ classdef Elements < handle
             obj.K    = zeros(obj.ndof*obj.nen, obj.ndof*obj.nen);
             obj.Fint = zeros(obj.ndof*obj.nen,1);
         end
-        
-%         function value = get.props(obj)
-%             value = obj.Props( obj.property_num(obj.i),:);
-%         end
         
     end
 end

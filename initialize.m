@@ -28,27 +28,31 @@ for i=1:numnp
     hist.nconn(i,nen+1) = count;
 end
 %%%%%%%%%%%%%%%%%%%%% Create objects:
+% Material-related
+if (material == 1)
+    mat = Elastic(ndof);
+elseif   (material == 2)
+    mat = PlaneStrain(ndm, ndof);
+elseif (material == 3)
+    mat = HyperNeo(ndm, ndof);  
+end
+
 % gp-related 
 if(eltype == 'Q4')
-    gp = Q4(numel);
+    gp = Q4(numel, mat.finiteDisp);
 elseif (eltype == 'Q9')
     gp = Q9;
 elseif    (eltype == 'T3')
     gp = T3;
 elseif    (eltype == 'T6')
     gp = T6;
+elseif    (eltype == 'Q8')
+    gp = Q8(numel, mat.finiteDisp);
 end
 
 % Element-related
-el = Elements(elements, nodes, numel, numnp, ndof, ndof, nen, props, globl.U);
+el = Elements(elements, nodes, numel, numnp, ndm, ndof, nen, props, globl.U);
 
-% Material-related
-if (material == 2)
-    mat = PlaneStrain(ndm, ndof);
-elseif (material == 3)
-    mat = HyperNeo(ndm, ndof);  
-end
-    
 inpt.BC         = BC;
 inpt.FORCE      = FORCE;
 

@@ -40,7 +40,6 @@ for istep=1:num.steps % Steps loop
                 gp = Compute_gp_info(gp, coor, Umt, iel);
                 
                 %%%   3gp. Strain tensor
-                gp.B   = mat.Compute_B(gp);
                 gp.eps = gp.B * Uvc;
                 
                 %%%   4gp. Stress
@@ -101,4 +100,4 @@ for istep=1:num.steps % Steps loop
 end
 %%%     12. Post Processing
 [hist, num] = WriteReadHistory(hist, num, nodes);
-PostProcess(hist, num, gp);
+% PostProcess(hist, num, gp);
