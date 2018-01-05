@@ -21,7 +21,7 @@ subH = subplot(2,2,2);
 plotcont(hist, num, mainH, subH)
 
 subplot(2,2,3)
-plotDeformation(hist)
+plotDeformation(hist,num)
 
 end
 
@@ -102,12 +102,23 @@ ylabel('force')
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function plotDeformation(hist)
-% Q4 = [1,2,3,4];
+function plotDeformation(hist,num)
+
 coor = hist.coor;
 title('Undeformed vs Deformed')
+if (num.ndm == 2)
+    V0 = coor(:,:,1);
+    F0 = hist.conn;
+elseif (num.ndm == 3)
+    i = [1 2 6 5 2 3 7 6 3 4 8 7 4 1 5 8 1 2 3 4 5 6 7 8];
+    fac = reshape(1:num.nen*num.el,num.nen,num.el);
+    F0  = reshape(fac(i,:),num.nen/2,6*num.el)';
+    V0  = hist.coor(reshape(hist.conn',num.el*num.nen,1),:,1);
 
-patch('Vertices',coor(:,:,1),'Faces',hist.conn,'FaceColor','none',...
+    set(gca,'DataAspectRatio',[1 1 1],'PlotBoxAspectRatio',[570.5 570.5 570.5])
+    view (gca,[-0.8 -0.4 0.1])
+end
+patch('Vertices', V0,'Faces',F0,'FaceColor','none',...
     'EdgeColor','g','Marker', 'o','MarkerFaceColor','g','MarkerSize',3);
 axis equal
 axisH = gca; %
@@ -115,7 +126,16 @@ axisH.XLim = [min(min(hist.coor(:,1,:))) max(max(hist.coor(:,1,:)))];
 axisH.YLim = [min(min(hist.coor(:,2,:))) max(max(hist.coor(:,2,:)))];
 
 hold on
-patch('Vertices',coor(:,:,end),'Faces',hist.conn,'FaceColor', 'none',...
+if (num.ndm == 2)
+    Vf = coor(:,:,end);
+    Ff = hist.conn;
+elseif (num.ndm == 3)
+    i = [1 2 6 5 2 3 7 6 3 4 8 7 4 1 5 8 1 2 3 4 5 6 7 8];
+    fac = reshape(1:num.nen*num.el,num.nen,num.el);
+    Ff  = reshape(fac(i,:),num.nen/2,6*num.el)';
+    Vf  = hist.coor(reshape(hist.conn',num.el*num.nen,1),:,end);
+end
+patch('Vertices',Vf,'Faces',Ff,'FaceColor', 'none',...
     'EdgeColor','r','Marker', 'o','MarkerFaceColor','r');
 end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

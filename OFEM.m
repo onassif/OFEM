@@ -100,4 +100,4 @@ for istep=1:num.steps % Steps loop
 end
 %%%     12. Post Processing
 [hist, num] = WriteReadHistory(hist, num, nodes);
-% PostProcess(hist, num, gp);
+PostProcess(hist, num, gp);
