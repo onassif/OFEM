@@ -2,7 +2,7 @@
 clear; close all
 
 % Dialog
-inputParameters
+run(ReadInput())
 initialize
 
 for istep=1:num.steps % Steps loop
