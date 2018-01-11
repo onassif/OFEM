@@ -68,8 +68,8 @@ num.ndm         = ndm;
 
 mon_str={'Jan','Feb','Mar','Apr','May','June','Jul','Aug','Sep','Oct','Nov','Dec'};
 current = fix(clock);
-hist.start= sprintf('hist_%d-%d-%s_%d:%d:%d',...
-    current([1,3]), mon_str{current(2)}, current(4:6));
+hist.start= sprintf('hist%shist_%d-%d-%s_%d:%d:%d',...
+    filesep, current([1,3]), mon_str{current(2)}, current(4:6));
 mkdir(hist.start); 
 
 clear('BC','BC_T', 'FORCE', 'numel','numnp', 'nen', 'ndof', 'numeq', 'ngp',...

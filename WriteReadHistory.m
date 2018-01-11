@@ -7,13 +7,13 @@ if(length(varargin)==4)
     d     = varargin{3};
     coor  = varargin{4};
     
-    strgF = sprintf('%s/forc_%0.4d', hist.start,step);
-    strgd = sprintf('%s/disp_%0.4d', hist.start,step);
-    strgc = sprintf('%s/coor_%0.4d', hist.start,step);
-    strgr = sprintf('%s/resi_%0.4d', hist.start,step);
-    strge = sprintf('%s/epsi_%0.4d', hist.start,step);
-    strgs = sprintf('%s/stre_%0.4d', hist.start,step);
-    strgC = sprintf('%s/ctan_%0.4d', hist.start,step);
+    strgF = sprintf('%s%sforc_%0.4d', hist.start, filesep, step);
+    strgd = sprintf('%s%sdisp_%0.4d', hist.start, filesep, step);
+    strgc = sprintf('%s%scoor_%0.4d', hist.start, filesep, step);
+    strgr = sprintf('%s%sresi_%0.4d', hist.start, filesep, step);
+    strge = sprintf('%s%sepsi_%0.4d', hist.start, filesep, step);
+    strgs = sprintf('%s%sstre_%0.4d', hist.start, filesep, step);
+    strgC = sprintf('%s%sctan_%0.4d', hist.start, filesep, step);
 
     eps  = reshape(hist.eps , num.str, num.gp*num.el);
     stre = reshape(hist.stre, num.str, num.gp*num.el);
@@ -48,12 +48,12 @@ elseif(length(varargin)==1)
     hist.ctan        = zeros(3,3,3,3,num.gp, num.el, num.steps, 'single');
     
     for i=1:num.steps-1
-        strgF = sprintf('%s/forc_%0.4d', hist.start,i);
-        strgd = sprintf('%s/disp_%0.4d', hist.start,i);
-        strgc = sprintf('%s/coor_%0.4d', hist.start,i);
-        strge = sprintf('%s/epsi_%0.4d', hist.start,i);
-        strgs = sprintf('%s/stre_%0.4d', hist.start,i);
-        strgC = sprintf('%s/ctan_%0.4d', hist.start,i);
+        strgF = sprintf('%s%sforc_%0.4d', hist.start, filesep, i);
+        strgd = sprintf('%s%sdisp_%0.4d', hist.start, filesep, i);
+        strgc = sprintf('%s%scoor_%0.4d', hist.start, filesep, i);
+        strge = sprintf('%s%sepsi_%0.4d', hist.start, filesep, i);
+        strgs = sprintf('%s%sstre_%0.4d', hist.start, filesep, i);
+        strgC = sprintf('%s%sctan_%0.4d', hist.start, filesep, i);
     
         fidF = fopen(strgF,'r');
         fidd = fopen(strgd,'r');
@@ -71,6 +71,8 @@ elseif(length(varargin)==1)
         
         fclose('all');    
     end
+    hist.disp = permute(reshape(hist.disp ,num.ndof,num.np,num.steps),[2 1 3]);
+    hist.force= permute(reshape(hist.force,num.ndof,num.np,num.steps),[2 1 3]); 
     varargout{1} = hist;
     varargout{2} = num;
     

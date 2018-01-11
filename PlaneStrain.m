@@ -37,7 +37,7 @@ classdef PlaneStrain
             
             Eh= E/(1-2*v)/(1+v);
             G = 0.5*E/(1+v);
-            c =[Eh*(1-v)    Eh*v        Eh*v        0 0 0
+            c =[Eh*(1-v)	Eh*v        Eh*v        0 0 0
                 Eh*v        Eh*(1-v)    Eh*v        0 0 0
                 Eh*v        Eh*v        Eh*(1-v)    0 0 0
                 0           0           0           G 0 0
@@ -45,11 +45,11 @@ classdef PlaneStrain
                 0           0           0           0 0 G];
             
             
-            D = [ c(1,1) c(1,2) c(1,4)
+            D =[c(1,1) c(1,2) c(1,4)
                 c(2,1) c(2,2) c(2,4)
                 c(4,1) c(4,2) c(4,4)];
             ctan = reshape(c([1,4,6,4,2,5,6,5,3],[1,4,6,4,2,5,6,5,3]),3,3,3,3);
-
+            
         end
         %% Element K
         function Kel = Compute_Kel(~, Kel, gp, ~)
@@ -57,7 +57,7 @@ classdef PlaneStrain
             B=gp.B;
             D=gp.D;
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
+            
             Kel = Kel + (B'*D*B) *gp.J *gp.w;
         end
         %% Element Fint
