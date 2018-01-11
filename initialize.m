@@ -43,7 +43,7 @@ if(eltype == 'Q4')
 elseif (eltype == 'Q9')
     gp = Q9;
 elseif    (eltype == 'T3')
-    gp = T3;
+    gp = T3(numel, mat.finiteDisp);
 elseif    (eltype == 'T6')
     gp = T6;
 elseif    (eltype == 'Q8')

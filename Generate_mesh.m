@@ -311,87 +311,53 @@ end
 %%
 % BC
 new_BC = 0;
-for i=1:size(old_BC,1)
+for i=1:size(old_BC,1)    
     switch  old_BC{i,1}
         case 'x'
-            xdir = old_BC{i,2};
-            affected_nodes = find( sign(xdir).*nde(:,2)<=sign(xdir)*xdir*1.00001 &...
-                sign(xdir).*nde(:,2)>=sign(xdir).*xdir*0.99999);
-            starts = new_BC(end,1)+1;
-            ends   = new_BC(end,1)+length(affected_nodes);
-            new_BC(starts:ends, 1) = starts:ends;
-            new_BC(starts:ends, 2) = affected_nodes;
-            switch old_BC{i,3}
-                case 'u'
-                    new_BC(starts:ends, 3) = 1;
-                case 'v'
-                    new_BC(starts:ends, 3) = 2;
-                case 'w'
-                    new_BC(starts:ends, 3) = 3;
-                otherwise
-                    error('unrecognized input!!');
-            end
-            new_BC(starts:ends, 4) = 0;
-            
+            dir = 1;
+            batch = true;
         case 'y'
-            ydir = old_BC{i,2};
-            affected_nodes = find( sign(ydir).*nde(:,2)<=sign(ydir)*ydir*1.00001 &...
-                sign(ydir).*nde(:,2)>=sign(ydir).*ydir*0.99999);
-            starts = new_BC(end,1)+1;
-            ends   = new_BC(end,1)+length(affected_nodes);
-            new_BC(starts:ends, 1) = starts:ends;
-            new_BC(starts:ends, 2) = affected_nodes;
-            switch old_BC{i,3}
-                case 'u'
-                    new_BC(starts:ends, 3) = 1;
-                case 'v'
-                    new_BC(starts:ends, 3) = 2;
-                case 'w'
-                    new_BC(starts:ends, 3) = 3;
-                otherwise
-                    error('unrecognized input!!');
-            end
-            new_BC(starts:ends, 4) = 0;
-            
+            dir = 2;
+            batch = true;
         case 'z'
-            zdir = old_BC{i,2};
-            affected_nodes = find( sign(zdir).*nde(:,2)<=sign(zdir)*zdir*1.00001 &...
-                sign(zdir).*nde(:,2)>=sign(zdir).*zdir*0.99999);
-            starts = new_BC(end,1)+1;
-            ends   = new_BC(end,1)+length(affected_nodes);
-            new_BC(starts:ends, 1) = starts:ends;
-            new_BC(starts:ends, 2) = affected_nodes;
-            switch old_BC{i,3}
-                case 'u'
-                    new_BC(starts:ends, 3) = 1;
-                case 'v'
-                    new_BC(starts:ends, 3) = 2;
-                case 'w'
-                    new_BC(starts:ends, 3) = 3;
-                otherwise
-                    error('unrecognized input!!');
-            end
-            new_BC(starts:ends, 4) = 0;
-            
+            dir = 3;
+            batch = true;
         case 'node'
             affected_node = old_BC{i,2};
             starts = new_BC(end,1)+1;
             new_BC(starts, 1) = starts;
             new_BC(starts, 2) = affected_node;
-            switch old_BC{i,3}
-                case 'u'
-                    new_BC(starts, 3) = 1;
-                case 'v'
-                    new_BC(starts, 3) = 2;
-                case 'w'
-                    new_BC(starts, 3) = 3;
-                otherwise
-                    error('unrecognized input!!');
-            end
-            new_BC(starts, 4) = 0;
+            batch = false;
         otherwise
             error('unrecognized input!!');
     end
+    if batch
+        
+        lmt = old_BC{i,2};
+        if sign(lmt) >=0
+            affected_nodes = find( nde(:,dir)<=lmt*1.001 & nde(:,dir)>=lmt*0.999 );
+        else
+            affected_nodes = find( nde(:,dir)>=lmt*1.001 & nde(:,dir)<=lmt*0.999 );
+        end
+        
+        starts = new_BC(end,1)+1;
+        ends   = new_BC(end,1)+length(affected_nodes);
+        new_BC(starts:ends, 1) = starts:ends;
+        new_BC(starts:ends, 2) = affected_nodes;
+    end
+    
+    switch old_BC{i,3}
+        case 'u'
+            new_BC(starts:ends, 3) = 1;
+        case 'v'
+            new_BC(starts:ends, 3) = 2;
+        case 'w'
+            new_BC(starts:ends, 3) = 3;
+        otherwise
+            error('unrecognized input!!');
+    end
+    new_BC(starts:ends, 4) = 0;
+    
 end
 new_BC = new_BC(:,2:4);
 %%
@@ -400,108 +366,67 @@ new_FORCE = 0;
 for i=1:size(old_FORCE,1)
     switch  old_FORCE{i,1}
         case 'x'
-            xdir = old_FORCE{i,2};
-            affected_nodes = find( sign(xdir).*nde(:,2)<=sign(xdir)*xdir*1.00001 &...
-                sign(xdir).*nde(:,2)>=sign(xdir).*xdir*0.99999);
-            portions = 0;
-            for j=1:length(affected_nodes)
-                portions = portions + sum(length(find(el(:,1:nen) == affected_nodes(j))));
-            end
-            portioned_load = old_FORCE{i,4}/portions;
-            starts = new_FORCE(end,1);
-            
-            for j=1:length(affected_nodes)
-                new_FORCE(starts+j, 1) = starts+j;
-                new_FORCE(starts+j, 2) = affected_nodes(j);
-                new_FORCE(starts+j, 4) = portioned_load *...
-                    sum(length(find(el(:,1:nen) == affected_nodes(j))));
-            end
-            
-            switch old_FORCE{i,3}
-                case 'u'
-                    new_FORCE(starts+1:starts+j, 3) = 1;
-                case 'v'
-                    new_FORCE(starts+1:starts+j, 3) = 2;
-                case 'w'
-                    new_FORCE(starts+1:starts+j, 3) = 3;
-                otherwise
-                    error('unrecognized input!!');
-            end
+            dir = 1;
+            batch = true;
         case 'y'
-            ydir = old_FORCE{i,2};
-            affected_nodes = find( sign(ydir).*nde(:,2)<=sign(ydir)*ydir*1.00001 &...
-                sign(ydir).*nde(:,2)>=sign(ydir).*ydir*0.99999);
-            portions = 0;
-            for j=1:length(affected_nodes)
-                portions = portions + sum(length(find(el(:,1:nen) == affected_nodes(j))));
-            end
-            portioned_load = old_FORCE{i,4}/portions;
-            starts = new_FORCE(end,1);
-            
-            for j=1:length(affected_nodes)
-                new_FORCE(starts+j, 1) = starts+j;
-                new_FORCE(starts+j, 2) = affected_nodes(j);
-                new_FORCE(starts+j, 4) = portioned_load *...
-                    sum(length(find(el(:,1:nen) == affected_nodes(j))));
-            end
-            
-            switch old_FORCE{i,3}
-                case 'u'
-                    new_FORCE(starts+1:starts+j, 3) = 1;
-                case 'v'
-                    new_FORCE(starts+1:starts+j, 3) = 2;
-                case 'w'
-                    new_FORCE(starts+1:starts+j, 3) = 3;
-                otherwise
-                    error('unrecognized input!!');
-            end
+            dir = 2;
+            batch = true;
         case 'z'
-            zdir = old_FORCE{i,2};
-            affected_nodes = find( sign(zdir).*nde(:,2)<=sign(zdir)*zdir*1.00001 &...
-                sign(zdir).*nde(:,2)>=sign(zdir).*zdir*0.99999);
-            portions = 0;
-            for j=1:length(affected_nodes)
-                portions = portions + sum(length(find(el(:,1:nen) == affected_nodes(j))));
-            end
-            portioned_load = old_FORCE{i,4}/portions;
-            starts = new_FORCE(end,1);
-            
-            for j=1:length(affected_nodes)
-                new_FORCE(starts+j, 1) = starts+j;
-                new_FORCE(starts+j, 2) = affected_nodes(j);
-                new_FORCE(starts+j, 4) = portioned_load *...
-                    sum(length(find(el(:,1:nen) == affected_nodes(j))));
-            end
-            
-            switch old_FORCE{i,3}
-                case 'u'
-                    new_FORCE(starts+1:starts+j, 3) = 1;
-                case 'v'
-                    new_FORCE(starts+1:starts+j, 3) = 2;
-                case 'w'
-                    new_FORCE(starts+1:starts+j, 3) = 3;
-                otherwise
-                    error('unrecognized input!!');
-            end
+            dir = 3;
+            batch = true;
         case 'node'
             affected_node = old_FORCE{i,2};
             starts = new_FORCE(end,1)+1;
             new_FORCE(starts, 1) = starts;
             new_FORCE(starts, 2) = affected_node;
-            switch old_BC{i,3}
-                case 'u'
-                    new_FORCE(starts, 3) = 1;
-                case 'v'
-                    new_FORCE(starts, 3) = 2;
-                case 'w'
-                    new_FORCE(starts, 3) = 3;
-                otherwise
-                    error('unrecognized input!!');
-            end
-            new_BC(starts, 4) = 0;
+            batch = false;
         otherwise
             error('unrecognized input!!');
     end
+    if batch
+        lmt = old_FORCE{i,2};
+        if sign(lmt) >=0
+            affected_nodes = find( nde(:,dir)<=lmt*1.001 & nde(:,dir)>=lmt*0.999 );
+        else
+            affected_nodes = find( nde(:,dir)>=lmt*1.001 & nde(:,dir)<=lmt*0.999 );
+        end
+        
+        portions = 0;
+        for j=1:length(affected_nodes)
+            if elmtype == 'T3'
+                portions = portions + sum(length(find(el(:,1:nen-1) == affected_nodes(j))));
+            else
+                portions = portions + sum(length(find(el(:,1:nen) == affected_nodes(j))));
+            end
+        end
+        portioned_load = old_FORCE{i,4}/portions;
+        starts = new_FORCE(end,1);
+        
+        for j=1:length(affected_nodes)
+            new_FORCE(starts+j, 1) = starts+j;
+            new_FORCE(starts+j, 2) = affected_nodes(j);
+            if elmtype == 'T3'
+                new_FORCE(starts+j, 4) = portioned_load *...
+                    sum(length(find(el(:,1:nen-1) == affected_nodes(j))));
+            else
+                new_FORCE(starts+j, 4) = portioned_load *...
+                    sum(length(find(el(:,1:nen) == affected_nodes(j))));
+            end
+            
+        end
+    end
+            
+    switch old_FORCE{i,3}
+        case 'u'
+            new_FORCE(starts+1:starts+j, 3) = 1;
+        case 'v'
+            new_FORCE(starts+1:starts+j, 3) = 2;
+        case 'w'
+            new_FORCE(starts+1:starts+j, 3) = 3;
+        otherwise
+            error('unrecognized input!!');
+    end
+  
 end
 new_FORCE = new_FORCE(:,2:4);
 

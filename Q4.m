@@ -2,8 +2,8 @@ classdef Q4
     
     properties (Constant)
         % Isoparametric gp
-        xi = 1/sqrt(3) .*...
-            [-1  1  1 -1
+        xi = 1/sqrt(3) .*[...
+            -1  1  1 -1
             -1 -1  1  1]';
     end
     
@@ -92,8 +92,9 @@ classdef Q4
                 dx = obj.dNdX(:,1);
                 dy = obj.dNdX(:,2);
             end
-            value=[ dx(1),   0.0, dx(2),   0.0, dx(3),   0.0, dx(4),   0.0
-                0.0, dy(1),   0.0, dy(2),   0.0, dy(3),   0.0, dy(4)
+            value=[...
+                dx(1),   0.0, dx(2),   0.0, dx(3),   0.0, dx(4),   0.0
+                0.0  , dy(1),   0.0, dy(2),   0.0, dy(3),   0.0, dy(4)
                 dy(1), dx(1), dy(2), dx(2), dy(3), dx(3), dy(4), dx(4)];
         end
         
@@ -107,15 +108,16 @@ classdef Q4
                 dNdxi_3D(:,:,i) =...
                     1/4 *[...
                     -(1-xi(i,2)) -(1-xi(i,1))
-                    (1-xi(i,2)) -(1+xi(i,1))
-                    (1+xi(i,2))  (1+xi(i,1))
+                    ( 1-xi(i,2)) -(1+xi(i,1))
+                    ( 1+xi(i,2))  (1+xi(i,1))
                     -(1+xi(i,2))  (1-xi(i,1))]';
             end
         end
         
         function [Nmat, Ninv] = compute_Nmat(obj)
             xi = obj.xi;
-            Nmat = 1/4*[(1-xi(:,1)).*(1-xi(:,2)), (1+xi(:,1)).*(1-xi(:,2)),...
+            Nmat = 1/4*[...
+                (1-xi(:,1)).*(1-xi(:,2)), (1+xi(:,1)).*(1-xi(:,2)),...
                 (1+xi(:,1)).*(1+xi(:,2)), (1-xi(:,1)).*(1+xi(:,2))];
             Ninv = inv(Nmat);
         end
