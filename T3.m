@@ -40,7 +40,7 @@ classdef T3
         dNdX;
         B;
         N;
-        w=1;
+        w=0.5;
         dNdxi;
     end
     

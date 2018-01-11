@@ -37,8 +37,8 @@ for istep=1:num.steps % Steps loop
                 %%   Start Loop over Gauss points
                 
                 %%%   2gp. Gauss points geometry-related values
-                gp = Compute_gp_info(gp, coor, Umt, iel);
-                
+                gp = Compute_gp_info(gp, coor, Umt, iel, num);
+                 
                 %%%   3gp. Strain tensor
                 gp.eps = gp.B * Uvc;
                 
@@ -100,4 +100,4 @@ for istep=1:num.steps % Steps loop
 end
 %%%     12. Post Processing
 [hist, num] = WriteReadHistory(hist, num, nodes);
-PostProcess(hist, num, gp);
+% PostProcess(hist, num, gp);
