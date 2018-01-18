@@ -2,23 +2,22 @@ classdef Elastic
     %Elastic 3D elastic class
     %   Detailed explanation goes here
     
-   properties (Hidden, SetAccess = private)
+    properties (Hidden, SetAccess = private)
+        ndm;
         ndof;
         dNdX;
         finiteDisp = 0;
     end
     %%
     methods
-        function obj = Elastic(ndof)
+        function obj = Elastic(ndm, ndof)
+            obj.ndm = ndm;
             obj.ndof = ndof;
         end
         %% Sigma
         function sigma_voigt = Compute_cauchy(obj, gp, props)
             [D, ~] = obj.Compute_tangentstiffness( gp, props);
-            
-            if (obj.ndof == 3)
-                sigma_voigt = D *gp.eps;
-            end
+            sigma_voigt = D *gp.eps;
         end
         %% Tangential stiffness
         function [D, ctan] = Compute_tangentstiffness(~, ~, props)
@@ -43,7 +42,7 @@ classdef Elastic
                 0           0           0           0 0 G];
             
             ctan = reshape(D([1,4,6,4,2,5,6,5,3],[1,4,6,4,2,5,6,5,3]),3,3,3,3);
-
+            
         end
         %% Element K
         function Kel = Compute_Kel(~, Kel, gp, ~)
@@ -51,7 +50,7 @@ classdef Elastic
             B=gp.B;
             D=gp.D;
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
+            
             Kel = Kel + (B'*D*B) *gp.J *gp.w;
         end
         %% Element Fint

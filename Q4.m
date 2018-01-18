@@ -34,6 +34,7 @@ classdef Q4
         numel;
         weights = [1 1 1 1];
         finiteDisp;
+        adof;
     end
     
     properties (SetAccess = private)
@@ -48,12 +49,13 @@ classdef Q4
     end
     
     methods
-        function obj = Q4(numel, finiteDisp)
+        function obj = Q4(num, finiteDisp)
             obj.dNdxi_3D = obj.compute_dNdxi(obj);
             [obj.Nmat, obj.Ninv] = obj.compute_Nmat(obj);
-            obj.det_dXdxi_list = zeros(4,numel);
-            obj.dNdX_list = zeros(4,2,4,numel);
+            obj.det_dXdxi_list = zeros(4,num.el);
+            obj.dNdX_list = zeros(4,2,4,num.el);
             obj.finiteDisp = finiteDisp;
+            obj.adof = num.ndof - num.ndm;
         end
         
         function value = get.dNdxi(obj)
@@ -92,10 +94,11 @@ classdef Q4
                 dx = obj.dNdX(:,1);
                 dy = obj.dNdX(:,2);
             end
+            a = zeros(1,obj.adof);
             value=[...
-                dx(1),   0.0, dx(2),   0.0, dx(3),   0.0, dx(4),   0.0
-                0.0  , dy(1),   0.0, dy(2),   0.0, dy(3),   0.0, dy(4)
-                dy(1), dx(1), dy(2), dx(2), dy(3), dx(3), dy(4), dx(4)];
+                dx(1),   0.0, a, dx(2),   0.0, a, dx(3),   0.0, a, dx(4),   0.0 a
+                0.0  , dy(1), a,   0.0, dy(2), a,   0.0, dy(3), a,   0.0, dy(4) a
+                dy(1), dx(1), a, dy(2), dx(2), a, dy(3), dx(3), a, dy(4), dx(4) a];
         end
         
     end
