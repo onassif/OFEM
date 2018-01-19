@@ -6,26 +6,32 @@ classdef HyperNeo
         ndm;
         ndof;
         finiteDisp = 1;
+        
+        shear; 
+        lame1;
     end
     %%
     methods
-        function obj = HyperNeo(ndm, ndof)
-            obj.ndm  = ndm;
-            obj.ndof = ndof;
-        end
-        %% Sigma
-        function sigma_voigt = Compute_cauchy(obj, gp, props)
+        %% Construct
+        function obj = HyperNeo(num, props)
+            obj.ndm  = num.ndm;
+            obj.ndof = num.ndof;
             
             if strcmp(props{1,1} ,'mu') && strcmp(props{2,1} ,'lambda')
-                mu      = props{1,2};
-                lambda  = props{2,2};
+                obj.shear  = props{1,2};
+                obj.lame1  = props{2,2};
             elseif strcmp(props{1,1} ,'lambda') && strcmp(props{2,1} ,'mu')
-                mu      = props{1,2};
-                lambda  = props{2,2};
+                obj.shear  = props{1,2};
+                obj.lame1  = props{2,2};
             else
                 error("You've chosen Plane Strain material but specified incompatible material properties, I'm disapponted");
             end
-            
+        end
+        %% Sigma
+        function sigma_voigt = Compute_cauchy(obj, gp)
+            mu     = obj.shear;
+            lambda = obj.lame1;
+
             if (obj.ndm==2 && obj.ndof ==2)
                 I = eye(obj.ndm);
                 b = gp.b;
@@ -36,18 +42,10 @@ classdef HyperNeo
             end
         end
         %% Tangential stiffness
-        function [D, ctan] = Compute_tangentstiffness(~, gp, props)
-            
-            if strcmp(props{1,1} ,'mu') && strcmp(props{2,1} ,'lambda')
-                mu      = props{1,2};
-                lambda  = props{2,2};
-            elseif strcmp(props{1,1} ,'lambda') && strcmp(props{2,1} ,'mu')
-                mu      = props{1,2};
-                lambda  = props{2,2};
-            else
-                error("You've chosen Plane Strain material but specified incompatible material properties, I'm disapponted");
-            end
-            
+        function [D, ctan] = Compute_tangentstiffness(~, gp)
+            mu     = obj.shear;
+            lambda = obj.lame1;            
+
             c = zeros(3,3,3,3);
             I = eye(3);
             J = gp.det_F;
@@ -63,7 +61,7 @@ classdef HyperNeo
                 end
             end
             
-            D = [ c(1,1,1,1) c(1,1,2,2) c(1,1,1,2)
+            D=[ c(1,1,1,1) c(1,1,2,2) c(1,1,1,2)
                 c(2,2,1,1) c(2,2,2,2) c(2,2,1,2)
                 c(1,2,1,1) c(1,2,2,2) c(1,2,1,2)];
             ctan = c;

@@ -5,15 +5,15 @@ clear; close all
 run(ReadInput())
 initialize
 
-for istep=1:num.steps % Steps loop
+for step=1:num.steps % Steps loop
     %% Start time loop
     
     %%% 1n - Load multiplier
-    mult = istep/num.steps;
+    NR.step = step;
     
-    iter = 0; fprintf('\n');
-    residual = inf;
-    while (residual > NR_tol)
+    NR.iter = 0; fprintf('\n');
+    NR.residual = inf;
+    while (NR.residual > NR.tol)
         %% Start NR loop
         % Clear global K and Fint
         globl.K = sparse(num.eq, num.eq);          globl.Fint = zeros(num.eq,1);
@@ -31,7 +31,8 @@ for istep=1:num.steps % Steps loop
             props= el.props;        % element material properties
             
             % clear previous values of elemental K and Fint
-            el.clear_K_Fint();
+            el.K    = 0;    
+            el.Fint = 0;
             
             for igp = 1:num.gp;     gp.i = igp;
                 %%   Start Loop over Gauss points
@@ -42,11 +43,11 @@ for istep=1:num.steps % Steps loop
                 %%%   3gp. Strain tensor
                 gp.eps = gp.B * Uvc;
                 
-                %%%   4gp. Stress
-                gp.sigma        = mat.Compute_cauchy(gp, props);
+                %%%   4gp. Tangential stifness
+                [gp.D, gp.ctan] = mat.Compute_tangentstiffness(gp);
                 
-                %%%   5gp. Tangential stifness
-                [gp.D, gp.ctan] = mat.Compute_tangentstiffness(gp, props);
+                %%%   5gp. Stress
+                gp.sigma        = mat.Compute_cauchy(gp);
                 
                 %%%   6gp. K
                 el.K            = mat.Compute_Kel(el.K, gp, num.gp);
@@ -68,31 +69,31 @@ for istep=1:num.steps % Steps loop
         
         %%%   8i. Fext and apply constrains
         [globl.K, Fext, globl.Fint]  =  ApplyConstraints_and_Loads(...
-            mult, globl.K, Fext, globl.Fint, inpt, num.ndof);
+            NR.mult, globl.K, Fext, globl.Fint, inpt, num.ndof);
         
         %%%   9i. Residual and normalized residual
         G = Fext - globl.Fint;
-        residual = norm(G)/norm(Fext);
+        NR.residual = norm(G)/norm(Fext);
 
         %%%   10i. dU and update Ui
         dU = globl.K\G;
         globl.U = globl.U + dU;
         
         %   Print iteration information:
-        iter = iter + 1;
+        NR.iter = NR.iter + 1;
         fprintf(['step: %d\t iteration: %d\t residual: ',...
-            '[abs: %.10f\t rel: %.10f]\n'],istep, iter, norm(G),residual);...
+            '[abs: %.10f\t rel: %.10f]\n'],step, NR.iter, norm(G),NR.residual);
         
         %%%   11i. History arrays
-        hist.resid(iter) = residual;
+        hist.resid(NR.iter) = NR.residual;
         % write to file 
-        if (residual < NR_tol)
-            WriteReadHistory(hist, num, istep, Fext, globl.U + dU,...
+        if (NR.residual < NR.tol)
+            WriteReadHistory(hist, num, step, Fext, globl.U + dU,...
                 nodes+reshape(globl.U,num.ndof,num.np)');
         end
         
         
-        if (iter > max_iter)
+        if (NR.iter > NR.max_iter)
             error('>>>>> Error!! Exceeded the number of NR iterations permissible, exiting...');
         end
     end

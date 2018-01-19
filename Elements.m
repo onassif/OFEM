@@ -1,10 +1,9 @@
-classdef Elements < handle
+classdef Elements
     
     properties (SetAccess = public, GetAccess = public)
         i
         K
         Fint
-        list
     end    
     properties (SetAccess = private, GetAccess = public)
         Umt
@@ -28,43 +27,62 @@ classdef Elements < handle
     end
     
     methods
-        function obj = Elements(elements, nodes, numel, numnp, ndm, ndof,...
-                nen, Props, U_global)
-            
-            obj.elements        = elements(:,1:nen);
+        %% Construct
+        function obj = Elements(elements, nodes, num, Props, U_global)
+            obj.elements        = elements(:,1:num.nen);
             obj.nodes           = nodes;
-            obj.numel           = numel;
-            obj.numnp           = numnp;
-            obj.ndm             = ndm;
-            obj.ndof            = ndof;
-            obj.nen             = nen;
+            obj.numel           = num.el;
+            obj.numnp           = num.np;
+            obj.ndm             = num.ndm;
+            obj.ndof            = num.ndof;
+            obj.nen             = num.nen;
             obj.property_num    = elements(:,end);
             obj.props           = Props;
             obj.U_global        = U_global;
-            obj.list            = cell(numel,1);
+            obj.K               = zeros(num.ndof*num.nen, num.ndof*num.nen);
+            obj.Fint            = zeros(num.ndof*num.nen, 1);
         end
-        
+        %% get functions
         function value = get.coor(obj)
             value = obj.nodes(obj.elements(obj.i,:),:);
         end
-        
         function value = get.Umt(obj)
             reshaped_U = reshape(obj.U_global,obj.ndof,obj.numnp);
+            value = reshaped_U(:, obj.elements(obj.i,:))';
+        end      
+        function value = get.Uvc(obj)
+            value = reshape(obj.Umt', obj.ndof*obj.nen, 1);
+        end
+        function value = get.indices(obj)
             indc = obj.elements(obj.i,:);
-            value = reshaped_U(:,indc)';
             
-            obj.Uvc = reshape(value',obj.ndof*obj.nen,1);
+            dofs_col = repmat((1:obj.ndof)', obj.nen,1);
             
-            obj.indices = sub2ind(size(reshaped_U),...
-                repmat((1:obj.ndof)',length(indc),1),...
-                reshape(repmat(indc,obj.ndof,1),obj.ndof*obj.nen,1));
+            repeated_el_conn = repmat(indc, obj.ndof, 1);
+            conns_col= reshape(repeated_el_conn, obj.ndof*obj.nen, 1);
+            
+            value = sub2ind([obj.ndof obj.numnp], dofs_col, conns_col);
         end
         
-        function clear_K_Fint(obj)
-            obj.K    = zeros(obj.ndof*obj.nen, obj.ndof*obj.nen);
-            obj.Fint = zeros(obj.ndof*obj.nen,1);
+        %% set functions
+        function obj = set.K(obj, value)
+            if isempty(obj.K) || sum(size(value)==size(obj.K))==2 % 1st time or same size
+                obj.K = value;
+            elseif value == 0
+                obj.K = zeros(size(obj.K));
+            else
+                error("Size of element K has changed")
+            end
         end
-        
+        function obj = set.Fint(obj, value)
+            if isempty(obj.Fint) || sum(size(value)==size(obj.Fint))==2
+                obj.Fint = value;
+            elseif value == 0
+                obj.Fint = zeros(size(obj.Fint));
+            else
+                error("Size of element Fint has changed") 
+            end
+        end
     end
 end
 

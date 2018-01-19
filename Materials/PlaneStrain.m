@@ -7,33 +7,38 @@ classdef PlaneStrain
         ndof;
         dNdX;
         finiteDisp = 0;
+                
+        Young;
+        Poisson;
     end
     %%
     methods
-        function obj = PlaneStrain(ndm, ndof)
-            obj.ndm  = ndm;
-            obj.ndof = ndof;
-        end
-        %% Sigma
-        function sigma_voigt = Compute_cauchy(obj, gp, props)
-            [D, ~] = obj.Compute_tangentstiffness( gp, props);
-            
-            if (obj.ndm==2 && obj.ndof ==2)
-                sigma_voigt = D *gp.eps;
-            end
-        end
-        %% Tangential stiffness
-        function [D, ctan] = Compute_tangentstiffness(~, ~, props)
+        %% Construct
+        function obj = PlaneStrain(num, props)
+            obj.ndm  = num.ndm;
+            obj.ndof = num.ndof;
             
             if strcmp(props{1,1} ,'E') && strcmp(props{2,1} ,'v')
-                E = props{1,2};
-                v = props{2,2};
+                obj.Young  = props{1,2};
+                obj.Poisson= props{2,2};
             elseif strcmp(props{1,1} ,'v') && strcmp(props{2,1} ,'E')
-                v = props{1,2};
-                E = props{2,2};
+                obj.Poisson= props{1,2};
+                obj.Young  = props{2,2};
             else
                 error("You've chosen Plane Strain material but specified incompatible material properties, I'm disapponted");
             end
+        end
+        %% Sigma
+        function sigma_voigt = Compute_cauchy(obj, gp)
+            
+            if (obj.ndm==2 && obj.ndof ==2)
+                sigma_voigt = gp.D *gp.eps;
+            end
+        end
+        %% Tangential stiffness
+        function [D, ctan] = Compute_tangentstiffness(obj, ~)
+            E = obj.Young;
+            v = obj.Poisson;
             
             Eh= E/(1-2*v)/(1+v);
             G = 0.5*E/(1+v);

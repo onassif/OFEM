@@ -1,7 +1,7 @@
 function varargout = WriteReadHistory(hist, num, varargin )
 %WriteHistory Writes & reads history arrays to binary files
 
-if(length(varargin)==4)
+if(nargin==6)
     step  = varargin{1};
     Fext  = varargin{2};
     d     = varargin{3};
@@ -35,7 +35,7 @@ if(length(varargin)==4)
     fwrite(fids, stre       , 'single');
     fwrite(fidC, ctan       , 'single');
     
-elseif(length(varargin)==1)
+elseif(nargin==3)
     nodes       = varargin{1};
     num.steps   = num.steps+1;
     
