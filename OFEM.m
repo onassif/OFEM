@@ -69,7 +69,7 @@ for step=1:num.steps % Steps loop
         
         %%%   8i. Fext and apply constrains
         [globl.K, Fext, globl.Fint]  =  ApplyConstraints_and_Loads(...
-            NR.mult, globl.K, Fext, globl.Fint, inpt, num.ndof);
+            NR.mult, globl.K, Fext, globl.Fint, inpt, num.ndof, NR.iter==0);
         
         %%%   9i. Residual and normalized residual
         G = Fext - globl.Fint;

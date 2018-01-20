@@ -42,7 +42,7 @@ classdef HyperNeo
             end
         end
         %% Tangential stiffness
-        function [D, ctan] = Compute_tangentstiffness(~, gp)
+        function [D, ctan] = Compute_tangentstiffness(obj, gp)
             mu     = obj.shear;
             lambda = obj.lame1;            
 
@@ -87,7 +87,7 @@ classdef HyperNeo
                                     aa=(a-1)*ndf; bb=(b-1)*ndf;
                                     
                                     K_geo(aa+i, bb+k) = K_geo(aa+i, bb+k) +...
-                                        I(l,k)*dNdx(a,l) *sigma(i,j)*dNdx(b,j);
+                                        I(i,k)*dNdx(a,l) *sigma(l,j)*dNdx(b,j);
                                 end
                             end
                         end

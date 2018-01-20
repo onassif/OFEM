@@ -1,4 +1,4 @@
-function [K, Fext, Fint]  =  ApplyConstraints_and_Loads(mult, K, Fext, Fint, inpt, ndof)
+function [K, Fext, Fint]=ApplyConstraints_and_Loads(mult, K, Fext, Fint, inpt, ndof, zeroIter)
 BC = inpt.BC;
 FORCE = inpt.FORCE;
 %   BC
@@ -14,8 +14,8 @@ for i = 1:size(BC,1)
     K(k_index,k_index) = 1.0;
     
     %       Change the Fs 
-    Fext(k_index) = 0;      
-    Fint(k_index) = 0;
+    Fext(k_index) = BC(i,3)*mult;      
+    Fint(k_index) =(~zeroIter)*BC(i,3)*mult; % Apply BC only if not the zeroth iteration
 end
 
 %   Loads

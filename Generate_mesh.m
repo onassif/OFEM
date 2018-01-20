@@ -356,7 +356,7 @@ for i=1:size(old_BC,1)
         otherwise
             error('unrecognized input!!');
     end
-    new_BC(starts:ends, 4) = 0;
+    new_BC(starts:ends, 4) = old_BC{i,4};
     
 end
 new_BC = new_BC(:,2:4);
