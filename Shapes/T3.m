@@ -75,7 +75,9 @@ classdef T3
         end
         
         function value = get.b(obj)
-            value = obj.F*obj.F';
+            if obj.finiteDisp
+                value = obj.F*obj.F';
+            end
         end
         
         function value = get.B(obj)

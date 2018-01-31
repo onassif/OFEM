@@ -357,9 +357,10 @@ for i=1:size(old_BC,1)
             error('unrecognized input!!');
     end
     new_BC(starts:ends, 4) = old_BC{i,4};
+    new_BC(starts:ends, 5) = i;
     
 end
-new_BC = new_BC(:,2:4);
+new_BC = new_BC(:,2:5);
 %%
 % FORCE
 new_FORCE = 0;
@@ -426,8 +427,9 @@ for i=1:size(old_FORCE,1)
         otherwise
             error('unrecognized input!!');
     end
+    new_FORCE(starts+1:starts+j, 5) = i;
   
 end
-new_FORCE = new_FORCE(:,2:4);
+new_FORCE = new_FORCE(:,2:5);
 
 end

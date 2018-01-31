@@ -35,9 +35,15 @@ num.gp          = ngp;
 num.steps       = n_steps;
 num.str         = numstr;
 num.ndm         = ndm;
-
+num.BC          = BC(end,end);
+num.FORCE       = FORCE(end,end);
 
 %%%%%%%%%%%%%%%%%%%%% Create objects:
+% Hardening-related
+if strcmp(hardtype,'Mixed')
+    hard = ConstantMixedHardening(hardprops);
+end
+
 % Material-related
 if     (material == 1)
     mat = Elastic(num, props);
@@ -46,9 +52,11 @@ elseif (material == 2)
 elseif (material == 3)
     mat = HyperNeo(num, props);  
 elseif (material == 4)
-    mat = ClassicPlasticityRI(num, props);
-    hist.dt          = n_steps/total_time;
-    hist.ttime       = total_time;
+%     hist.dt          = total_time/n_steps;
+%     hist.ttime       = total_time;
+    mat = ClassicPlasticityRI(num, props, time, hard);
+elseif (material == 5)
+    mat = ClassicPlasticityRI(num, props, time);
 end
     
 
@@ -69,7 +77,13 @@ end
 el = Elements(elements, nodes, num, props, globl.U);
 
 % NR-related
-NR = NewtonRaphson(NR_tol, max_iter, n_steps);
+if exist('time','var') && exist('fctr','var')
+    NR = NewtonRaphson(NR_tol, max_iter, num, time, fctr);
+elseif exist('time','var')
+    NR = NewtonRaphson(NR_tol, max_iter, num, time);
+else
+    NR = NewtonRaphson(NR_tol, max_iter, num);
+end
 
 inpt.BC         = BC;
 inpt.FORCE      = FORCE;

@@ -10,7 +10,7 @@ for step=1:num.steps % Steps loop
     
     %%% 1n - Load multiplier
     NR.step = step;
-    
+    NR.mult = step/num.steps;
     NR.iter = 0; fprintf('\n');
     NR.residual = inf;
     while (NR.residual > NR.tol)
@@ -44,7 +44,7 @@ for step=1:num.steps % Steps loop
                 gp.eps = gp.B * Uvc;
                 
                 %%%   4gp. Tangential stifness
-                [gp.D, gp.ctan] = mat.Compute_tangentstiffness(gp);
+                [gp.D, gp.ctan, mat] = mat.Compute_tangentstiffness(gp);
                 
                 %%%   5gp. Stress
                 gp.sigma        = mat.Compute_cauchy(gp);

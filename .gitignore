@@ -1,4 +1,14 @@
 
 Input/
 
+hist/
+
 Generate_mesh\.m~
+
+temp\.m
+
+temp\.m~
+
+Materials/ClassicPlasticityRI\.m~
+
+*.m~

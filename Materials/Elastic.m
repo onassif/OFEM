@@ -39,12 +39,12 @@ classdef Elastic
 
             Eh= E/(1-2*v)/(1+v);
             G = 0.5*E/(1+v);
-            D =[Eh*(1-v)    Eh*v        Eh*v        0 0 0
-                Eh*v        Eh*(1-v)    Eh*v        0 0 0
-                Eh*v        Eh*v        Eh*(1-v)    0 0 0
-                0           0           0           G 0 0
-                0           0           0           0 G 0
-                0           0           0           0 0 G];
+            D =[Eh*(1-v) Eh*v     Eh*v     0 0 0
+                Eh*v     Eh*(1-v) Eh*v     0 0 0
+                Eh*v     Eh*v     Eh*(1-v) 0 0 0
+                0        0        0        G 0 0
+                0        0        0        0 G 0
+                0        0        0        0 0 G];
             
             ctan = reshape(D([1,4,6,4,2,5,6,5,3],[1,4,6,4,2,5,6,5,3]),3,3,3,3);
             

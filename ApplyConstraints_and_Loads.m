@@ -14,8 +14,8 @@ for i = 1:size(BC,1)
     K(k_index,k_index) = 1.0;
     
     %       Change the Fs 
-    Fext(k_index) = BC(i,3)*mult;      
-    Fint(k_index) =(~zeroIter)*BC(i,3)*mult; % Apply BC only if not the zeroth iteration
+    Fext(k_index) = BC(i,3)*mult(BC(i,4),1);      
+    Fint(k_index) =(~zeroIter)*BC(i,3)*mult(BC(i,4),1); % Apply BC only if not the zeroth iteration
 end
 
 %   Loads
@@ -30,6 +30,6 @@ for i = 1:size(FORCE,1)
     end
     
     f_index = ndof*(index-1) + direction; % A smart way to do it without if-statement
-    Fext(f_index) = FORCE(i,3)*mult;   
+    Fext(f_index) = FORCE(i,3)*mult(FORCE(i,4),2);   
 end
 end
