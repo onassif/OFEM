@@ -40,8 +40,10 @@ num.FORCE       = FORCE(end,end);
 
 %%%%%%%%%%%%%%%%%%%%% Create objects:
 % Hardening-related
-if strcmp(hardtype,'Mixed')
-    hard = ConstantMixedHardening(hardprops);
+if exist('hardType','var')
+    if strcmp(hardType,'Mixed')
+        hard = ConstantMixedHardening(hardprops);
+    end
 end
 
 % Material-related

@@ -5,14 +5,12 @@ classdef NewtonRaphson
     properties (SetAccess=public)
         tol;
         max_iter;
-        mult;
+        mult
         iter
         residual
-        
-
     end
     properties (Hidden)
-        step
+        step=1;
     end
     properties (SetAccess=private, Hidden)
         numsteps
@@ -36,18 +34,25 @@ classdef NewtonRaphson
                     obj.time(:,2)=cumsum(obj.time(:,2));
                     obj.fctr=[zeros(mult_length,1) varargin{2}(:,:,1), zeros(mult_length,1), varargin{2}(:,:,2)];
                     obj.fctr=reshape(obj.fctr, mult_length , size(varargin{2},2)+1,2);
-            end
+            end               
         end
         function obj = set.mult(obj,value)
             if (~obj.time | length(obj.fctr)==1)%if user didn't pass time or factors or Initialization
-                obj.mult(:,:) = value;
+                if length(value)==1
+                    obj.mult(:,1) = value/obj.step;
+                    obj.mult(:,2) = value;
+                else % Initialization
+                    obj.mult(:,1) = value(:,1)/obj.step;
+                    obj.mult(:,2) = value(:,2);
+                end
             else
                 row = find(obj.step>obj.time(:,2),1,'last')+1;
                 ncrmnt = squeeze(...
                     (obj.fctr(:,row,:)-obj.fctr(:,row-1,:))/...
                     (obj.time(  row,2)-obj.time(  row-1,2)) );
                 
-                obj.mult(:,:) = obj.mult(:,:) + ncrmnt;
+                obj.mult(:,1) = ncrmnt;
+                obj.mult(:,2) = obj.mult(:,2) + ncrmnt;
             end
         end
     end
