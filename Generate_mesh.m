@@ -325,6 +325,7 @@ for i=1:size(old_BC,1)
         case 'node'
             affected_node = old_BC{i,2};
             starts = new_BC(end,1)+1;
+            ends   = new_BC(end,1)+1;
             new_BC(starts, 1) = starts;
             new_BC(starts, 2) = affected_node;
             batch = false;
@@ -378,6 +379,7 @@ for i=1:size(old_FORCE,1)
         case 'node'
             affected_node = old_FORCE{i,2};
             starts = new_FORCE(end,1)+1;
+            ends   = new_FORCE(end,1)+1;
             new_FORCE(starts, 1) = starts;
             new_FORCE(starts, 2) = affected_node;
             batch = false;
