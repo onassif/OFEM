@@ -6,7 +6,7 @@ dU              = zeros(numeq,1);
 Fext            = zeros(numeq,1);
 G               = zeros(numeq,1);
 globl.U         = zeros(numeq,1);
-
+globl.Fint      = zeros(numeq,1);
 step            = cell (n_steps+1,1);
 
 hist.eps        = zeros(numstr, ngp, numel, 'single');
