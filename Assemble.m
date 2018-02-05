@@ -1,8 +1,7 @@
-function [K, Fint] = Assemble(K, Fint, el, iter)
+function [K, Fint] = Assemble(K, Fint, el)
 ind = el.indices;
-if iter ~=0
-    Fint(ind) = Fint(ind) + el.Fint;
-end
+Fint(ind) = Fint(ind) + el.Fint;
+
 K(ind, ind) = K(ind, ind) + el.K;
 
 end

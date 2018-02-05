@@ -13,15 +13,30 @@ for step=1:num.steps % Steps loop
     NR.mult = step/num.steps;
     NR.iter = 0; fprintf('\n');
     NR.residual = inf;
+    
+    if step > 1 % iteration zero when Fext changes while Fint is the same
+        
+        %%%   1z. Fext and apply constrains
+        [globl.K, Fext, ~]  =  ApplyConstraints_and_Loads(...
+            NR.mult, globl.K, Fext, globl.Fint, inpt, num.ndof);
+        
+        %%%   2z. Residual and normalized residual
+        G = Fext - globl.Fint;
+        
+        %%%   3z. dU and update Ui
+        dU = globl.K\G;
+        globl.U = globl.U + dU;
+    end
+    
     while (NR.residual > NR.tol)
         %% Start NR loop
         % Clear global K and Fint
-        globl.K = sparse(num.eq, num.eq);          globl.Fint = zeros(num.eq,1);
+        globl.K = sparse(num.eq, num.eq);       globl.Fint = zeros(num.eq,1);
         
         % Send new U to the element object
         el.U_global = globl.U;
-
-        for iel =1:num.el          
+        
+        for iel =1:num.el
             %% Start elements loop
             % Get information related to current element:
             el.i = iel;             % element number
@@ -31,7 +46,7 @@ for step=1:num.steps % Steps loop
             props= el.props;        % element material properties
             
             % clear previous values of elemental K and Fint
-            el.K    = 0;    
+            el.K    = 0;
             el.Fint = 0;
             
             for igp = 1:num.gp;     gp.i = igp;
@@ -39,7 +54,7 @@ for step=1:num.steps % Steps loop
                 
                 %%%   2gp. Gauss points geometry-related values
                 gp = Compute_gp_info(gp, coor, Umt, iel, num);
-                 
+                
                 %%%   3gp. Strain tensor
                 gp.eps = gp.B * Uvc;
                 
@@ -58,7 +73,7 @@ for step=1:num.steps % Steps loop
                 % store states
                 hist.eps (:,igp,iel) = gp.eps;
                 hist.stre(:,igp,iel) = gp.sigma;
-                hist.ctan(:,:,:,:,igp,iel) = gp.ctan;                               
+                hist.ctan(:,:,:,:,igp,iel) = gp.ctan;
             end
             
             % Assemble to global arrays
@@ -69,24 +84,26 @@ for step=1:num.steps % Steps loop
         
         %%%   8i. Fext and apply constrains
         [globl.K, Fext, globl.Fint]  =  ApplyConstraints_and_Loads(...
-            NR.mult, globl.K, Fext, globl.Fint, inpt, num.ndof, NR.iter==0);
+            NR.mult, globl.K, Fext, globl.Fint, inpt, num.ndof);
         
         %%%   9i. Residual and normalized residual
-        G = Fext - globl.Fint;
+        G = Fext - globl.Fint .* ~(step==1 && NR.iter==0);
         NR.residual = norm(G)/norm(Fext);
-
+        
         %%%   10i. dU and update Ui
         dU = globl.K\G;
         globl.U = globl.U + dU;
         
         %   Print iteration information:
+        if ~(step==1 && NR.iter==0)
+            fprintf(['step: %4.0d\t iteration: %d\t residual: ',...
+                '[abs: %.10f\t rel: %.10f]\n'],step, NR.iter+1-(step==1), norm(G),NR.residual);
+        end
         NR.iter = NR.iter + 1;
-        fprintf(['step: %d\t iteration: %d\t residual: ',...
-            '[abs: %.10f\t rel: %.10f]\n'],step, NR.iter, norm(G),NR.residual);
         
         %%%   11i. History arrays
         hist.resid(NR.iter) = NR.residual;
-        % write to file 
+        % write to file
         if (NR.residual < NR.tol)
             WriteReadHistory(hist, num, step, Fext, globl.U + dU,...
                 nodes+reshape(globl.U,num.ndof,num.np)');
