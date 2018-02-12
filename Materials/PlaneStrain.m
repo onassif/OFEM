@@ -10,6 +10,7 @@ classdef PlaneStrain
                 
         Young;
         Poisson;
+        linear = true;
     end
     %%
     methods
@@ -28,15 +29,19 @@ classdef PlaneStrain
                 error("You've chosen Plane Strain material but specified incompatible material properties, I'm disapponted");
             end
         end
+        %% Epsilon
+        function eps = computeStrain(~, gp, el)
+            eps = gp.B * el.Uvc;
+        end
         %% Sigma
-        function sigma_voigt = Compute_cauchy(obj, gp)
+        function sigma_voigt = computeCauchy(obj, gp)
             
             if (obj.ndm==2 && obj.ndof ==2)
                 sigma_voigt = gp.D *gp.eps;
             end
         end
         %% Tangential stiffness
-        function [D, ctan, obj] = Compute_tangentstiffness(obj, ~)
+        function [D, ctan, obj] = computeTangentStiffness(obj, ~, ~)
             E = obj.Young;
             v = obj.Poisson;
             
@@ -57,7 +62,7 @@ classdef PlaneStrain
             
         end
         %% Element K
-        function Kel = Compute_Kel(~, Kel, gp, ~)
+        function Kel = computeK_el(~, Kel, gp, ~)
             % Definitions
             B=gp.B;
             D=gp.D;
@@ -66,8 +71,8 @@ classdef PlaneStrain
             Kel = Kel + (B'*D*B) *gp.J *gp.w;
         end
         %% Element Fint
-        function Fint = Compute_Fint(~, Fint, gp)
-            Fint = Fint + (gp.B'*gp.sigma) *gp.J *gp.w;
+        function Fint = computeFint(~, gp, el)
+            Fint = el.Fint + (gp.B'*gp.sigma) *gp.J *gp.w;
         end
     end
 end

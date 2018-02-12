@@ -39,10 +39,10 @@ classdef NewtonRaphson
         function obj = set.mult(obj,value)
             if (~obj.time | length(obj.fctr)==1)%if user didn't pass time or factors or Initialization
                 if length(value)==1
-                    obj.mult(:,1) = value/obj.step;
+                    obj.mult(:,1) = value;
                     obj.mult(:,2) = value;
                 else % Initialization
-                    obj.mult(:,1) = value(:,1)/obj.step;
+                    obj.mult(:,1) = value(:,2);
                     obj.mult(:,2) = value(:,2);
                 end
             else
@@ -51,7 +51,7 @@ classdef NewtonRaphson
                     (obj.fctr(:,row,:)-obj.fctr(:,row-1,:))/...
                     (obj.time(  row,2)-obj.time(  row-1,2)) );
                 
-                obj.mult(:,1) = ncrmnt;
+                obj.mult(:,1) = obj.mult(:,1) + ncrmnt;
                 obj.mult(:,2) = obj.mult(:,2) + ncrmnt;
             end
         end

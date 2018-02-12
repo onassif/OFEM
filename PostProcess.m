@@ -14,8 +14,8 @@ hist        = Compute_avg(hist, num);
 
 mainH = figure;
 mainH.Position = [25,50,1500,700];
-subplot(2,2,1)
-plotFvD(hist,num.steps)
+% subplot(2,2,1)
+% plotFvD(hist,num.steps)
 
 subH = subplot(2,2,2);
 plotcont(hist, num, mainH, subH)

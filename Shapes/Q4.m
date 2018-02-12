@@ -55,7 +55,8 @@ classdef Q4
             obj.det_dXdxi_list = zeros(4,num.el);
             obj.dNdX_list = zeros(4,2,4,num.el);
             obj.finiteDisp = finiteDisp;
-            obj.adof = num.ndof - num.ndm;
+%             obj.adof = num.ndof - num.ndm;
+            obj.adof = 0;
         end
         
         function value = get.dNdxi(obj)
