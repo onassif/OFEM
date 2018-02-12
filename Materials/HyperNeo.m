@@ -9,6 +9,7 @@ classdef HyperNeo
         
         shear; 
         lame1;
+        linear = false;
     end
     %%
     methods
@@ -27,8 +28,12 @@ classdef HyperNeo
                 error("You've chosen Plane Strain material but specified incompatible material properties, I'm disapponted");
             end
         end
+        %% Epsilon
+        function eps = computeStrain(~, gp, el)
+            eps = gp.B * el.Uvc;
+        end
         %% Sigma
-        function sigma_voigt = Compute_cauchy(obj, gp)
+        function sigma_voigt = computeCauchy(obj, gp)
             mu     = obj.shear;
             lambda = obj.lame1;
 
@@ -42,7 +47,7 @@ classdef HyperNeo
             end
         end
         %% Tangential stiffness
-        function [D, ctan, obj] = Compute_tangentstiffness(obj, gp)
+        function [D, ctan, obj] = computeTangentStiffness(obj, gp, ~)
             mu     = obj.shear;
             lambda = obj.lame1;            
 
@@ -67,7 +72,7 @@ classdef HyperNeo
             ctan = c;
         end
         %% Element K
-        function Kel = Compute_Kel(obj, Kel, gp, ngp)
+        function Kel = computeK_el(obj, Kel, gp, ngp)
             % Definitions
             B=gp.B;
             D=gp.D;
@@ -97,9 +102,9 @@ classdef HyperNeo
             Kel = Kel + ( (B'*D*B) + K_geo ) *gp.j*gp.w;
         end
         %% Element Fint
-        function Fint = Compute_Fint(~, Fint, gp)
+        function Fint = computeFint(~, gp, el)
             
-            Fint = Fint + (gp.B'*gp.sigma) *gp.j *gp.w;
+            Fint = el.Fint + (gp.B'*gp.sigma) *gp.j *gp.w;
         end
     end
 end

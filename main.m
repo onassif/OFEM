@@ -42,7 +42,6 @@ for step=1:num.steps % Steps loop
             el.i = iel;             % element number
             coor = el.coor;         % element coordinates
             Umt  = el.Umt;          % element unknowns (array form)
-            Uvc  = el.Uvc;          % element unknowns (vector form)
             props= el.props;        % element material properties
             
             % clear previous values of elemental K and Fint
@@ -56,19 +55,19 @@ for step=1:num.steps % Steps loop
                 gp = Compute_gp_info(gp, coor, Umt, iel, num);
                 
                 %%%   3gp. Strain tensor
-                gp.eps = gp.B * Uvc;
+                gp.eps = mat.computeStrain(gp, el);
                 
                 %%%   4gp. Tangential stifness
-                [gp.D, gp.ctan, mat] = mat.Compute_tangentstiffness(gp);
+                [gp.D, gp.ctan, mat] = mat.computeTangentStiffness(gp, step);
                 
                 %%%   5gp. Stress
-                gp.sigma        = mat.Compute_cauchy(gp);
+                gp.sigma        = mat.computeCauchy(gp);
                 
                 %%%   6gp. K
-                el.K            = mat.Compute_Kel(el.K, gp, num.gp);
+                el.K            = mat.computeK_el(el.K, gp, num.gp);
                 
                 %%%   7gp. Fint
-                el.Fint         = mat.Compute_Fint(el.Fint, gp);
+                el.Fint         = mat.computeFint(gp, el);
                 
                 % store states
                 hist.eps (:,igp,iel) = gp.eps;
@@ -84,9 +83,13 @@ for step=1:num.steps % Steps loop
         
         %%%   8i. Fext and apply constrains
         [globl.K, Fext, globl.Fint]  =  ApplyConstraints_and_Loads(...
-            NR.mult, globl.K, Fext, globl.Fint, inpt, num.ndof);
+            NR.mult, globl.K, Fext, globl.Fint, inpt, num.ndm);
+%             NR.mult, globl.K, Fext, globl.Fint, inpt, num.ndof);
         
         %%%   9i. Residual and normalized residual
+        if (mat.linear)
+            globl.Fint = Fext;
+        end 
         G = Fext - globl.Fint .* ~(step==1 && NR.iter==0);
         NR.residual = norm(G)/norm(Fext);
         
@@ -106,7 +109,8 @@ for step=1:num.steps % Steps loop
         % write to file
         if (NR.residual < NR.tol)
             WriteReadHistory(hist, num, step, Fext, globl.U + dU,...
-                nodes+reshape(globl.U,num.ndof,num.np)');
+                nodes+reshape(globl.U(1:num.ndm*num.np),num.ndm,num.np)');
+%                 nodes+reshape(globl.U,num.ndof,num.np)');
         end
         
         
@@ -118,4 +122,4 @@ for step=1:num.steps % Steps loop
 end
 %%%     12. Post Processing
 [hist, num] = WriteReadHistory(hist, num, nodes);
-% PostProcess(hist, num, gp);
+PostProcess(hist, num, gp);

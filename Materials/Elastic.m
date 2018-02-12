@@ -10,6 +10,7 @@ classdef Elastic
         
         Young;
         Poisson;
+        linear = true;
     end
     %%
     methods
@@ -28,12 +29,16 @@ classdef Elastic
                 error("You've chosen Plane Strain material but specified incompatible material properties, I'm disapponted");
             end
         end
+        %% Epsilon
+        function eps = computeStrain(~, gp, el)
+            eps = gp.B * el.Uvc;
+        end
         %% Sigma
-        function sigma_voigt = Compute_cauchy(~, gp)
+        function sigma_voigt = computeCauchy(~, gp)
             sigma_voigt = gp.D *gp.eps;
         end
         %% Tangential stiffness
-        function [D, ctan, obj] = Compute_tangentstiffness(obj, ~)
+        function [D, ctan, obj] = computeTangentStiffness(obj, ~, ~)
             E = obj.Young;
             v = obj.Poisson;
 
@@ -50,17 +55,12 @@ classdef Elastic
             
         end
         %% Element K
-        function Kel = Compute_Kel(~, Kel, gp, ~)
-            % Definitions
-            B=gp.B;
-            D=gp.D;
-            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            
-            Kel = Kel + (B'*D*B) *gp.J *gp.w;
+        function Kel = computeK_el(~, Kel, gp, ~)
+            Kel = Kel + (gp.B'*gp.D*gp.B) *gp.J *gp.w;
         end
         %% Element Fint
-        function Fint = Compute_Fint(~, Fint, gp)
-            Fint = Fint + (gp.B'*gp.sigma) *gp.J *gp.w;
+        function Fint = computeFint(~, gp, el)
+            Fint = el.Fint + (gp.B'*gp.sigma) *gp.J *gp.w;
         end
     end
 end

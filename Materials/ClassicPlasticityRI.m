@@ -8,6 +8,13 @@ classdef ClassicPlasticityRI
         dNdX;
         finiteDisp = 0;
         
+        I2 = eye(3);
+        IFour
+        linear = false;
+    end
+    
+    properties (SetAccess = private)
+        
         Young
         Poisson
         iso_modulus
@@ -16,17 +23,9 @@ classdef ClassicPlasticityRI
         Shear
         Bulk
         
-        dt
-        de_p
-        
-        I2 = eye(3);
-        IFour
-        
-        eps_n
-        eps_np1
-        e_p
-        Beta
-        Alpha
+        ep
+        beta
+        alpha
         
         plastic = false;
         sTrial
@@ -36,15 +35,12 @@ classdef ClassicPlasticityRI
     %%
     methods
         %% Construct
-        function obj = ClassicPlasticityRI(num, props, dt)
+        function obj = ClassicPlasticityRI(num, props)
             obj.ndm  = num.ndm;
             obj.ndof = num.ndof;
-            obj.eps_n  = zeros(3,3, num.gp,num.el);
-            obj.eps_np1= zeros(3,3, num.gp,num.el);
-            obj.e_p  = zeros(3,3, num.gp,num.el);
-            obj.Beta = zeros(3,3, num.gp,num.el);
-            obj.Alpha= zeros(     num.gp,num.el);
-            obj.dt   = dt;
+            obj.ep   = zeros(3,3, num.gp, num.el, num.steps+1);
+            obj.beta = zeros(3,3, num.gp, num.el, num.steps+1);
+            obj.alpha= zeros(     num.gp, num.el, num.steps+1);
             
             for i=1:length(props)
                 switch props{i,1}
@@ -73,8 +69,12 @@ classdef ClassicPlasticityRI
             
             
         end
+        %% Epsilon
+        function eps = computeStrain(~, gp, el)
+            eps = gp.B * el.Uvc;
+        end
         %% Sigma
-        function sigma_voigt = Compute_cauchy(obj, gp)
+        function sigma_voigt = computeCauchy(obj, gp)
             if obj.plastic
                 G    = obj.Shear;
                 kappa= obj.Bulk;
@@ -91,7 +91,7 @@ classdef ClassicPlasticityRI
             end
         end
         %% Tangential stiffness
-        function [D, ctan, obj] = Compute_tangentstiffness(obj, gp)
+        function [D, ctan, obj] = computeTangentStiffness(obj, gp, step)
             % Identities
             I    = obj.I2;
             I4   = obj.IFour;
@@ -101,30 +101,29 @@ classdef ClassicPlasticityRI
             G    = obj.Shear;
             kappa= obj.Bulk;
             Kp   = obj.iso_modulus;
-            Hp   = obj.kin_modulus; 
+            Hp   = obj.kin_modulus;
             Y    = obj.yield_strss;
+            % Values from previous step
+            n    = struct(...
+                'ep'   , obj.ep   (:,:, gp.i, gp.iel, step), ...
+                'beta' , obj.beta (:,:, gp.i, gp.iel, step), ...
+                'alpha', obj.alpha(     gp.i, gp.iel, step));
             % Strain full matrix
-            eps  = [...
+            np1.eps  = [...
                 1.0*gp.eps(1) 0.5*gp.eps(4) 0.5*gp.eps(6)
                 0.5*gp.eps(4) 1.0*gp.eps(2) 0.5*gp.eps(5)
                 0.5*gp.eps(6) 0.5*gp.eps(5) 1.0*gp.eps(3)];
             
-            obj.eps_np1(:,:,gp.i, gp.iel)= eps;
-            
-            ep     = obj.e_p  (:,:,gp.i, gp.iel);
-            beta   = obj.Beta (:,:,gp.i, gp.iel);
-            alpha_n= obj.Alpha(    gp.i, gp.iel);
-            
-            e = eps - 1/3.*trace(eps)*I;
+            np1.e = np1.eps - 1/3.*trace(np1.eps)*I;
             %             [K_n,~,~,~] = obj.hardening(alpha_n);
-            K_n = ( Y + Kp*alpha_n );
+            n.K = ( Y + Kp*n.alpha );
             
-            obj.sTrial  = 2*G*(e - ep);
-            xiTrial     = obj.sTrial - beta;
-            normXiTrial = norm(eig(xiTrial));
-            ftrial      = normXiTrial - sqrt(2/3) * K_n;
+            np1.sTrial      = 2*G*(np1.e - n.ep);
+            np1.xiTrial     = np1.sTrial - n.beta;
+            np1.normXiTrial = norm(eig(np1.xiTrial));
+            np1.fTrial      = np1.normXiTrial - sqrt(2/3) * n.K;
             
-            if ftrial<=0
+            if np1.fTrial<=0
                 obj.plastic = false;
                 
                 Eh= E/(1-2*v)/(1+v);
@@ -138,27 +137,26 @@ classdef ClassicPlasticityRI
                 
                 ctan = reshape(D([1,4,6,4,2,5,6,5,3],[1,4,6,4,2,5,6,5,3]),3,3,3,3);
                 
+                obj.ep   (:,:, gp.i, gp.iel, step+1)= obj.ep   (:,:, gp.i, gp.iel, step);
+                obj.beta (:,:, gp.i, gp.iel, step+1)= obj.beta (:,:, gp.i, gp.iel, step);
+                obj.alpha(     gp.i, gp.iel, step+1)= obj.alpha(     gp.i, gp.iel, step);
+                
             else
                 obj.plastic = true;
-                n = xiTrial ./ normXiTrial;
-                obj.dir = n;
-%                 deltaEps = obj.eps_np1(:,:,gp.i, gp.iel) - obj.eps_n(:,:,gp.i, gp.iel);
-                %                 [~,Kp,~,Hp] = obj.hardening(alpha_n);
-                deltaGamma = ftrial / (2*G + (2/3)*(Kp+Hp));
-                obj.dGamma = deltaGamma;
-                alpha_np1 = alpha_n + sqrt(2/3)*deltaGamma;
                 
-                obj.e_p  (:,:,gp.i, gp.iel)= ep + deltaGamma.*n;
-                obj.Beta (:,:,gp.i, gp.iel)= beta + deltaGamma*(2/3)*Hp*n;
-                obj.Alpha(    gp.i, gp.iel)= alpha_np1;
-                %                 ep   = ep + deltaGamma.*n;
-                %                 beta = beta + sqrt(2/3).*(H_np1 - H_n).*n;
-                %                 sigma= kappa*trace(eps)*I + sTrial - 2*G*deltaGamma*n;
-                %                 sigma= kappa*trace(eps)*I + 2*G*(e - ep);
+                np1.N      = np1.xiTrial ./ np1.normXiTrial;
+                np1.dGamma = np1.fTrial / (2*G + (2/3)*(Kp+Hp));
+                obj.dir    = np1.N;
+                obj.dGamma = np1.dGamma;
+                obj.sTrial = np1.sTrial;
                 
-                theta   = 1 - (2*G*deltaGamma)/normXiTrial;
-%                 thetaBar= deltaGamma + theta - 1;
-                thetaBar= 1 / (1 + (Kp+Hp)/(3*G)) + theta - 1;                
+                obj.ep   (:,:, gp.i, gp.iel, step+1)= n.ep    + np1.dGamma.*np1.N;
+                obj.beta (:,:, gp.i, gp.iel, step+1)= n.beta  + np1.dGamma.*np1.N*(2/3)*Hp;
+                obj.alpha(     gp.i, gp.iel, step+1)= n.alpha + sqrt(2/3)*np1.dGamma;
+                
+                np1.theta   = 1 - (2*G*np1.dGamma)/np1.normXiTrial;
+                %                 thetaBar= deltaGamma + theta - 1;
+                np1.thetaBar= 1 / (1 + (Kp+Hp)/(3*G)) + np1.theta - 1;
                 
                 ctan = zeros(3,3,3,3);
                 for i=1:3
@@ -167,8 +165,8 @@ classdef ClassicPlasticityRI
                             for l=1:3
                                 ctan(i,j,k,l) = ...
                                     kappa*I(i,j)*I(k,l) + ...
-                                    2*G*theta* (I4(i,j,k,l) - (1/3)*I(i,j)*I(k,l)) - ...
-                                    2*G*thetaBar*n(i,j)*n(k,l); 
+                                    2*G*np1.theta*( I4(i,j,k,l) - (1/3)*I(i,j)*I(k,l) ) - ...
+                                    2*G*np1.thetaBar * ( np1.N(i,j)*np1.N(k,l) );
                             end
                         end
                     end
@@ -181,11 +179,9 @@ classdef ClassicPlasticityRI
                     ctan(2,3,1,1) ctan(2,3,2,2) ctan(2,3,3,3) ctan(2,3,1,2) ctan(2,3,2,3) ctan(2,3,1,3)
                     ctan(1,3,1,1) ctan(1,3,2,2) ctan(1,3,3,3) ctan(1,3,1,2) ctan(1,3,2,3) ctan(1,3,1,3)];
             end
-            
-            obj.eps_n(:,:,gp.i, gp.iel)= obj.eps_np1(:,:,gp.i, gp.iel);
         end
         %% Element K
-        function Kel = Compute_Kel(~, Kel, gp, ~)
+        function Kel = computeK_el(~, Kel, gp, ~)
             % Definitions
             B=gp.B;
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -193,8 +189,8 @@ classdef ClassicPlasticityRI
             Kel = Kel + (B'*gp.D*B) *gp.J *gp.w;
         end
         %% Element Fint
-        function Fint = Compute_Fint(~, Fint, gp)
-            Fint = Fint + (gp.B'*gp.sigma) *gp.J *gp.w;
+        function Fint = computeFint(~, gp, el)
+            Fint = el.Fint + (gp.B'*gp.sigma) *gp.J *gp.w;
         end
     end
     

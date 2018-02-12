@@ -56,7 +56,8 @@ classdef Q8
             obj.det_dXdxi_list = zeros(8,num.el);
             obj.dNdX_list = zeros(8,3,8,num.el);
             obj.finiteDisp = finiteDisp;
-            obj.adof = num.ndof - num.ndm;
+%             obj.adof = num.ndof - num.ndm;
+            obj.adof = 0;
         end
         
         function value = get.dNdxi(obj)

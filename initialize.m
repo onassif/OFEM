@@ -52,13 +52,15 @@ if     (material == 1)
 elseif (material == 2)
     mat = PlaneStrain(num, props);
 elseif (material == 3)
-    mat = HyperNeo(num, props);  
+    mat = HyperNeo(num, props); 
 elseif (material == 4)
 %     hist.dt          = total_time/n_steps;
 %     hist.ttime       = total_time;
     mat = ClassicPlasticityRI(num, props, time, hard);
 elseif (material == 5)
-    mat = ClassicPlasticityRI(num, props, time);
+    mat = ClassicPlasticityRI(num, props);
+elseif (material == 6)
+    mat = MixedElasticPlaneStrain(num, props);
 end
     
 

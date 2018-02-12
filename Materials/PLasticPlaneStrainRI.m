@@ -32,6 +32,7 @@ classdef PLasticPlaneStrainRI
         
         time
         hard
+        linear = false;
     end
     %%
     methods
@@ -58,8 +59,12 @@ classdef PLasticPlaneStrainRI
             end
             
         end
+        %% Epsilon
+        function eps = computeStrain(~, gp, el)
+            eps = gp.B * el.Uvc;
+        end
         %% Sigma
-        function sigma_voigt = Compute_cauchy(obj, gp)
+        function sigma_voigt = computeCauchy(obj, gp)
             sigma_voigt = gp.D([1,2,4],[1,2,4]) *gp.eps;
 %             sigma_voigt_trial = gp.D *(gp.eps - obj.epsp);
 %             
@@ -70,7 +75,7 @@ classdef PLasticPlaneStrainRI
 %             end
         end
         %% Tangential stiffness
-        function [D, ctan, obj] = Compute_tangentstiffness(obj, ~)
+        function [D, ctan, obj] = computeTangentStiffness(obj, ~, ~)
             E = obj.Young;
             v = obj.Poisson;
             
@@ -87,7 +92,7 @@ classdef PLasticPlaneStrainRI
             
         end
         %% Element K
-        function Kel = Compute_Kel(~, Kel, gp, ~)
+        function Kel = computeK_el(~, Kel, gp, ~)
             % Definitions
             B=gp.B;
             D=gp.D([1,2,4],[1,2,4]);
@@ -96,8 +101,8 @@ classdef PLasticPlaneStrainRI
             Kel = Kel + (B'*D*B) *gp.J *gp.w;
         end
         %% Element Fint
-        function Fint = Compute_Fint(~, Fint, gp)
-            Fint = Fint + (gp.B'*gp.sigma) *gp.J *gp.w;
+        function Fint = computeFint(~, gp, el)
+            Fint = el.Fint + (gp.B'*gp.sigma) *gp.J *gp.w;
         end
         %% Yielding function
         function value = get.threshold(obj)
