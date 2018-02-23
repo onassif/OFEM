@@ -30,15 +30,15 @@ classdef Elastic
             end
         end
         %% Epsilon
-        function eps = computeStrain(~, gp, el)
+        function [eps, obj] = computeStrain(obj, gp, el, ~)
             eps = gp.B * el.Uvc;
         end
         %% Sigma
-        function sigma_voigt = computeCauchy(~, gp)
+        function [sigma_voigt, obj] = computeCauchy(obj, gp, ~)
             sigma_voigt = gp.D *gp.eps;
         end
         %% Tangential stiffness
-        function [D, ctan, obj] = computeTangentStiffness(obj, ~, ~)
+        function [D, ctan, obj] = computeTangentStiffness(obj, gp, ~)
             E = obj.Young;
             v = obj.Poisson;
 

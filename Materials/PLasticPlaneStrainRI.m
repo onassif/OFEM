@@ -60,11 +60,11 @@ classdef PLasticPlaneStrainRI
             
         end
         %% Epsilon
-        function eps = computeStrain(~, gp, el)
+        function [eps, obj] = computeStrain(obj, gp, el, ~)
             eps = gp.B * el.Uvc;
         end
         %% Sigma
-        function sigma_voigt = computeCauchy(obj, gp)
+        function [sigma_voigt, obj] = computeCauchy(obj, gp, ~)
             sigma_voigt = gp.D([1,2,4],[1,2,4]) *gp.eps;
 %             sigma_voigt_trial = gp.D *(gp.eps - obj.epsp);
 %             

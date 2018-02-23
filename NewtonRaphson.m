@@ -8,6 +8,7 @@ classdef NewtonRaphson
         mult
         iter
         residual
+        correction
     end
     properties (Hidden)
         step=1;

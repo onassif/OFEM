@@ -14,8 +14,8 @@ hist        = Compute_avg(hist, num);
 
 mainH = figure;
 mainH.Position = [25,50,1500,700];
-% subplot(2,2,1)
-% plotFvD(hist,num.steps)
+subplot(2,2,1)
+plotFvD(hist,num.steps)
 
 subH = subplot(2,2,2);
 plotcont(hist, num, mainH, subH)
@@ -27,7 +27,7 @@ end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function hist = Compute_mat(hist,num)
-% Converts voigt notation stress into 3x3 matrix: 
+% Converts voigt notation stress into 3x3 matrix:
 ngp = num.gp; nel = num.el; nsteps = num.steps;
 
 if num.ndm == 2
@@ -71,13 +71,13 @@ function hist = Compute_principal(hist,num)
 for k=1:num.steps
     for i=1:num.np
         hist.strss.P(:,i,k)= eig(hist.strss.mat_n(:,:,i,k));
-    end  
+    end
 end
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function hist = Compute_von(hist)
-P1=squeeze(hist.strss.P(1,:,:)); 
+P1=squeeze(hist.strss.P(1,:,:));
 P2=squeeze(hist.strss.P(2,:,:));
 P3=squeeze(hist.strss.P(3,:,:));
 
@@ -94,8 +94,23 @@ end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function plotFvD(hist,last)
-[~,f_indx]  = max(hist.force(: ,last));
-plot(hist.disp(f_indx,:), hist.force(f_indx,:)*2)
+D = zeros(last,1);
+
+sumForce = squeeze(sum(hist.force))';
+[~,f_indx]  = max(sumForce(last,:));
+U = squeeze(hist.disp(:,f_indx,:));
+
+for i=1:last
+    u = U(:,i);
+    if ( max(u)== max(abs(u)) )
+        u_face = u>=0.98.*max(u);
+    elseif (abs(min(u)) == max(abs(u)))
+        u_face = u<=0.98.*min(u);
+    end
+    D(i) = mean(u(u_face));
+end
+
+plot(D, sumForce(:,f_indx),'r','LineWidth',2)
 title('Force (total surface not nodal) vs displacement')
 xlabel('displacement')
 ylabel('force')
@@ -114,7 +129,7 @@ elseif (num.ndm == 3)
     fac = reshape(1:num.nen*num.el,num.nen,num.el);
     F0  = reshape(fac(i,:),num.nen/2,6*num.el)';
     V0  = hist.coor(reshape(hist.conn',num.el*num.nen,1),:,1);
-
+    
     set(gca,'DataAspectRatio',[1 1 1],'PlotBoxAspectRatio',[570.5 570.5 570.5])
     view (gca,[-0.8 -0.4 0.1])
 end
@@ -223,37 +238,37 @@ switch i
         h.CData = reshape(hist.strss.mat_n(1,1,hist.conn',step),num.nen,num.el);
         legH.String = '$\sigma_{11}$';
         L_limit = min(min(hist.strss.mat_n(1,1, :,:)));
-        U_limit = max(max(hist.strss.mat_n(1,1, :,:))); 
+        U_limit = max(max(hist.strss.mat_n(1,1, :,:)));
         colorbarH.Limits = [L_limit U_limit+(U_limit==L_limit)*0.001];
     case 5
         h.CData = reshape(hist.strss.mat_n(2,2,hist.conn',step),num.nen,num.el);
         legH.String = '$\sigma_{22}$';
         L_limit = min(min(hist.strss.mat_n(2,2, :,:)));
-        U_limit = max(max(hist.strss.mat_n(2,2, :,:))); 
+        U_limit = max(max(hist.strss.mat_n(2,2, :,:)));
         colorbarH.Limits = [L_limit U_limit+(U_limit==L_limit)*0.001];
     case 6
         h.CData = reshape(hist.strss.mat_n(3,3,hist.conn',step),num.nen,num.el);
         legH.String = '$\sigma_{33}$';
         L_limit = min(min(hist.strss.mat_n(3,3, :,:)));
-        U_limit = max(max(hist.strss.mat_n(3,3, :,:))); 
+        U_limit = max(max(hist.strss.mat_n(3,3, :,:)));
         colorbarH.Limits = [L_limit U_limit+(U_limit==L_limit)*0.001];
     case 7
         h.CData = reshape(hist.strss.mat_n(1,2,hist.conn',step),num.nen,num.el);
         legH.String = '$\sigma_{12}$';
         L_limit = min(min(hist.strss.mat_n(1,2, :,:)));
-        U_limit = max(max(hist.strss.mat_n(1,2, :,:))); 
+        U_limit = max(max(hist.strss.mat_n(1,2, :,:)));
         colorbarH.Limits = [L_limit U_limit+(U_limit==L_limit)*0.001];
     case 8
         h.CData = reshape(hist.strss.mat_n(2,3,hist.conn',step),num.nen,num.el);
         legH.String = '$\sigma_{23}$';
         L_limit = min(min(hist.strss.mat_n(2,3, :,:)));
-        U_limit = max(max(hist.strss.mat_n(2,3, :,:))); 
+        U_limit = max(max(hist.strss.mat_n(2,3, :,:)));
         colorbarH.Limits = [L_limit U_limit+(U_limit==L_limit)*0.001];
     case 9
         h.CData = reshape(hist.strss.mat_n(1,3,hist.conn',step),num.nen,num.el);
         legH.String = '$\sigma_{13}$';
         L_limit = min(min(hist.strss.mat_n(1,3, :,:)));
-        U_limit = max(max(hist.strss.mat_n(1,3, :,:))); 
+        U_limit = max(max(hist.strss.mat_n(1,3, :,:)));
         colorbarH.Limits = [L_limit U_limit+(U_limit==L_limit)*0.001];
     case 10
         h.CData = reshape(hist.strss.vm(hist.conn',step),num.nen,num.el);

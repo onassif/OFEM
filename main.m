@@ -12,29 +12,16 @@ for step=1:num.steps % Steps loop
     NR.step = step;
     NR.mult = step/num.steps;
     NR.iter = 0; fprintf('\n');
-    NR.residual = inf;
+    NR.correction = inf;
     
-    if step > 1 % iteration zero when Fext changes while Fint is the same
-        
-        %%%   1z. Fext and apply constrains
-        [globl.K, Fext, ~]  =  ApplyConstraints_and_Loads(...
-            NR.mult, globl.K, Fext, globl.Fint, inpt, num.ndof);
-        
-        %%%   2z. Residual and normalized residual
-        G = Fext - globl.Fint;
-        
-        %%%   3z. dU and update Ui
-        dU = globl.K\G;
-        globl.U = globl.U + dU;
-    end
-    
-    while (NR.residual > NR.tol)
+    while (NR.correction > NR.tol)
         %% Start NR loop
         % Clear global K and Fint
-        globl.K = sparse(num.eq, num.eq);       globl.Fint = zeros(num.eq,1);
+        globl.K    = sparse(num.eq, num.eq);
+        globl.Fint = zeros(num.eq,1);
         
         % Send new U to the element object
-        el.U_global = globl.U;
+        el.U_global = globl.w;
         
         for iel =1:num.el
             %% Start elements loop
@@ -55,13 +42,13 @@ for step=1:num.steps % Steps loop
                 gp = Compute_gp_info(gp, coor, Umt, iel, num);
                 
                 %%%   3gp. Strain tensor
-                gp.eps = mat.computeStrain(gp, el);
+                [gp.eps, mat] = mat.computeStrain(gp, el, step);
                 
                 %%%   4gp. Tangential stifness
                 [gp.D, gp.ctan, mat] = mat.computeTangentStiffness(gp, step);
                 
                 %%%   5gp. Stress
-                gp.sigma        = mat.computeCauchy(gp);
+                [gp.sigma, mat]      = mat.computeCauchy(gp, step);
                 
                 %%%   6gp. K
                 el.K            = mat.computeK_el(el.K, gp, num.gp);
@@ -82,35 +69,37 @@ for step=1:num.steps % Steps loop
         %% Finished gauss points loop, back to NR loop
         
         %%%   8i. Fext and apply constrains
-        [globl.K, Fext, globl.Fint]  =  ApplyConstraints_and_Loads(...
-            NR.mult, globl.K, Fext, globl.Fint, inpt, num.ndm);
-%             NR.mult, globl.K, Fext, globl.Fint, inpt, num.ndof);
+        [globl.K, Fext, G]  =  ApplyConstraints_and_Loads(...
+            NR.mult, globl.K, Fext, globl.Fint, globl.U, globl.w, inpt, num.ndm);
+        %             NR.mult, globl.K, Fext, globl.Fint, inpt, num.ndof);
         
         %%%   9i. Residual and normalized residual
         if (mat.linear)
             globl.Fint = Fext;
-        end 
-        G = Fext - globl.Fint .* ~(step==1 && NR.iter==0);
-        NR.residual = norm(G)/norm(Fext);
+        end
         
         %%%   10i. dU and update Ui
-        dU = globl.K\G;
-        globl.U = globl.U + dU;
+        dU      = globl.K\G;
+        globl.w = globl.w + dU;
         
-        %   Print iteration information:
-        if ~(step==1 && NR.iter==0)
-            fprintf(['step: %4.0d\t iteration: %d\t residual: ',...
-                '[abs: %.10f\t rel: %.10f]\n'],step, NR.iter+1-(step==1), norm(G),NR.residual);
-        end
+        NR.correction = norm(dU)/norm(globl.w);
+        NR.residual   = norm(G)/(num.np*num.ndof);
+        %           Print iteration information:
+        
         NR.iter = NR.iter + 1;
+        fprintf('step: %4.0d\t iteration:%2.0d\t correction: %.10f\t residual: %.10f\n',...
+            step, NR.iter, NR.correction, NR.residual);
+        
+        
         
         %%%   11i. History arrays
         hist.resid(NR.iter) = NR.residual;
         % write to file
-        if (NR.residual < NR.tol)
+        if (NR.correction < NR.tol)
+            globl.U = globl.U + globl.w;
+            
             WriteReadHistory(hist, num, step, Fext, globl.U + dU,...
                 nodes+reshape(globl.U(1:num.ndm*num.np),num.ndm,num.np)');
-%                 nodes+reshape(globl.U,num.ndof,num.np)');
         end
         
         

@@ -35,7 +35,7 @@ classdef ClassicPlasticityRI
     %%
     methods
         %% Construct
-        function obj = ClassicPlasticityRI(num, props)
+        function obj = ClassicPlasticityRI(num, props, identity)
             obj.ndm  = num.ndm;
             obj.ndof = num.ndof;
             obj.ep   = zeros(3,3, num.gp, num.el, num.steps+1);
@@ -61,20 +61,16 @@ classdef ClassicPlasticityRI
             obj.Shear =  0.5*obj.Young/(1+  obj.Poisson);
             obj.Bulk  =(1/3)*obj.Young/(1-2*obj.Poisson);
             
-            obj.IFour = zeros(3,3,3,3);
-            obj.IFour(1,1,1,1) = 1;     obj.IFour(2,2,2,2) = 1;     obj.IFour(3,3,3,3) = 1;
-            obj.IFour(1,2,1,2) = 1/2;   obj.IFour(1,2,2,1) = 1/2;   obj.IFour(2,1,2,1) = 1/2;   obj.IFour(2,1,1,2) = 1/2;
-            obj.IFour(2,3,2,3) = 1/2;   obj.IFour(2,3,3,2) = 1/2;   obj.IFour(3,2,3,2) = 1/2;   obj.IFour(3,2,2,3) = 1/2;
-            obj.IFour(1,3,1,3) = 1/2;   obj.IFour(1,3,3,1) = 1/2;   obj.IFour(3,1,3,1) = 1/2;   obj.IFour(3,1,1,3) = 1/2;
+            obj.IFour = identity;
             
             
         end
         %% Epsilon
-        function eps = computeStrain(~, gp, el)
+        function [eps, obj] = computeStrain(obj, gp, el, ~)
             eps = gp.B * el.Uvc;
         end
         %% Sigma
-        function sigma_voigt = computeCauchy(obj, gp)
+        function [sigma_voigt, obj] = computeCauchy(obj, gp, ~)
             if obj.plastic
                 G    = obj.Shear;
                 kappa= obj.Bulk;

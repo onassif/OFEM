@@ -30,11 +30,11 @@ classdef PlaneStrain
             end
         end
         %% Epsilon
-        function eps = computeStrain(~, gp, el)
+        function [eps, obj] = computeStrain(obj, gp, el, ~)
             eps = gp.B * el.Uvc;
         end
         %% Sigma
-        function sigma_voigt = computeCauchy(obj, gp)
+        function [sigma_voigt, obj] = computeCauchy(obj, gp, ~)
             
             if (obj.ndm==2 && obj.ndof ==2)
                 sigma_voigt = gp.D *gp.eps;

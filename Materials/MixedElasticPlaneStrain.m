@@ -40,11 +40,11 @@ classdef MixedElasticPlaneStrain
             obj.Bulk = (1/3)*obj.Young/(1-2*obj.Poisson);
         end
         %% Epsilon
-        function eps = computeStrain(~, gp, el)
+        function [eps, obj] = computeStrain(obj, gp, el, ~)
             eps = gp.B * el.Uvc;
         end
         %% Sigma
-        function sigma_voigt = computeCauchy(obj, gp)
+        function [sigma_voigt, obj] = computeCauchy(obj, gp, ~)
             %             eps = [...
             %                 1.0*gp.eps(1) 0.5*gp.eps(3)
             %                 0.5*gp.eps(3) 1.0*gp.eps(2) ];
