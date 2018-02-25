@@ -11,12 +11,17 @@ classdef HyperNeo
         lame1;
         linear = false;
     end
+    
+    properties(SetAccess = private)
+        strss
+    end
     %%
     methods
         %% Construct
         function obj = HyperNeo(num, props)
             obj.ndm  = num.ndm;
             obj.ndof = num.ndof;
+            obj.strss = zeros(num.str, num.gp, num.el, num.steps+1);
             
             if strcmp(props{1,1} ,'mu') && strcmp(props{2,1} ,'lambda')
                 obj.shear  = props{1,2};
@@ -29,13 +34,14 @@ classdef HyperNeo
             end
         end
         %% Epsilon
-        function [eps, obj] = computeStrain(obj, gp, el, ~)
-            eps = gp.B * el.Uvc;
+        function [deps, obj] = computeStrain(obj, gp, el, ~)
+            deps = gp.B * el.Uvc;
         end
         %% Sigma
-        function [sigma_voigt, obj] = computeCauchy(obj, gp, ~)
+        function [sigma_voigt, obj] = computeCauchy(obj, gp, step)
             mu     = obj.shear;
             lambda = obj.lame1;
+            n.strss = obj.strss(:, gp.i, gp.iel, step);
 
             if (obj.ndm==2 && obj.ndof ==2)
                 I = eye(obj.ndm);

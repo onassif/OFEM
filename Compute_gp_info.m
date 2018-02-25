@@ -1,10 +1,10 @@
-function gp = Compute_gp_info(gp, coor, U, iel, num)
+function gp = Compute_gp_info(gp, coor, Umt, iel, num)
 ndm = num.ndm;
 %   Compute Shape function derivatives in reference coordinates
 gp = ShpFun(gp, coor, iel);
 
 %   Compute deformation gradient F = dx/dX 
-gp.F = U(:, 1:num.ndm)'*gp.dNdX + eye(ndm); % dN/dx is calculated(if needed) inside the object
+gp.F = Umt(:, 1:num.ndm)'*gp.dNdX + eye(ndm); % dN/dx is calculated(if needed) inside the object
 
 %   Compute J in both reference and spatial configurations
 gp.det_F = det(gp.F);

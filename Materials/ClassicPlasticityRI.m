@@ -9,12 +9,12 @@ classdef ClassicPlasticityRI
         finiteDisp = 0;
         
         I2 = eye(3);
-        IFour
+        I4_dev
+        I4_bulk
         linear = false;
     end
     
     properties (SetAccess = private)
-        
         Young
         Poisson
         iso_modulus
@@ -23,14 +23,12 @@ classdef ClassicPlasticityRI
         Shear
         Bulk
         
-        ep
-        beta
-        alpha
-        
-        plastic = false;
-        sTrial
-        dGamma
-        dir;
+        eEff
+        de
+        dep
+        theta
+        bkStrss
+        strss
     end
     %%
     methods
@@ -38,9 +36,9 @@ classdef ClassicPlasticityRI
         function obj = ClassicPlasticityRI(num, props, identity)
             obj.ndm  = num.ndm;
             obj.ndof = num.ndof;
-            obj.ep   = zeros(3,3, num.gp, num.el, num.steps+1);
-            obj.beta = zeros(3,3, num.gp, num.el, num.steps+1);
-            obj.alpha= zeros(     num.gp, num.el, num.steps+1);
+            obj.eEff    = zeros(     num.gp, num.el, num.steps+1);
+            obj.bkStrss = zeros(3,3, num.gp, num.el, num.steps+1);
+            obj.strss   = zeros(3,3, num.gp, num.el, num.steps+1);
             
             for i=1:length(props)
                 switch props{i,1}
@@ -61,120 +59,90 @@ classdef ClassicPlasticityRI
             obj.Shear =  0.5*obj.Young/(1+  obj.Poisson);
             obj.Bulk  =(1/3)*obj.Young/(1-2*obj.Poisson);
             
-            obj.IFour = identity;
-            
+            obj.I4_dev= identity.I4_dev;
+            obj.I4_bulk= identity.I4_bulk;
             
         end
         %% Epsilon
         function [eps, obj] = computeStrain(obj, gp, el, ~)
             eps = gp.B * el.Uvc;
+            de=[1.0*eps(1) 0.5*eps(4) 0.5*eps(6)
+                0.5*eps(4) 1.0*eps(2) 0.5*eps(5)
+                0.5*eps(6) 0.5*eps(5) 1.0*eps(3)];
+            de = de - (1/3)*trace(de)*eye(3);
+            obj.de = de;
         end
         %% Sigma
-        function [sigma_voigt, obj] = computeCauchy(obj, gp, ~)
-            if obj.plastic
-                G    = obj.Shear;
-                kappa= obj.Bulk;
-                sigma= kappa*sum(gp.eps(1:obj.ndm))*obj.I2 + obj.sTrial - 2*G*obj.dGamma*obj.dir;
-                sigma_voigt = [...
-                    sigma(1,1)
-                    sigma(2,2)
-                    sigma(3,3)
-                    sigma(1,2)
-                    sigma(2,3)
-                    sigma(1,3)];
-            else
-                sigma_voigt = gp.D *gp.eps;
-            end
+        function [sigma_voigt, obj] = computeCauchy(obj, gp, step)
+            I = obj.I2;
+            G = obj.Shear;
+            K = obj.Bulk;
+            
+            n.strss     = obj.strss(:,:, gp.i, gp.iel, step);
+            np1.de      = obj.de;
+            np1.dep     = obj.dep;
+           
+            sigma      = n.strss + 2*G* (np1.de - np1.dep) + K*sum(gp.eps(1:obj.ndm))*I;
+            
+            obj.strss(:,:, gp.i, gp.iel, step+1) = sigma;
+            
+            sigma_voigt = obj.voigtize(sigma,'col');
         end
         %% Tangential stiffness
         function [D, ctan, obj] = computeTangentStiffness(obj, gp, step)
             % Identities
             I    = obj.I2;
-            I4   = obj.IFour;
+            I4_dev = obj.I4_dev;
+            I4_bulk= obj.I4_bulk;
             % Material properties
-            E    = obj.Young;
-            v    = obj.Poisson;
             G    = obj.Shear;
             kappa= obj.Bulk;
             Kp   = obj.iso_modulus;
             Hp   = obj.kin_modulus;
             Y    = obj.yield_strss;
             % Values from previous step
-            n    = struct(...
-                'ep'   , obj.ep   (:,:, gp.i, gp.iel, step), ...
-                'beta' , obj.beta (:,:, gp.i, gp.iel, step), ...
-                'alpha', obj.alpha(     gp.i, gp.iel, step));
-            % Strain full matrix
-            np1.eps  = [...
-                1.0*gp.eps(1) 0.5*gp.eps(4) 0.5*gp.eps(6)
-                0.5*gp.eps(4) 1.0*gp.eps(2) 0.5*gp.eps(5)
-                0.5*gp.eps(6) 0.5*gp.eps(5) 1.0*gp.eps(3)];
+            n.bkStrss = obj.bkStrss(:,:,  gp.i, gp.iel, step);
+            n.strss   = obj.strss  (:,:,  gp.i, gp.iel, step);
+            n.eEff    = obj.eEff   (gp.i, gp.iel, step);
             
-            np1.e = np1.eps - 1/3.*trace(np1.eps)*I;
-            %             [K_n,~,~,~] = obj.hardening(alpha_n);
-            n.K = ( Y + Kp*n.alpha );
+            np1.de  = obj.de;
+            np1.S   = n.strss - (1/3)*trace(n.strss)*I + 2*G*np1.de;
             
-            np1.sTrial      = 2*G*(np1.e - n.ep);
-            np1.xiTrial     = np1.sTrial - n.beta;
-            np1.normXiTrial = norm(eig(np1.xiTrial));
-            np1.fTrial      = np1.normXiTrial - sqrt(2/3) * n.K;
+            np1.S_ht= np1.S - n.bkStrss;
+            np1.sEqv= sqrt( (3/2)*sum(dot(np1.S_ht, np1.S_ht)) );
             
-            if np1.fTrial<=0
-                obj.plastic = false;
+            
+            np1.deEff    = obj.getEffPlasStrnInc(n.eEff, G, Y, Kp, Hp, np1.sEqv);
+            obj.eEff(gp.i, gp.iel, step+1) =  n.eEff + np1.deEff;
+            
+            if (np1.sEqv*np1.deEff>0)
+                np1.dir      = np1.S_ht/np1.sEqv;
                 
-                Eh= E/(1-2*v)/(1+v);
+                np1.dbkStrss = np1.deEff * Hp * np1.dir;
+                np1.dep      = (3/2)*np1.deEff* np1.dir;
                 
-                D =[Eh*(1-v)    Eh*v        Eh*v        0 0 0
-                    Eh*v        Eh*(1-v)    Eh*v        0 0 0
-                    Eh*v        Eh*v        Eh*(1-v)    0 0 0
-                    0           0           0           G 0 0
-                    0           0           0           0 G 0
-                    0           0           0           0 0 G];
-                
-                ctan = reshape(D([1,4,6,4,2,5,6,5,3],[1,4,6,4,2,5,6,5,3]),3,3,3,3);
-                
-                obj.ep   (:,:, gp.i, gp.iel, step+1)= obj.ep   (:,:, gp.i, gp.iel, step);
-                obj.beta (:,:, gp.i, gp.iel, step+1)= obj.beta (:,:, gp.i, gp.iel, step);
-                obj.alpha(     gp.i, gp.iel, step+1)= obj.alpha(     gp.i, gp.iel, step);
-                
+                np1.theta = 1 - 3*G* (np1.deEff/np1.sEqv);
+                c2        = (1-np1.theta) - 1/(1+ (Kp+Hp)/(3*G)) ;
+                c3        = (3/2)*c2/(np1.sEqv)^2;
             else
-                obj.plastic = true;
+                np1.dbkStrss = zeros(size(np1.S_ht));
+                np1.dep      = 0;
                 
-                np1.N      = np1.xiTrial ./ np1.normXiTrial;
-                np1.dGamma = np1.fTrial / (2*G + (2/3)*(Kp+Hp));
-                obj.dir    = np1.N;
-                obj.dGamma = np1.dGamma;
-                obj.sTrial = np1.sTrial;
-                
-                obj.ep   (:,:, gp.i, gp.iel, step+1)= n.ep    + np1.dGamma.*np1.N;
-                obj.beta (:,:, gp.i, gp.iel, step+1)= n.beta  + np1.dGamma.*np1.N*(2/3)*Hp;
-                obj.alpha(     gp.i, gp.iel, step+1)= n.alpha + sqrt(2/3)*np1.dGamma;
-                
-                np1.theta   = 1 - (2*G*np1.dGamma)/np1.normXiTrial;
-                %                 thetaBar= deltaGamma + theta - 1;
-                np1.thetaBar= 1 / (1 + (Kp+Hp)/(3*G)) + np1.theta - 1;
-                
-                ctan = zeros(3,3,3,3);
-                for i=1:3
-                    for j=1:3
-                        for k=1:3
-                            for l=1:3
-                                ctan(i,j,k,l) = ...
-                                    kappa*I(i,j)*I(k,l) + ...
-                                    2*G*np1.theta*( I4(i,j,k,l) - (1/3)*I(i,j)*I(k,l) ) - ...
-                                    2*G*np1.thetaBar * ( np1.N(i,j)*np1.N(k,l) );
-                            end
-                        end
-                    end
-                end
-                D =[...
-                    ctan(1,1,1,1) ctan(1,1,2,2) ctan(1,1,3,3) ctan(1,1,1,2) ctan(1,1,2,3) ctan(1,1,1,3)
-                    ctan(2,2,1,1) ctan(2,2,2,2) ctan(2,2,3,3) ctan(2,2,1,2) ctan(2,2,2,3) ctan(2,2,1,3)
-                    ctan(3,3,1,1) ctan(3,3,2,2) ctan(3,3,3,3) ctan(3,3,1,2) ctan(3,3,2,3) ctan(3,3,1,3)
-                    ctan(1,2,1,1) ctan(1,2,2,2) ctan(1,2,3,3) ctan(1,2,1,2) ctan(1,2,2,3) ctan(1,2,1,3)
-                    ctan(2,3,1,1) ctan(2,3,2,2) ctan(2,3,3,3) ctan(2,3,1,2) ctan(2,3,2,3) ctan(2,3,1,3)
-                    ctan(1,3,1,1) ctan(1,3,2,2) ctan(1,3,3,3) ctan(1,3,1,2) ctan(1,3,2,3) ctan(1,3,1,3)];
+                np1.theta    = 1;
+                c3 = 0;
             end
+            % Save states
+            obj.bkStrss(:,:, gp.i, gp.iel, step+1) = n.bkStrss + np1.dbkStrss;
+            obj.dep = np1.dep;
+            
+            % Compute D
+            S = obj.voigtize(np1.S_ht, 'row');
+            
+            D = kappa*I4_bulk            +... % Elastic bulk
+                np1.theta*(2*G)*I4_dev   +... % Elastic deviatoric
+                c3*(2*G)*(S'*S);              % Plastic
+            
+            ctan = reshape(D([1,4,6,4,2,5,6,5,3],[1,4,6,4,2,5,6,5,3]),3,3,3,3);
         end
         %% Element K
         function Kel = computeK_el(~, Kel, gp, ~)
@@ -192,33 +160,22 @@ classdef ClassicPlasticityRI
     
     methods (Static)
         
-        %         function [deltaGamma, alpha_np1] = box3d1(alpha, normXiTrial, G)
-        %             tol = 1e-9;
-        %             g = inf;
-        %
-        %             deltaGamma = 0;
-        %             alpha_k = alpha;
-        %             [~,~,H_n,~] = ClassicPlasticityRI.hardening(alpha);
-        %
-        %             while(abs(g)>tol)
-        %                 [K,Kp,H,Hp] = ClassicPlasticityRI.hardening(alpha_k);
-        %
-        %                 g = -sqrt(2/3)*K + normXiTrial...
-        %                     -( 2*G*deltaGamma + sqrt(2/3)*(H - H_n) );
-        %
-        %                 Dg= -2*G*( 1 + (Hp+Kp)/(3*G) );
-        %
-        %                 deltaGamma = deltaGamma - g/Dg;
-        %                 alpha_k      = alpha + sqrt(2/3)*deltaGamma;
-        %             end
-        %             alpha_np1 = alpha_k;
-        %         end
+        function deEff = getEffPlasStrnInc(eEff_n, G, Y, Kp,Hp, sEquiv)
+            deEff = (sEquiv - Y - eEff_n*Kp) / (Kp + Hp + 3*G);
+            if deEff < 0
+                deEff = 0;
+            end
+        end
         
-        function [K,Kp,H,Hp] = hardening(alpha)
-            K = (60 + 10*alpha);
-            Kp= 10;
-            H = 40*alpha;
-            Hp= 40;
+        function vec = voigtize(mat, orientation)
+            switch orientation
+                case {'Col', 'col', 'Column', 'column'}
+                    vec = [mat(1,1) mat(2,2) mat(3,3) mat(1,2) mat(2,3) mat(1,3)]';
+                case {'Row', 'row'}
+                    vec = [mat(1,1) mat(2,2) mat(3,3) mat(1,2) mat(2,3) mat(1,3)];
+                otherwise
+                    error('Unknown input');
+            end
         end
     end
 end

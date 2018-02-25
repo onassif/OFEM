@@ -42,7 +42,7 @@ for step=1:num.steps % Steps loop
                 gp = Compute_gp_info(gp, coor, Umt, iel, num);
                 
                 %%%   3gp. Strain tensor
-                [gp.eps, mat] = mat.computeStrain(gp, el, step);
+                [gp.deps, mat] = mat.computeStrain(gp, el, step);
                 
                 %%%   4gp. Tangential stifness
                 [gp.D, gp.ctan, mat] = mat.computeTangentStiffness(gp, step);
@@ -57,7 +57,7 @@ for step=1:num.steps % Steps loop
                 el.Fint         = mat.computeFint(gp, el);
                 
                 % store states
-                hist.eps (:,igp,iel) = gp.eps;
+                hist.eps (:,igp,iel) = gp.deps;
                 hist.stre(:,igp,iel) = gp.sigma;
                 hist.ctan(:,:,:,:,igp,iel) = gp.ctan;
             end
@@ -74,9 +74,9 @@ for step=1:num.steps % Steps loop
         %             NR.mult, globl.K, Fext, globl.Fint, inpt, num.ndof);
         
         %%%   9i. Residual and normalized residual
-        if (mat.linear)
-            globl.Fint = Fext;
-        end
+%         if (mat.linear)
+%             globl.Fint = Fext;
+%         end
         
         %%%   10i. dU and update Ui
         dU      = globl.K\G;

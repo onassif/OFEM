@@ -15,7 +15,7 @@ classdef T3
         b;
         J;
         j;
-        eps;
+        deps;
         sigma;
         ctan;
         D;

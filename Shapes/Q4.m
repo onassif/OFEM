@@ -17,7 +17,7 @@ classdef Q4
         b;
         J;
         j;
-        eps;
+        deps;
         sigma;
         ctan;
         D;

@@ -18,7 +18,7 @@ classdef Q8
         b;
         J;
         j;
-        eps;
+        deps;
         sigma;
         ctan;
         D;

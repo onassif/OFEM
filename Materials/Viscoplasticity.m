@@ -103,7 +103,6 @@ classdef Viscoplasticity
             np1.dep     = obj.dep;
             
             np1.S      =  n.strss - (1/3)*trace(n.strss)*I + 2*G* (np1.de - np1.dep);
-            np1.sEquiv =  sqrt( (3/2)*sum( dot(np1.S, np1.S) ));
             sigma      =  np1.S + (1/3)*trace(n.strss)*I + K*sum(gp.eps(1:obj.ndm))*I;
             
             obj.strss(:,:, gp.i, gp.iel, step+1) = sigma;

@@ -12,12 +12,17 @@ classdef Elastic
         Poisson;
         linear = true;
     end
+    
+    properties(SetAccess = private)
+        strss
+    end
     %%
     methods
         %% Construct
         function obj = Elastic(num, props)
-            obj.ndm  = num.ndm;
-            obj.ndof = num.ndof;
+            obj.ndm   = num.ndm;
+            obj.ndof  = num.ndof;
+            obj.strss = zeros(num.str, num.gp, num.el, num.steps+1);
             
             if strcmp(props{1,1} ,'E') && strcmp(props{2,1} ,'v')
                 obj.Young  = props{1,2};
@@ -30,15 +35,19 @@ classdef Elastic
             end
         end
         %% Epsilon
-        function [eps, obj] = computeStrain(obj, gp, el, ~)
-            eps = gp.B * el.Uvc;
+        function [deps, obj] = computeStrain(obj, gp, el, ~)
+            deps = gp.B * el.Uvc;
         end
         %% Sigma
-        function [sigma_voigt, obj] = computeCauchy(obj, gp, ~)
-            sigma_voigt = gp.D *gp.eps;
+        function [sigma_voigt, obj] = computeCauchy(obj, gp, step)
+            n.strss = obj.strss(:, gp.i, gp.iel, step);
+            
+            sigma_voigt = n.strss + gp.D*gp.deps;
+            
+            obj.strss(:, gp.i, gp.iel, step+1) = sigma_voigt;
         end
         %% Tangential stiffness
-        function [D, ctan, obj] = computeTangentStiffness(obj, gp, ~)
+        function [D, ctan, obj] = computeTangentStiffness(obj, ~, ~)
             E = obj.Young;
             v = obj.Poisson;
 
