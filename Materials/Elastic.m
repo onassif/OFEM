@@ -42,7 +42,7 @@ classdef Elastic
         function [sigma_voigt, obj] = computeCauchy(obj, gp, step)
             n.strss = obj.strss(:, gp.i, gp.iel, step);
             
-            sigma_voigt = n.strss + gp.D*gp.deps;
+            sigma_voigt = gp.D*gp.deps;
             
             obj.strss(:, gp.i, gp.iel, step+1) = sigma_voigt;
         end

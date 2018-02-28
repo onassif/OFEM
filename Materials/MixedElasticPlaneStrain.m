@@ -49,18 +49,7 @@ classdef MixedElasticPlaneStrain
             %                 1.0*gp.eps(1) 0.5*gp.eps(3)
             %                 0.5*gp.eps(3) 1.0*gp.eps(2) ];
             %             sigma = zeros(obj.ndm);
-            %
-            %             for i = 1:obj.ndm
-            %                 for j = 1:obj.ndm
-            %                     for k = 1:obj.ndm
-            %                         for l = 1:obj.ndm
-            %                             sigma(i,j) = sigma(i,j) + gp.ctan(i,j,k,l) *eps(k,l);
-            %                         end
-            %                     end
-            %                 end
-            %             end
-            %
-            %             sigma_voigt = [sigma(1,1); sigma(2,2); sigma(1,2)];
+
             sigma_voigt = gp.D *gp.eps;
         end
         %% Tangential stiffness
@@ -94,15 +83,10 @@ classdef MixedElasticPlaneStrain
         end
         %% Element Fint
         function Fint = computeFint(obj, gp, el)
-            %             reshaped_U = reshape(el.U_global(1:el.ndm*el.numnp), el.ndm, el.numnp);
-            %             U = [...
-            %                 reshape( reshaped_U(:, el.elements(el.i, :)), obj.nen*obj.ndm, 1)
-            %                 el.U_global(el.ndm*el.numnp + el.i)];
             dN = reshape(gp.dNdx',8,1);
-%             Fint = el.Fint + [(gp.B'*gp.D*gp.B*el.Uvc ); 0] *gp.J *gp.w;
-%             Fint = [(gp.B'*gp.D*gp.B*el.Uvc ); 0] *gp.J *gp.w;
-            Fint = el.Fint + [(el.K(1:8,1:8)*el.Uvc ); 0] *gp.J *gp.w;
-%             - obj.Bulk*(dN'*dN)*el.Uvc
+            K = obj.Bulk;
+            
+            Fint = el.Fint + [(gp.B'*gp.sigma - (K*(dN*dN'))*el.Uvc ); 0] *gp.j *gp.w;
         end
     end
 end
