@@ -1,4 +1,4 @@
-function [K, Fext, Fint, G]=ApplyConstraints_and_Loads(mult, K, Fext, Fint, U, inpt, ndof)
+function [K, Fext, Fint, G]=ApplyConstraints_and_Loads(mult, K, Fext, Fint, U, w, inpt, ndof)
 BC = inpt.BC;
 FORCE = inpt.FORCE;
 
@@ -35,5 +35,7 @@ for i = 1:size(BC,1)
 Fint(k_index) = BC(i,3)*mult(BC(i,4),1);
 % G(k_index) = BC(i,3)*mult(BC(i,4),1) - U(k_index) - w(k_index);
 G(k_index)    = BC(i,3)*mult(BC(i,4),1) - U(k_index);
+% G(k_index)    = BC(i,3)*mult(BC(i,4),1) - w(k_index);
+% G(k_index)    = BC(i,3)*mult(BC(i,4),1);
 end
 end

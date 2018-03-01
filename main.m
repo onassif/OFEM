@@ -4,7 +4,9 @@ clear; close all
 % Dialog
 run(ReadInput())
 initialize
-
+WW = zeros(num.steps,1);
+UU = zeros(num.steps,1);
+        
 for step=1:num.steps % Steps loop
     %% Start time loop
     
@@ -71,14 +73,14 @@ for step=1:num.steps % Steps loop
         
         %%%   8i. Fext and apply constrains
         [globl.K, Fext, globl.Fint, G]  =  ApplyConstraints_and_Loads(...
-            NR.mult, globl.K, Fext, globl.Fint, globl.U, inpt, num.ndm);
-        %             NR.mult, globl.K, Fext, globl.Fint, inpt, num.ndof);        
+            NR.mult, globl.K, Fext, globl.Fint, globl.U, globl.w, inpt, num.ndm);      
         
         %%%   10i. dU and update Ui
         dU      = globl.K\G .* ~(mat.linear==1 && NR.iter>0);
         globl.w = globl.w + dU;
         globl.U = globl.U + dU;
-        
+        WW(step) = max(globl.w);
+        UU(step) = max(globl.U);
         NR.correction = norm(dU)/norm(globl.w); 
         NR.residual   = norm(G)/(num.np*num.ndof);
         

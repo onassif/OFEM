@@ -26,11 +26,11 @@ classdef Viscoplasticity
         Bulk
         
         strss
-        de
+        e
+        ep
         eEff
         deEff
         sEquiv
-        dep
         
         plastic = false;
         dir;
@@ -44,6 +44,7 @@ classdef Viscoplasticity
             obj.ndm  = num.ndm;
             obj.ndof = num.ndof;
             obj.eEff = zeros(     num.gp, num.el, num.steps+1);
+            obj.ep   = zeros(3,3, num.gp, num.el, num.steps+1);
             obj.strss= zeros(3,3, num.gp, num.el, num.steps+1);
             
             for i=1:length(props)
@@ -85,12 +86,12 @@ classdef Viscoplasticity
         end
         %% Epsilon
         function [eps, obj] = computeStrain(obj, gp, el, ~)
-            eps = gp.B * el.Uvc;
-            de=[1.0*eps(1) 0.5*eps(4) 0.5*eps(6)
+            eps= gp.B * el.Uvc;
+            e =[1.0*eps(1) 0.5*eps(4) 0.5*eps(6)
                 0.5*eps(4) 1.0*eps(2) 0.5*eps(5)
                 0.5*eps(6) 0.5*eps(5) 1.0*eps(3)];
-            de = de - (1/3)*trace(de)*eye(3);
-            obj.de = de;
+            e = e - (1/3)*trace(e)*eye(3);
+            obj.e = e;
         end
         %% Sigma
         function [sigma_voigt, obj] = computeCauchy(obj, gp, step)
@@ -98,14 +99,11 @@ classdef Viscoplasticity
             G = obj.G;
             K = obj.Bulk;
             
-            n.strss     = obj.strss(:,:, gp.i, gp.iel, step);
-            np1.de      = obj.de;
-            np1.dep     = obj.dep;
+            np1.e       = obj.e;
+            np1.ep      = obj.ep(:,:, gp.i, gp.iel, step+1);
             
-            np1.S      =  n.strss - (1/3)*trace(n.strss)*I + 2*G* (np1.de - np1.dep);
-            sigma      =  np1.S + (1/3)*trace(n.strss)*I + K*sum(gp.eps(1:obj.ndm))*I;
-            
-            obj.strss(:,:, gp.i, gp.iel, step+1) = sigma;
+            np1.S      =  2*G* (np1.e - np1.ep);
+            sigma      =  np1.S + K*sum(gp.eps(1:obj.ndm))*I;
             
             sigma_voigt = obj.voigtize(sigma,'col');
         end
@@ -127,12 +125,13 @@ classdef Viscoplasticity
             K    = obj.Bulk;
             
             % Values from previous step
+            n.ep    = obj.ep   (:,:, gp.i, gp.iel, step);
             n.strss = obj.strss(:,:, gp.i, gp.iel, step);
             n.eEff  = obj.eEff (     gp.i, gp.iel, step);
             
             % Trial equivalent stress
-            np1.de     = obj.de;
-            np1.S      = n.strss - (1/3)*trace(n.strss)*I + 2*G* np1.de; % Assuming no plasticity
+            np1.e      = obj.e;
+            np1.S      = 2*G* (np1.e - n.ep); % Assuming no plasticity
             np1.sEquiv = sqrt( (3/2)*sum( dot(np1.S, np1.S) ));% Assuming no plasticity
             
             % Effective plastic strain increment
@@ -152,11 +151,12 @@ classdef Viscoplasticity
                 c1 = 1;
                 c3 = 0;
             end
+            np1.ep = n.ep + np1.dep;
             
             % Save states as they'll be sent to stress function
-            obj.deEff                      = np1.deEff;
-            obj.eEff(gp.i, gp.iel, step+1) = np1.eEff;
-            obj.dep                        = np1.dep;
+            obj.deEff                        = np1.deEff;
+            obj.eEff(   gp.i, gp.iel, step+1)= np1.eEff;
+            obj.ep(:,:, gp.i, gp.iel, step+1)= np1.ep;
             
             S = obj.voigtize(np1.S, 'row');
             
