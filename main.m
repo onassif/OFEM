@@ -13,8 +13,8 @@ for step=1:num.steps % Steps loop
     NR.mult = step/num.steps;
     NR.iter = 0; fprintf('\n');
     NR.correction = inf;
-    globl.w    = zeros(num.eq,1);
-    
+    globl.w = zeros(num.eq,1);
+        
     while (NR.correction > NR.tol)
         %% Start NR loop
         % Clear global K and Fint
@@ -70,7 +70,7 @@ for step=1:num.steps % Steps loop
         
         %%%   8i. Fext and apply constrains
         [globl.K, Fext, globl.Fint, G]  =  ApplyConstraints_and_Loads(...
-            NR.mult, globl.K, Fext, globl.Fint, globl.U, globl.w, inpt, num.ndm);      
+            NR.mult, globl.K, Fext, globl.Fint, globl.U, inpt, num.ndm);      
         
         %%%   10i. dU and update Ui
         dU      = globl.K\G .* ~(mat.linear==1 && NR.iter>0);
@@ -88,7 +88,7 @@ for step=1:num.steps % Steps loop
         hist.resid(NR.iter) = NR.residual;
         % write to file
         if (NR.correction < NR.tol)
-            WriteReadHistory(hist, num, step, globl.Fint, globl.U + dU,...
+            WriteReadHistory(hist, num, step, Fext, globl.U + dU,...
                 nodes+reshape(globl.U(1:num.ndm*num.np),num.ndm,num.np)');
         end
         
