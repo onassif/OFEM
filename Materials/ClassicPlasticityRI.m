@@ -20,12 +20,12 @@ classdef ClassicPlasticityRI
         iso_modulus
         kin_modulus
         yield_strss
-        Shear
+        G
         Bulk
         
         eEff
-        de
-        dep
+        e
+        ep
         theta
         bkStrss
         strss
@@ -39,6 +39,7 @@ classdef ClassicPlasticityRI
             obj.eEff    = zeros(     num.gp, num.el, num.steps+1);
             obj.bkStrss = zeros(3,3, num.gp, num.el, num.steps+1);
             obj.strss   = zeros(3,3, num.gp, num.el, num.steps+1);
+            obj.ep      = zeros(3,3, num.gp, num.el, num.steps+1);
             
             for i=1:length(props)
                 switch props{i,1}
@@ -56,8 +57,8 @@ classdef ClassicPlasticityRI
                         error("You've chosen Rate Independent Plastic material but specified incompatible material properties, I'm disapponted");
                 end
             end
-            obj.Shear =  0.5*obj.Young/(1+  obj.Poisson);
-            obj.Bulk  =(1/3)*obj.Young/(1-2*obj.Poisson);
+            obj.G    =  0.5*obj.Young/(1+  obj.Poisson);
+            obj.Bulk =(1/3)*obj.Young/(1-2*obj.Poisson);
             
             obj.I4_dev= identity.I4_dev;
             obj.I4_bulk= identity.I4_bulk;
@@ -66,60 +67,54 @@ classdef ClassicPlasticityRI
         %% Epsilon
         function [eps, obj] = computeStrain(obj, gp, el, ~)
             eps = gp.B * el.Uvc;
-            de=[1.0*eps(1) 0.5*eps(4) 0.5*eps(6)
-                0.5*eps(4) 1.0*eps(2) 0.5*eps(5)
-                0.5*eps(6) 0.5*eps(5) 1.0*eps(3)];
-            de = de - (1/3)*trace(de)*eye(3);
-            obj.de = de;
+            e=[1.0*eps(1) 0.5*eps(4) 0.5*eps(6)
+               0.5*eps(4) 1.0*eps(2) 0.5*eps(5)
+               0.5*eps(6) 0.5*eps(5) 1.0*eps(3)];
+            e = e - (1/3)*trace(e)*eye(3);
+            obj.e = e;
         end
         %% Sigma
         function [sigma_voigt, obj] = computeCauchy(obj, gp, step)
             I = obj.I2;
-            G = obj.Shear;
+            G = obj.G;
             K = obj.Bulk;
             
-            n.strss     = obj.strss(:,:, gp.i, gp.iel, step);
-            np1.de      = obj.de;
-            np1.dep     = obj.dep;
+            np1.e  = obj.e;
+            np1.ep = obj.ep(:,:, gp.i, gp.iel, step+1);
            
-            sigma      = n.strss + 2*G* (np1.de - np1.dep) + K*sum(gp.eps(1:obj.ndm))*I;
-            
-            obj.strss(:,:, gp.i, gp.iel, step+1) = sigma;
+            sigma  = 2*G* (np1.e - np1.ep) + K*sum(gp.eps(1:obj.ndm))*I;
             
             sigma_voigt = obj.voigtize(sigma,'col');
         end
         %% Tangential stiffness
         function [D, ctan, obj] = computeTangentStiffness(obj, gp, step)
+            
             % Identities
-            I    = obj.I2;
             I4_dev = obj.I4_dev;
             I4_bulk= obj.I4_bulk;
             % Material properties
-            G    = obj.Shear;
+            G    = obj.G;
             kappa= obj.Bulk;
             Kp   = obj.iso_modulus;
             Hp   = obj.kin_modulus;
             Y    = obj.yield_strss;
             % Values from previous step
-            n.bkStrss = obj.bkStrss(:,:,  gp.i, gp.iel, step);
-            n.strss   = obj.strss  (:,:,  gp.i, gp.iel, step);
-            n.eEff    = obj.eEff   (gp.i, gp.iel, step);
+            n.ep      = obj.ep     (:,:, gp.i, gp.iel, step);
+            n.eEff    = obj.eEff   (     gp.i, gp.iel, step);
+            n.bkStrss = obj.bkStrss(:,:, gp.i, gp.iel, step);
             
-            np1.de  = obj.de;
-            np1.S   = n.strss - (1/3)*trace(n.strss)*I + 2*G*np1.de;
-            
-            np1.S_ht= np1.S - n.bkStrss;
-            np1.sEqv= sqrt( (3/2)*sum(dot(np1.S_ht, np1.S_ht)) );
+            % Trial equivalent stress
+            np1.e    = obj.e;
+            np1.S_ht = 2*G*(np1.e - n.ep) - n.bkStrss;
+            np1.sEqv = sqrt( (3/2)*sum(dot(np1.S_ht, np1.S_ht)) );
             
             
             np1.deEff    = obj.getEffPlasStrnInc(n.eEff, G, Y, Kp, Hp, np1.sEqv);
             obj.eEff(gp.i, gp.iel, step+1) =  n.eEff + np1.deEff;
             
-            if (np1.sEqv*np1.deEff>0)
-                np1.dir      = np1.S_ht/np1.sEqv;
-                
-                np1.dbkStrss = np1.deEff * Hp * np1.dir;
-                np1.dep      = (3/2)*np1.deEff* np1.dir;
+            if (np1.sEqv*np1.deEff>0) 
+                np1.dbkStrss = np1.deEff * Hp * (np1.S_ht/np1.sEqv);
+                np1.dep      = (3/2)*np1.deEff* (np1.S_ht/np1.sEqv);
                 
                 np1.theta = 1 - 3*G* (np1.deEff/np1.sEqv);
                 c2        = (1-np1.theta) - 1/(1+ (Kp+Hp)/(3*G)) ;
@@ -131,9 +126,11 @@ classdef ClassicPlasticityRI
                 np1.theta    = 1;
                 c3 = 0;
             end
+            np1.ep = n.ep + np1.dep;
+            
             % Save states
             obj.bkStrss(:,:, gp.i, gp.iel, step+1) = n.bkStrss + np1.dbkStrss;
-            obj.dep = np1.dep;
+            obj.ep     (:,:, gp.i, gp.iel, step+1) = np1.ep;
             
             % Compute D
             S = obj.voigtize(np1.S_ht, 'row');

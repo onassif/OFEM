@@ -33,9 +33,9 @@ for i = 1:size(BC,1)
     %       Change the Fs
 %     Fext(k_index) = BC(i,3)*mult(BC(i,4),1);
 Fint(k_index) = BC(i,3)*mult(BC(i,4),1);
-% G(k_index) = BC(i,3)*mult(BC(i,4),1) - U(k_index) - w(k_index);
 G(k_index)    = BC(i,3)*mult(BC(i,4),1) - U(k_index);
-% G(k_index)    = BC(i,3)*mult(BC(i,4),1) - w(k_index);
-% G(k_index)    = BC(i,3)*mult(BC(i,4),1);
+% G(k_index) = BC(i,3)*mult(BC(i,4),1) - U(k_index) - w(k_index);
+% G(k_index) = BC(i,3)*mult(BC(i,4),1) - w(k_index);
+% G(k_index) = BC(i,3)*mult(BC(i,4),1);
 end
 end

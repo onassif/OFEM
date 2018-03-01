@@ -29,7 +29,6 @@ classdef Viscoplasticity
         e
         ep
         eEff
-        deEff
         sEquiv
         
         plastic = false;
@@ -70,8 +69,8 @@ classdef Viscoplasticity
             obj.G    =   0.5*obj.E/(1+  obj.nu);
             obj.Bulk = (1/3)*obj.E/(1-2*obj.nu);
             
-            obj.I4_dev= identity.I4_dev;
-            obj.I4_bulk= identity.I4_bulk;
+            obj.I4_dev  = identity.I4_dev;
+            obj.I4_bulk = identity.I4_bulk;
             
             obj.dt = zeros(sum(time(:,2),1), 1);
             for i=1:size(time,1)
@@ -99,22 +98,18 @@ classdef Viscoplasticity
             G = obj.G;
             K = obj.Bulk;
             
-            np1.e       = obj.e;
-            np1.ep      = obj.ep(:,:, gp.i, gp.iel, step+1);
+            np1.e  = obj.e;
+            np1.ep = obj.ep(:,:, gp.i, gp.iel, step+1);
             
-            np1.S      =  2*G* (np1.e - np1.ep);
-            sigma      =  np1.S + K*sum(gp.eps(1:obj.ndm))*I;
-            
+            sigma       = 2*G* (np1.e - np1.ep) + K*sum(gp.eps(1:obj.ndm))*I;
             sigma_voigt = obj.voigtize(sigma,'col');
         end
         %% Tangential stiffness
         function [D, ctan, obj] = computeTangentStiffness(obj, gp, step)
-            
             dt   = obj.dt(step);
             % Identities
-            I      = obj.I2;
-            I4_dev = obj.I4_dev;
-            I4_bulk= obj.I4_bulk;
+            I4_dev  = obj.I4_dev;
+            I4_bulk = obj.I4_bulk;
             % Material properties
             Y    = obj.Y;
             e0   = obj.e0;
@@ -126,7 +121,6 @@ classdef Viscoplasticity
             
             % Values from previous step
             n.ep    = obj.ep   (:,:, gp.i, gp.iel, step);
-            n.strss = obj.strss(:,:, gp.i, gp.iel, step);
             n.eEff  = obj.eEff (     gp.i, gp.iel, step);
             
             % Trial equivalent stress
@@ -154,9 +148,8 @@ classdef Viscoplasticity
             np1.ep = n.ep + np1.dep;
             
             % Save states as they'll be sent to stress function
-            obj.deEff                        = np1.deEff;
-            obj.eEff(   gp.i, gp.iel, step+1)= np1.eEff;
-            obj.ep(:,:, gp.i, gp.iel, step+1)= np1.ep;
+            obj.eEff(     gp.i, gp.iel, step+1)= np1.eEff;
+            obj.ep  (:,:, gp.i, gp.iel, step+1)= np1.ep;
             
             S = obj.voigtize(np1.S, 'row');
             

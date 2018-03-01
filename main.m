@@ -4,8 +4,6 @@ clear; close all
 % Dialog
 run(ReadInput())
 initialize
-WW = zeros(num.steps,1);
-UU = zeros(num.steps,1);
         
 for step=1:num.steps % Steps loop
     %% Start time loop
@@ -24,7 +22,6 @@ for step=1:num.steps % Steps loop
         globl.Fint = zeros(num.eq,1);
         
         % Send new U to the element object
-%         el.U_global = globl.w;
         el.U_global = globl.U;
         for iel =1:num.el
             %% Start elements loop
@@ -79,28 +76,21 @@ for step=1:num.steps % Steps loop
         dU      = globl.K\G .* ~(mat.linear==1 && NR.iter>0);
         globl.w = globl.w + dU;
         globl.U = globl.U + dU;
-        WW(step) = max(globl.w);
-        UU(step) = max(globl.U);
         NR.correction = norm(dU)/norm(globl.w); 
         NR.residual   = norm(G)/(num.np*num.ndof);
         
-        %           Print iteration information:
+        % Print iteration information:
         NR.iter = NR.iter + 1;
         fprintf('step: %4.0d\t iteration:%2.0d\t correction: %.10f\t residual: %.10f\n',...
             step, NR.iter, NR.correction, NR.residual);
-        
-        
         
         %%%   11i. History arrays
         hist.resid(NR.iter) = NR.residual;
         % write to file
         if (NR.correction < NR.tol)
-%             globl.U = globl.U + globl.w;
-            
             WriteReadHistory(hist, num, step, globl.Fint, globl.U + dU,...
                 nodes+reshape(globl.U(1:num.ndm*num.np),num.ndm,num.np)');
         end
-        
         
         if (NR.iter > NR.max_iter)
             error('>>>>> Error!! Exceeded the number of NR iterations permissible, exiting...');
