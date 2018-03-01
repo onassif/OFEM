@@ -34,14 +34,13 @@ classdef HyperNeo
             end
         end
         %% Epsilon
-        function [deps, obj] = computeStrain(obj, gp, el, ~)
-            deps = gp.B * el.Uvc;
+        function [eps, obj] = computeStrain(obj, gp, el, ~)
+            eps = gp.B * el.Uvc;
         end
         %% Sigma
-        function [sigma_voigt, obj] = computeCauchy(obj, gp, step)
+        function [sigma_voigt, obj] = computeCauchy(obj, gp, ~)
             mu     = obj.shear;
             lambda = obj.lame1;
-            n.strss = obj.strss(:, gp.i, gp.iel, step);
 
             if (obj.ndm==2 && obj.ndof ==2)
                 I = eye(obj.ndm);
