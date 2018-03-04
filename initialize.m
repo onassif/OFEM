@@ -51,18 +51,21 @@ run('identities.m');
 % end
 
 % Material-related
-if     (material == 1)
-    mat = Elastic(num, props);
-elseif (material == 2)
-    mat = PlaneStrain(num, props);
-elseif (material == 3)
-    mat = HyperNeo(num, props);
-elseif (material == 4)
-    mat = Viscoplasticity(num, props, time, ident.threeD.second);
-elseif (material == 5)
-    mat = ClassicPlasticityRI(num, props, ident.threeD.second);
-elseif (material == 6)
-    mat = MixedElasticPlaneStrain(num, props);
+switch material
+    case 1
+        mat = Elastic(num, props);
+    case 2
+        mat = PlaneStrain(num, props);
+    case 3
+        mat = HyperNeo(num, props);
+    case 4
+        mat = Viscoplasticity(num, props, time, ident.threeD.second);
+    case 5
+        mat = ClassicPlasticityRI(num, props, ident.threeD.second);
+    case 6
+        mat = MixedElasticPlaneStrain(num, props);
+    case 7 
+        mat = HypoElastic(num, props, ident.threeD.second);
 end
 
 % gp-related

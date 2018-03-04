@@ -11,17 +11,12 @@ classdef HyperNeo
         lame1;
         linear = false;
     end
-    
-    properties(SetAccess = private)
-        strss
-    end
     %%
     methods
         %% Construct
         function obj = HyperNeo(num, props)
             obj.ndm  = num.ndm;
             obj.ndof = num.ndof;
-            obj.strss = zeros(num.str, num.gp, num.el, num.steps+1);
             
             if strcmp(props{1,1} ,'mu') && strcmp(props{2,1} ,'lambda')
                 obj.shear  = props{1,2};

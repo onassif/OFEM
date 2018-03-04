@@ -1,19 +1,16 @@
 ident.twoD.I = eye(2);
 ident.twoD.second.I4_sym = [...
-    1   0   0   0
-    0   1   0   0
-    0   0 1/2   0
-    0   0   0 1/2];
+    1   0   0
+    0   1   0
+    0   0 1/2];
 ident.twoD.second.I4_bulk= [...
-    1   1   0   0
-    1   1   0   0
-    0   0   0   0
-    0   0   0   0];
+    1   1   0
+    1   1   0
+    0   0   0];
 ident.twoD.second.I4_dev = [...
-    2./3 -1/3   0   0
-    -1/3  2/3   0   0
-    0.00    0 1/2   0
-    0.00    0   0 1/2];
+    2./3 -1/3   0
+    -1/3  2/3   0
+    0.00    0 1/2];
 ident.twoD.fourth.I4_sym  = zeros(2,2,2,2);
 ident.twoD.fourth.I4_sym([1 16]) = 1;
 ident.twoD.fourth.I4_sym([6 7 10 11]) = 1/2;

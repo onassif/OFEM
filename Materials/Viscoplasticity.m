@@ -49,7 +49,7 @@ classdef Viscoplasticity
             for i=1:length(props)
                 switch props{i,1}
                     case 'E'
-                        obj.E      = props{i,2};
+                        obj.E     = props{i,2};
                     case 'nu'
                         obj.nu    = props{i,2};
                     case 'Y'
