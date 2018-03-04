@@ -1,4 +1,4 @@
-classdef ClassicPlasticityRI
+classdef PlasticRI
     %Elastic 3D elastic class
     %   Detailed explanation goes here
     
@@ -33,7 +33,7 @@ classdef ClassicPlasticityRI
     %%
     methods
         %% Construct
-        function obj = ClassicPlasticityRI(num, props, identity)
+        function obj = PlasticRI(num, props, identity)
             obj.ndm  = num.ndm;
             obj.ndof = num.ndof;
             obj.eEff    = zeros(     num.gp, num.el, num.steps+1);

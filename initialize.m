@@ -27,17 +27,17 @@ for i=1:numnp
     hist.nconn(i,nen+1) = count;
 end
 
-num.el     = numel;
-num.np     = numnp;
-num.nen    = nen;
-num.ndof   = ndof;
-num.eq     = numeq;
-num.gp     = ngp;
-num.steps  = n_steps;
-num.str    = numstr;
-num.ndm    = ndm;
-num.BC     = BC(end,end);
-num.FORCE  = FORCE(end,end);
+num.el    = numel;
+num.np    = numnp;
+num.nen   = nen;
+num.ndof  = ndof;
+num.eq    = numeq;
+num.gp    = ngp;
+num.steps = n_steps;
+num.str   = numstr;
+num.ndm   = ndm;
+num.BC    = BC(end,end);
+num.FORCE = FORCE(end,end);
 
 %%%%%%%%%%%%%%%%%%%%% Identities:
 run('identities.m');
@@ -55,17 +55,17 @@ switch material
     case 1
         mat = Elastic(num, props);
     case 2
-        mat = PlaneStrain(num, props);
+        mat = HypoElastic(num, props, ident.threeD.second);
     case 3
         mat = HyperNeo(num, props);
     case 4
-        mat = Viscoplasticity(num, props, time, ident.threeD.second);
+        mat = Viscoplastic(num, props, time, ident.threeD.second);
     case 5
-        mat = ClassicPlasticityRI(num, props, ident.threeD.second);
+        mat = PlasticRI(num, props, ident.threeD.second);
     case 6
         mat = MixedElasticPlaneStrain(num, props);
     case 7 
-        mat = HypoElastic(num, props, ident.threeD.second);
+%         mat = HypoElastic(num, props, ident.threeD.second);
 end
 
 % gp-related
@@ -93,8 +93,8 @@ else
     NR = NewtonRaphson(NR_tol, max_iter, num);
 end
 
-inpt.BC         = BC;
-inpt.FORCE      = FORCE;
+inpt.BC    = BC;
+inpt.FORCE = FORCE;
 
 mon_str={'Jan','Feb','Mar','Apr','May','June','Jul','Aug','Sep','Oct','Nov','Dec'};
 current = fix(clock);

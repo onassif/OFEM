@@ -1,4 +1,4 @@
-classdef Viscoplasticity
+classdef ViscoPlastic
     %Elastic 3D elastic class
     %   Detailed explanation goes here
     
@@ -39,7 +39,7 @@ classdef Viscoplasticity
     %%
     methods
         %% Construct
-        function obj = Viscoplasticity(num, props, time, identity)
+        function obj = ViscoPlastic(num, props, time, identity)
             obj.ndm  = num.ndm;
             obj.ndof = num.ndof;
             obj.eEff = zeros(     num.gp, num.el, num.steps+1);

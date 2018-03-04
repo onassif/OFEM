@@ -26,8 +26,8 @@ classdef PlaneStrain
             obj.Poisson= props{1,2};
             obj.Young  = props{2,2};
          else
-            error(["You've chosen Plane Strain material but specified incompatible",...
-               "material properties, I'm disapponted"]);
+            error("You've chosen Plane Strain material but specified incompatible",...
+               "material properties, I'm disapponted");
          end
       end
       %% Epsilon
@@ -36,10 +36,7 @@ classdef PlaneStrain
       end
       %% Sigma
       function [sigma_voigt, obj] = computeCauchy(obj, gp, ~)
-         
-         if (obj.ndm==2 && obj.ndof ==2)
-            sigma_voigt = gp.D *gp.eps;
-         end
+         sigma_voigt = gp.D*gp.eps;
       end
       %% Tangential stiffness
       function [D, ctan, obj] = computeTangentStiffness(obj, ~, ~)

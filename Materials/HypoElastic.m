@@ -114,37 +114,21 @@ classdef HypoElastic
          end
          
          if (eEff > 0 )
-            c =...
+            D =...
                (2/3)*(sEff/eEff)*I4_dev + ...
                (4/9)*(dsde-(sEff/eEff))/(eEff^2)*(e*e') + ...
                (K/3)*I4_bulk;
          else
-            c =...
+            D =...
                (2/3)*dsde*I4_dev ...
                + (K/3)*I4_bulk;
          end
-%          C = zeros(3,3,3,3);
-%          dl= eye(3);
-%          for i = 1 : 3
-%             for j = 1 : 3
-%                for k = 1 : 3
-%                   for l = 1 : 3
-% 
-%                         C(i,j,k,l) = (dl(i,k)*dl(j,l)/2+dl(i,l)*dl(j,k)/2-dl(i,j)*dl(k,l)/3);
-%                   end
-%                end
-%             end
-%          end
+
+         ctan = reshape(D([1,4,6,4,2,5,6,5,3],[1,4,6,4,2,5,6,5,3]),3,3,3,3); 
          
          if     obj.ndm == 2
-            D =[...
-               c(1,1) c(1,2) c(1,4)
-               c(2,1) c(2,2) c(2,4)
-               c(4,1) c(4,2) c(4,4)];
-         elseif obj.ndm == 3
-            D = c;
+            D =D([1,2,4],[1,2,4]);
          end
-         ctan = reshape(c([1,4,6,4,2,5,6,5,3],[1,4,6,4,2,5,6,5,3]),3,3,3,3);
       end
       %% Element K
       function Kel = computeK_el(~, Kel, gp, ~)
