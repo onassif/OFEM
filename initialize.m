@@ -59,7 +59,7 @@ switch material
     case 3
         mat = HyperNeo(num, props);
     case 4
-        mat = Viscoplastic(num, props, time, ident.threeD.second);
+        mat = ViscoPlastic(num, props, time, ident.threeD.second);
     case 5
         mat = PlasticRI(num, props, ident.threeD.second);
     case 6
