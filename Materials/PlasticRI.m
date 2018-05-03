@@ -12,6 +12,8 @@ classdef PlasticRI
       I4_dev
       I4_bulk
       linear = false;
+      
+      name = 'PlasticRI';
    end
    
    properties (SetAccess = private)
@@ -52,7 +54,8 @@ classdef PlasticRI
                case 'Y'
                   obj.yield_strss = props{i,2};
                otherwise
-                  error("You've chosen Rate Independent Plastic material but specified incompatible material properties, I'm disapponted");
+                  error(['You''ve chosen Rate Independent Plastic material but ',...
+                     'specified incompatible material properties, I''m disapponted']);
             end
          end
          obj.G    =  0.5*obj.Young/(1+  obj.Poisson);

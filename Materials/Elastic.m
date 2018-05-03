@@ -11,6 +11,8 @@ classdef Elastic
       Young;
       Poisson;
       linear = true;
+      
+      name = 'Elastic';
    end
    %%
    methods
@@ -26,8 +28,8 @@ classdef Elastic
             obj.Poisson= props{1,2};
             obj.Young  = props{2,2};
          else
-            error("You've chosen Plane Strain material but specified incompatible ",...
-               "material properties, I'm disapponted");
+            error(['You''ve chosen Elastic material but specified ',...
+               'incompatible material properties, I''m disapponted']);
          end
       end
       %% Epsilon

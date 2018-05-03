@@ -1,12 +1,13 @@
-classdef ViscoPlastic
+classdef MTS
    %Elastic 3D elastic class
    %   Detailed explanation goes here
    
    properties (Hidden, SetAccess = private)
       ndm;
       ndof;
+      nen;
       dNdX;
-      finiteDisp = 0;
+      finiteDisp = 1;
       
       I
       I2 = eye(3);
@@ -14,17 +15,18 @@ classdef ViscoPlastic
       I4_bulk
       linear = false;
       
-      name = 'ViscoPlastic';
+      hard
+      
+      name = 'mm10';
    end
    
    properties (SetAccess = private)
       E
       nu
+      beta
+      Hp
       Y
-      e0
-      nExp
-      edot0
-      m
+
       G
       Bulk
       
@@ -37,13 +39,16 @@ classdef ViscoPlastic
       dir;
       
       dt;
+      
+      gRot
    end
    %%
    methods
       %% Construct
-      function obj = ViscoPlastic(num, props, time, identity)
+      function obj = MTS(num, props, hardProps, slip, time, identity)
          obj.ndm  = num.ndm;
          obj.ndof = num.ndof;
+         obj.nen  = num.nen;
          obj.eEff = zeros(                 num.gp, num.el, num.steps+1);
          obj.ep   = zeros(obj.ndm,obj.ndm, num.gp, num.el, num.steps+1);
          
@@ -53,44 +58,17 @@ classdef ViscoPlastic
                   obj.E     = props{i,2};
                case 'nu'
                   obj.nu    = props{i,2};
+               case 'beta'
+                  obj.beta  = props{i,2};
+               case 'Hp'
+                  obj.Hp    = props{i,2};
                case 'Y'
                   obj.Y     = props{i,2};
-               case 'e0'
-                  obj.e0    = props{i,2};
-               case 'n'
-                  obj.nExp  = props{i,2};
-               case 'edot0'
-                  obj.edot0 = props{i,2};
-               case 'm'
-                  obj.m     = props{i,2};
                otherwise
-                  error(['You''ve chosen Rate Independent Plastic material but ',...
-                     'specified incompatible material properties, I''m disapponted']);
+                  error( ['You''ve chosen mm10 material but specified incompatible ',...
+                  'material properties, I''m disapponted']);
             end
          end
-         
-         for i=1:length(props)
-            switch props{i,1}
-               case 'K'
-                  obj.E     = props{i,2};
-               case 'H'
-                  obj.nu    = props{i,2};
-               case 'M'
-                  obj.Y     = props{i,2};
-               case 'sig0'
-                  obj.e0    = props{i,2};
-               case 'n'
-                  obj.nExp  = props{i,2};
-               case 'edot0'
-                  obj.edot0 = props{i,2};
-               case 'm'
-                  obj.m     = props{i,2};
-               otherwise
-                  error(['You''ve chosen Rate Independent Plastic material but ',...
-                     'specified incompatible material properties, I''m disapponted']);
-            end
-         end
-         
          obj.G    =   0.5*obj.E/(1+  obj.nu);
          obj.Bulk = (1/3)*obj.E/(1-2*obj.nu);
          
@@ -108,6 +86,7 @@ classdef ViscoPlastic
                end
             end
          end
+         
       end
       %% Epsilon
       function [eps, obj] = computeStrain(obj, gp, el, ~)
@@ -162,7 +141,8 @@ classdef ViscoPlastic
          np1.sEquiv = sqrt( (3/2)*sum( dot(np1.S, np1.S) ));% Assuming no plasticity
          
          % Effective plastic strain increment
-         np1.deEff = obj.getEffPlasStrnInc(G,Y,n.eEff,np1.sEquiv,e0,nExp,dt,edot0,m);
+         np1.deEff =...
+            obj.getEffPlasStrnInc(G, Y, n.eEff, np1.sEquiv, e0, nExp, dt, edot0, m);
          np1.eEff  = n.eEff + np1.deEff;
          
          % Decide whether solving plastic or elastic tangential
@@ -170,7 +150,8 @@ classdef ViscoPlastic
             np1.dep = (3/2)*np1.deEff* (np1.S/np1.sEquiv);
             
             c1 = 1 - 3*G*np1.deEff/np1.sEquiv;
-            c2 = 3*G/np1.sEquiv + c1*( 1/(nExp*(e0+n.eEff+np1.deEff)) + 1/(m*np1.deEff) );
+            c2 =...
+               3*G/np1.sEquiv + c1*( 1/(nExp*(e0+n.eEff+np1.deEff)) + 1/(m*np1.deEff) );
             c3 = 4.5*G* (np1.deEff - 1/c2)/(c1*(np1.sEquiv)^3);
          else
             np1.dep = (3/2)*np1.deEff* (np1.S/1);
@@ -211,9 +192,18 @@ classdef ViscoPlastic
       function Fint = computeFint(~, gp, el)
          Fint = el.Fint + (gp.B'*gp.sigma) *gp.J *gp.w;
       end
+      
+      
    end
    
-   methods (Static)      
+   methods (Static)
+      function [K,Kp,H,Hp] = hardening(alpha)
+         K = (60 + 10*alpha);
+         Kp= 10;
+         H = 40*alpha;
+         Hp= 40;
+      end
+      
       function deEff = getEffPlasStrnInc(G, Y, eEff, sEquiv, e0, nExp, dt, edot0, m)
          deEff = 10^(-15);
          err   = Y;
@@ -260,3 +250,4 @@ classdef ViscoPlastic
       
    end
 end
+

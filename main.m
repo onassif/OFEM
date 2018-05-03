@@ -1,4 +1,3 @@
-%     Program CE691
 clear; close all
 
 % Dialog
@@ -34,7 +33,6 @@ for step=1:num.steps % Steps loop
          % clear previous values of elemental K and Fint
          el.K    = 0;
          el.Fint = 0;
-         
          for igp = 1:num.gp;     gp.i = igp;
             %%   Start Loop over Gauss points
             

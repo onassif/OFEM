@@ -17,14 +17,14 @@ hist.resid = zeros(max_iter,1,'single');
 hist.conn  = uint32(elements(:,1:nen));
 hist.nconn = zeros(numnp,nen+1);
 for i=1:numnp
-    count = 0;
-    for j =1:numel
-        if( find(hist.conn(j,:)==i) )
-            count = count+1;
-            hist.nconn(i,count) = j;
-        end
-    end
-    hist.nconn(i,nen+1) = count;
+   count = 0;
+   for j =1:numel
+      if( find(hist.conn(j,:)==i) )
+         count = count+1;
+         hist.nconn(i,count) = j;
+      end
+   end
+   hist.nconn(i,nen+1) = count;
 end
 
 num.el    = numel;
@@ -44,11 +44,18 @@ run('identities.m');
 
 %%%%%%%%%%%%%%%%%%%%% Create objects:
 % Hardening-related
-% if exist('hardType','var')
-%     if strcmp(hardType,'Mixed')
-%         hard = ConstantMixedHardening(hardprops);
-%     end
-% end
+if exist('hardType','var')
+   
+   switch slipType
+      case {'FCC', 'fcc'}
+         slip = FCC();
+   end
+   
+%    switch hardType
+%       case {'MTS', 'mts'}
+%          hard = MTS(hardProps, slip);
+%    end
+end
 
 % Material-related
 switch material
@@ -65,20 +72,23 @@ switch material
     case 6
         mat = MixedElasticPlaneStrain(num, props);
     case 7 
-%         mat = HypoElastic(num, props, ident.threeD.second);
+        mat = MTS(num, props, hardProps, slip, time, ident.threeD.second);
 end
 
 % gp-related
-if     (eltype == 'Q4')
+switch eltype
+   case 'Q4'
     gp = Q4(num, mat.finiteDisp);
-elseif (eltype == 'Q9')
+   case 'Q9'
     gp = Q9;
-elseif (eltype == 'T3')
+   case 'T3'
     gp = T3(numel, mat.finiteDisp);
-elseif (eltype == 'T6')
+   case 'T6'
     gp = T6;
-elseif (eltype == 'Q8')
+   case 'Q8'
     gp = Q8(num, mat.finiteDisp);
+   case 'Q8Crys'
+    gp = Q8Crys(num, mat.finiteDisp);  
 end
 
 % Element-related
@@ -86,11 +96,11 @@ el = Elements(elements, nodes, num, props, globl.U);
 
 % NR-related
 if exist('time','var') && exist('fctr','var')
-    NR = NewtonRaphson(NR_tol, max_iter, num, time, fctr);
+   NR = NewtonRaphson(NR_tol, max_iter, num, time, fctr);
 elseif exist('time','var')
-    NR = NewtonRaphson(NR_tol, max_iter, num, time);
+   NR = NewtonRaphson(NR_tol, max_iter, num, time);
 else
-    NR = NewtonRaphson(NR_tol, max_iter, num);
+   NR = NewtonRaphson(NR_tol, max_iter, num);
 end
 
 inpt.BC    = BC;
@@ -99,7 +109,7 @@ inpt.FORCE = FORCE;
 mon_str={'Jan','Feb','Mar','Apr','May','June','Jul','Aug','Sep','Oct','Nov','Dec'};
 current = fix(clock);
 hist.start= sprintf('hist%shist_%d-%d-%s_%d:%d:%d',...
-    filesep, current([1,3]), mon_str{current(2)}, current(4:6));
+   filesep, current([1,3]), mon_str{current(2)}, current(4:6));
 mkdir(hist.start);
 
-clearvars -except dU el elements Fext globl gp hist inpt mat nodes NR num
+clearvars -except dU el elements Fext globl gp hist inpt mat nodes NR num hard slip

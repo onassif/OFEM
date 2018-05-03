@@ -1,7 +1,8 @@
 function [nde, el, nen, ngp, numnp, numel, ndm, new_BC, new_FORCE]= ...
     Generate_mesh(elmtype,coor, old_BC, old_FORCE, plot, numelx, numely, varargin)
 
-if elmtype == 'Q4'
+switch elmtype 
+   case  'Q4'
     %%
     numnpx = numelx+1;
     numnpy = numely+1;
@@ -56,7 +57,7 @@ if elmtype == 'Q4'
     end
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Q9 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-elseif elmtype == 'Q9'
+   case 'Q9'
     %%
     numnpx = 2*numelx+1;
     numnpy = 2*numely+1;
@@ -117,7 +118,7 @@ elseif elmtype == 'Q9'
     end
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% T3 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-elseif elmtype == 'T3'
+   case 'T3'
     %%
     numnpx = numelx+1;  numnpy = numely+1;  numnp = numnpx*numnpy;
     nen = 3;    ngp = 1;    ndm = 2;
@@ -170,7 +171,7 @@ elseif elmtype == 'T3'
     
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% T6 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-elseif elmtype == 'T6'
+   case 'T6'
     %%
     numnpx = 2*numelx+1;
     numnpy = 2*numely+1;
@@ -230,7 +231,7 @@ elseif elmtype == 'T6'
         
     end
     
-elseif elmtype == 'Q8'
+   case {'Q8','Q8Crys'}
     %%
     if (isempty(varargin))
         error("specified 3D element type but didn't specify increments in z direction");
@@ -396,7 +397,7 @@ for i=1:size(old_FORCE,1)
         
         portions = 0;
         for j=1:length(affected_nodes)
-            if elmtype == 'T3'
+            if strcmp(elmtype, 'T3')
                 portions = portions + sum(length(find(el(:,1:nen-1) == affected_nodes(j))));
             else
                 portions = portions + sum(length(find(el(:,1:nen) == affected_nodes(j))));
@@ -408,7 +409,7 @@ for i=1:size(old_FORCE,1)
         for j=1:length(affected_nodes)
             new_FORCE(starts+j, 1) = starts+j;
             new_FORCE(starts+j, 2) = affected_nodes(j);
-            if elmtype == 'T3'
+            if strcmp(elmtype, 'T3')
                 new_FORCE(starts+j, 4) = portioned_load *...
                     sum(length(find(el(:,1:nen-1) == affected_nodes(j))));
             else

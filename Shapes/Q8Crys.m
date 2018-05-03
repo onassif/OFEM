@@ -1,4 +1,4 @@
-classdef Q8
+classdef Q8Crys
    
    properties (Constant)
       % Isoparametric gp
@@ -13,12 +13,15 @@ classdef Q8
       dXdxi;
       dxdX;
       dNdx;
+      F;
+      det_F;
       b;
+      J;
+      j;
       eps;
       sigma;
       ctan;
       D;
-      U;
    end
    
    properties (Hidden)
@@ -38,25 +41,28 @@ classdef Q8
    properties (SetAccess = private)
       Nmat;
       Ninv;
+      det_dXdxi;
       dNdX;
       B;
       N;
       w;
       dNdxi;
-      F;
-      J; % det(dX/dxi) = J
-      j; % or det( dx/dX*dX/dxi ) = det(dx/dxi) = j
+      
+      gRot
+      R
+      np1_q
+      mat;
    end
    
    methods
-      function obj = Q8(num, finiteDisp)
+      function obj = Q8Crys(num, mat)
          obj.dNdxi_3D         = obj.compute_dNdxi(obj);
          [obj.Nmat, obj.Ninv] = obj.compute_Nmat(obj);
          
          obj.det_dXdxi_list = zeros(8,num.el);
          obj.dNdX_list      = zeros(8,3,8,num.el);
          
-         obj.finiteDisp = finiteDisp;
+         obj.mat = mat;
          %             obj.adof = num.ndof - num.ndm;
          obj.adof = 0;
       end
@@ -73,21 +79,12 @@ classdef Q8
          value = obj.weights(obj.i);
       end
       
-      function value = get.J(obj)
+      function value = get.det_dXdxi(obj)
          value = obj.det_dXdxi_list(obj.i,obj.iel);
       end
       
       function value = get.dNdX(obj)
          value = obj.dNdX_list(:,:,obj.i,obj.iel);
-      end
-      
-      function value = get.F(obj)
-        I     = eye(size(obj.U,1));
-        value = obj.U*obj.dNdX + I;
-      end
-      
-      function value = get.j(obj)     
-         value = det(obj.F) * obj.J;
       end
       
       function value = get.dNdx(obj)
@@ -99,7 +96,46 @@ classdef Q8
             value = obj.F*obj.F';
          end
       end
+ 
+      function value = get.R(obj)
+         [P,~,Q] = svd(obj.F);
+         value   = P*Q';
+      end
       
+      function value = get.np1_q(obj)
+         r = obj.R;
+         value= [...
+            r(1,1)^2, r(1,2)^2, r(1,3)^2, ...
+            2*r(1,1)*r(1,2), ...
+            2*r(1,3)*r(1,2), ...
+            2*r(1,1)*r(1,3);
+            ...
+            r(2,1)^2, r(2,2)^2, r(2,3)^2, ...
+            two*r(2,1)*r(2,2), ...
+            two*r(2,3)*r(2,2), ...
+            two*r(2,1)*r(2,3);
+            ...
+            r(3,1)^2, r(3,2)^2, r(3,3)^2, ...
+            two*r(3,1)*r(3,2), ...
+            two*r(3,3)*r(3,2), ...
+            two*r(3,1)*r(3,3);
+            ...
+            r(1,1)*r(2,1), r(1,2)*r(2,2), r(1,3)*r(2,3), ...
+            r(1,1)*r(2,2)+r(2,1)*r(1,2), ...
+            r(1,2)*r(2,3)+r(1,3)*r(2,2), ...
+            r(1,1)*r(2,3)+r(1,3)*r(2,1);
+            ...
+            r(2,1)*r(3,1), r(3,2)*r(2,2), r(2,3)*r(3,3), ...
+            r(2,1)*r(3,2)+r(2,2)*r(3,1), ...
+            r(2,2)*r(3,3)+r(3,2)*r(2,3), ...
+            r(2,1)*r(3,3)+r(2,3)*r(3,1);
+            ...
+            r(1,1)*r(3,1), r(1,2)*r(3,2), r(1,3)*r(3,3), ...
+            r(1,1)*r(3,2)+r(1,2)*r(3,1), ...
+            r(1,2)*r(3,3)+r(1,3)*r(3,2), ...
+            r(1,1)*r(3,3)+r(3,1)*r(1,3)];
+      end
+            
       function value = get.B(obj)
          if (obj.finiteDisp)
             dx = obj.dNdx(:,1); dy = obj.dNdx(:,2); dz = obj.dNdx(:,3);
@@ -141,6 +177,36 @@ classdef Q8
             0     0     dz(8) 0     dy(8) dx(8)
             a     a     a     a     a     a    ]';
       end
+      
+      function value = get.gRot(obj)
+         if strcmp(obj.mat.hard.angleConvention, 'kocks')
+            
+            if (strcmp(obj.mat.hard.angleType, 'degrees'))
+               psi   = obj.mat.hard.angles(1) * (pi/180);
+               theta = obj.mat.hard.angles(2) * (pi/180);
+               phi   = obj.mat.hard.angles(3) * (pi/180);
+            elseif (strcmp(atype, 'radians'))
+               psi   = obj.mat.hard.angles(1);
+               theta = obj.mat.hard.angles(2);
+               phi   = obj.mat.hard.angles(3);
+            end
+            
+            value = [...
+               -sin(psi)*sin(phi)-cos(psi)*cos(phi)*cos(theta),...
+               cos(psi)*sin(phi)-sin(psi)*cos(phi)*cos(theta) ,...
+               cos(phi)*sin(theta);
+               ...
+               sin(psi)*cos(phi)-cos(psi)*sin(phi)*cos(theta) ,...
+               -cos(psi)*cos(phi)-sin(psi)*sin(phi)*cos(theta),...
+               sin(phi)*sin(theta);
+               ...
+               cos(psi)*sin(theta),...
+               sin(psi)*sin(theta),...
+               cos(theta)];
+         else
+            error("Wrong angle convention");
+         end
+      end
    end
    
    methods (Static)
@@ -150,13 +216,13 @@ classdef Q8
          for i=1:8
             dNdxi_3D(:,:,i) =1/8*...
                [ -(xi(i,2)- 1)*(xi(i,3)- 1), -(xi(i,1)- 1)*(xi(i,3)- 1), -(xi(i,1)- 1)*(xi(i,2)- 1)
-                  (xi(i,2)- 1)*(xi(i,3)- 1),  (xi(i,1)+ 1)*(xi(i,3)- 1),  (xi(i,1)+ 1)*(xi(i,2)- 1)
-                 -(xi(i,2)+ 1)*(xi(i,3)- 1), -(xi(i,1)+ 1)*(xi(i,3)- 1), -(xi(i,1)+ 1)*(xi(i,2)+ 1)
-                  (xi(i,2)+ 1)*(xi(i,3)- 1),  (xi(i,1)- 1)*(xi(i,3)- 1),  (xi(i,1)- 1)*(xi(i,2)+ 1)
-                  (xi(i,2)- 1)*(xi(i,3)+ 1),  (xi(i,1)- 1)*(xi(i,3)+ 1),  (xi(i,1)- 1)*(xi(i,2)- 1)
-                 -(xi(i,2)- 1)*(xi(i,3)+ 1), -(xi(i,1)+ 1)*(xi(i,3)+ 1), -(xi(i,1)+ 1)*(xi(i,2)- 1)
-                  (xi(i,2)+ 1)*(xi(i,3)+ 1),  (xi(i,1)+ 1)*(xi(i,3)+ 1),  (xi(i,1)+ 1)*(xi(i,2)+ 1)
-                 -(xi(i,2)+ 1)*(xi(i,3)+ 1), -(xi(i,1)- 1)*(xi(i,3)+ 1), -(xi(i,1)- 1)*(xi(i,2)+ 1)]';
+               (xi(i,2)- 1)*(xi(i,3)- 1),  (xi(i,1)+ 1)*(xi(i,3)- 1),  (xi(i,1)+ 1)*(xi(i,2)- 1)
+               -(xi(i,2)+ 1)*(xi(i,3)- 1), -(xi(i,1)+ 1)*(xi(i,3)- 1), -(xi(i,1)+ 1)*(xi(i,2)+ 1)
+               (xi(i,2)+ 1)*(xi(i,3)- 1),  (xi(i,1)- 1)*(xi(i,3)- 1),  (xi(i,1)- 1)*(xi(i,2)+ 1)
+               (xi(i,2)- 1)*(xi(i,3)+ 1),  (xi(i,1)- 1)*(xi(i,3)+ 1),  (xi(i,1)- 1)*(xi(i,2)- 1)
+               -(xi(i,2)- 1)*(xi(i,3)+ 1), -(xi(i,1)+ 1)*(xi(i,3)+ 1), -(xi(i,1)+ 1)*(xi(i,2)- 1)
+               (xi(i,2)+ 1)*(xi(i,3)+ 1),  (xi(i,1)+ 1)*(xi(i,3)+ 1),  (xi(i,1)+ 1)*(xi(i,2)+ 1)
+               -(xi(i,2)+ 1)*(xi(i,3)+ 1), -(xi(i,1)- 1)*(xi(i,3)+ 1), -(xi(i,1)- 1)*(xi(i,2)+ 1)]';
          end
       end
       

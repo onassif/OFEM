@@ -17,6 +17,8 @@ classdef HypoElastic
       I
       I4_dev
       I4_bulk
+      
+      name = 'HypoElastic';
    end
    
    properties (SetAccess = private)
@@ -42,8 +44,8 @@ classdef HypoElastic
                case 'nu'
                   obj.nu   = props{i,2};
                otherwise
-                  error(["You've chosen Rate Independent Plastic material but ",...
-                     "specified incompatible material properties, I'm disapponted"]);
+                  error(['You''ve chosen Hypo Elastic material but specified',...
+                     ' incompatible material properties, I''m disapponted']);
             end
          end
          
@@ -123,8 +125,8 @@ classdef HypoElastic
                (2/3)*dsde*I4_dev ...
                + (K/3)*I4_bulk;
          end
-
-         ctan = reshape(D([1,4,6,4,2,5,6,5,3],[1,4,6,4,2,5,6,5,3]),3,3,3,3); 
+         
+         ctan = reshape(D([1,4,6,4,2,5,6,5,3],[1,4,6,4,2,5,6,5,3]),3,3,3,3);
          
          if     obj.ndm == 2
             D =D([1,2,4],[1,2,4]);
