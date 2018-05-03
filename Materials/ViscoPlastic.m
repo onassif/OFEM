@@ -69,28 +69,6 @@ classdef ViscoPlastic
             end
          end
          
-         for i=1:length(props)
-            switch props{i,1}
-               case 'K'
-                  obj.E     = props{i,2};
-               case 'H'
-                  obj.nu    = props{i,2};
-               case 'M'
-                  obj.Y     = props{i,2};
-               case 'sig0'
-                  obj.e0    = props{i,2};
-               case 'n'
-                  obj.nExp  = props{i,2};
-               case 'edot0'
-                  obj.edot0 = props{i,2};
-               case 'm'
-                  obj.m     = props{i,2};
-               otherwise
-                  error(['You''ve chosen Rate Independent Plastic material but ',...
-                     'specified incompatible material properties, I''m disapponted']);
-            end
-         end
-         
          obj.G    =   0.5*obj.E/(1+  obj.nu);
          obj.Bulk = (1/3)*obj.E/(1-2*obj.nu);
          
