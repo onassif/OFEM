@@ -4,15 +4,16 @@ classdef Elements
         i
         K
         Fint
+        iter = 0;
+        U_global
+        U_glb_n
     end    
     properties (SetAccess = private, GetAccess = public)
         Umt
+        Umt_n
         Uvc
         coor
         indices
-    end
-    properties (SetAccess = public, Hidden)
-        U_global
     end
     properties (SetAccess = private, Hidden)
         elements
@@ -57,7 +58,11 @@ classdef Elements
         function value = get.Umt(obj)
             reshaped_U = reshape(obj.U_global(1:obj.ndm*obj.numnp), obj.ndm, obj.numnp);
             value = reshaped_U(:, obj.elements(obj.i,:))';
-        end      
+        end
+        function value = get.Umt_n(obj)
+            reshaped_U = reshape(obj.U_glb_n(1:obj.ndm*obj.numnp), obj.ndm, obj.numnp);
+            value = reshaped_U(:, obj.elements(obj.i,:))';
+        end 
         function value = get.Uvc(obj)
             value = reshape(obj.Umt', obj.ndm*obj.nen, 1);
         end
@@ -80,6 +85,14 @@ classdef Elements
         end
         
         %% set functions
+        function obj = set.U_global(obj, value)
+           if obj.iter == 0
+              if ~isempty(obj.U_global)
+                 obj.U_glb_n  = obj.U_global;
+              end
+           end
+           obj.U_global = value;
+        end
         function obj = set.K(obj, value)
             if isempty(obj.K) || sum(size(value)==size(obj.K))==2 % 1st time or same size
                 obj.K = value;

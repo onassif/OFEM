@@ -19,6 +19,7 @@ classdef Q8
       ctan;
       D;
       U;
+      U_n;
    end
    
    properties (Hidden)
@@ -53,7 +54,7 @@ classdef Q8
          obj.dNdxi_3D         = obj.compute_dNdxi(obj);
          [obj.Nmat, obj.Ninv] = obj.compute_Nmat(obj);
          
-         obj.det_dXdxi_list = zeros(8,num.el);
+         obj.det_dXdxi_list = zeros(num.el,1);
          obj.dNdX_list      = zeros(8,3,8,num.el);
          
          obj.finiteDisp = finiteDisp;
@@ -74,7 +75,7 @@ classdef Q8
       end
       
       function value = get.J(obj)
-         value = obj.det_dXdxi_list(obj.i,obj.iel);
+         value = obj.det_dXdxi_list(obj.iel);
       end
       
       function value = get.dNdX(obj)

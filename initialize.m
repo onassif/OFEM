@@ -88,7 +88,7 @@ switch eltype
    case 'Q8'
     gp = Q8(num, mat.finiteDisp);
    case 'Q8Crys'
-    gp = Q8Crys(num, mat.finiteDisp);  
+    gp = Q8Crys(num, mat.hardProps.angles, slip);  
 end
 
 % Element-related

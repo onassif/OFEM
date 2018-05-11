@@ -21,14 +21,14 @@ classdef MTS
    end
    
    properties (SetAccess = private)
-      E
-      nu
-      beta
-      Hp
-      Y
-
-      G
-      Bulk
+      props     = struct('E',[], 'nu',[], 'beta',[], 'Hp',[], 'Y',[], 'G',[], 'Bulk',[]);
+      hardProps = struct(...
+         'tau_ht_y' ,[], 'g0_y'   ,[], 'q_y'        ,[], 'p_y'        ,[], 'eps0_dt_y',[],...
+         'tau_ht_v' ,[], 'g0_v'   ,[], 'q_v'        ,[], 'p_v'        ,[], 'eps0_dt_v',[],...
+         'tau_a'    ,[], 'k0'     ,[], 'boltz'      ,[], 'b'          ,[], 'theta0'   ,[],...
+         'mu0'      ,[], 'D0'     ,[], 't0'         ,[], 'hardenExp'  ,[], 'E'        ,[],...
+         'nu'       ,[], 'voche_m',[], 'elasticType',[], 'numCrystals',[],...
+         'angles'   ,struct('conv',[], 'type'       ,[], 'val'        ,[]));
       
       e
       ep
@@ -40,7 +40,10 @@ classdef MTS
       
       dt;
       
-      gRot
+      slip;
+      gRot;
+      
+      mu_harden;
    end
    %%
    methods
@@ -55,22 +58,83 @@ classdef MTS
          for i=1:length(props)
             switch props{i,1}
                case 'E'
-                  obj.E     = props{i,2};
+                  obj.props.E     = props{i,2};
                case 'nu'
-                  obj.nu    = props{i,2};
+                  obj.props.nu    = props{i,2};
                case 'beta'
-                  obj.beta  = props{i,2};
+                  obj.props.beta  = props{i,2};
                case 'Hp'
-                  obj.Hp    = props{i,2};
+                  obj.props.Hp    = props{i,2};
                case 'Y'
-                  obj.Y     = props{i,2};
+                  obj.props.Y     = props{i,2};
                otherwise
                   error( ['You''ve chosen mm10 material but specified incompatible ',...
-                  'material properties, I''m disapponted']);
+                     'material properties, I''m disapponted']);
             end
          end
-         obj.G    =   0.5*obj.E/(1+  obj.nu);
-         obj.Bulk = (1/3)*obj.E/(1-2*obj.nu);
+         for i=1:length(hardProps)
+            switch hardProps{i,1}
+               case 'tau_ht_y'
+                  obj.hardProps.tau_ht_y    = hardProps{i,2};
+               case 'g0_y'
+                  obj.hardProps.g0_y        = hardProps{i,2};
+               case 'q_y'
+                  obj.hardProps.q_y         = hardProps{i,2};
+               case 'p_y'
+                  obj.hardProps.p_y         = hardProps{i,2};
+               case 'eps0_dt_y'
+                  obj.hardProps.eps0_dt_y   = hardProps{i,2};
+               case 'tau_ht_v'
+                  obj.hardProps.tau_ht_v    = hardProps{i,2};
+               case 'g0_v'
+                  obj.hardProps.g0_v        = hardProps{i,2};
+               case 'q_v'
+                  obj.hardProps.q_v         = hardProps{i,2};
+               case 'p_v'
+                  obj.hardProps.p_v         = hardProps{i,2};
+               case 'eps0_dt_v'
+                  obj.hardProps.eps0_dt_v   = hardProps{i,2};
+               case 'tau_a'
+                  obj.hardProps.tau_a       = hardProps{i,2};
+               case 'k0'
+                  obj.hardProps.k0          = hardProps{i,2};
+               case 'boltz'
+                  obj.hardProps.boltz       = hardProps{i,2};
+               case 'b'
+                  obj.hardProps.b           = hardProps{i,2};
+               case 'theta0'
+                  obj.hardProps.theta0      = hardProps{i,2};
+               case 'mu0'
+                  obj.hardProps.mu0         = hardProps{i,2};
+               case 'D0'
+                  obj.hardProps.D0          = hardProps{i,2};
+               case 't0'
+                  obj.hardProps.t0          = hardProps{i,2};
+               case 'hardenExp'
+                  obj.hardProps.hardenExp   = hardProps{i,2};
+               case 'E'
+                  obj.hardProps.E           = hardProps{i,2};
+               case 'nu'
+                  obj.hardProps.nu          = hardProps{i,2};
+               case 'voche_m'
+                  obj.hardProps.voche_m     = hardProps{i,2};
+               case 'elasticType'
+                  obj.hardProps.elasticType = hardProps{i,2};
+               case 'numCrystals'
+                  obj.hardProps.numCrystals = hardProps{i,2};
+               case 'angleConv'
+                  obj.hardProps.angles.conv = hardProps{i,2};
+               case 'angleType'
+                  obj.hardProps.angles.type = hardProps{i,2};
+               case 'angles'
+                  obj.hardProps.angles.val  = hardProps{i,2};
+               otherwise
+                  error("Unknown MTS hardening parameter");
+            end
+         end
+         obj.slip = slip;
+         obj.props.G    =   0.5*obj.props.E/(1+  obj.props.nu);
+         obj.props.Bulk = (1/3)*obj.props.E/(1-2*obj.props.nu);
          
          obj.I       = eye(num.ndm);
          obj.I4_dev  = identity.I4_dev;
@@ -92,17 +156,14 @@ classdef MTS
       function [eps, obj] = computeStrain(obj, gp, el, ~)
          I = obj.I;
          
-         eps= gp.B * el.Uvc;
-         if obj.ndm == 2
-            e=[1.0*eps(1) 0.5*eps(3)
-               0.5*eps(3) 1.0*eps(2)];
-         elseif obj.ndm == 3
-            e=[1.0*eps(1) 0.5*eps(4) 0.5*eps(6)
-               0.5*eps(4) 1.0*eps(2) 0.5*eps(5)
-               0.5*eps(6) 0.5*eps(5) 1.0*eps(3)];
-         end
+         eps= gp.q * gp.B(1:6,:) * el.Uvc;
+         
+         e=[1.0*eps(1) 0.5*eps(4) 0.5*eps(6)
+            0.5*eps(4) 1.0*eps(2) 0.5*eps(5)
+            0.5*eps(6) 0.5*eps(5) 1.0*eps(3)];
          e = e - (1/3)*trace(e)*I;
          obj.e = e;
+         obj.eEff = sqrt( (2/3)*sum( dot(e,e) ));
       end
       %% Sigma
       function [sigma_voigt, obj] = computeCauchy(obj, gp, step)
@@ -123,14 +184,15 @@ classdef MTS
          I4_dev  = obj.I4_dev;
          I4_bulk = obj.I4_bulk;
          % Material properties
-         Y    = obj.Y;
-         e0   = obj.e0;
-         nExp = obj.nExp;
-         edot0= obj.edot0;
-         m    = obj.m;
-         G    = obj.G;
-         K    = obj.Bulk;
-         
+         mu_harden = obj.hardProps.mu0;
+         tau_v     = obj.hardProps.tau_ht_v;
+         tau_y     = obj.hardProps.tau_ht_y;
+         % Gauss-Point properties
+         ms        = gp.ms;
+         qs        = gp.qs;
+         q_cr      = gp.q_cr;
+         obj.calc_grads(8,1,gp.Rn_list(:,:,:,gp.iel),
+         %          tau_l     =
          % Values from previous step
          n.ep    = obj.ep   (:,:, gp.i, gp.iel, step);
          n.eEff  = obj.eEff (     gp.i, gp.iel, step);
@@ -197,12 +259,6 @@ classdef MTS
    end
    
    methods (Static)
-      function [K,Kp,H,Hp] = hardening(alpha)
-         K = (60 + 10*alpha);
-         Kp= 10;
-         H = 40*alpha;
-         Hp= 40;
-      end
       
       function deEff = getEffPlasStrnInc(G, Y, eEff, sEquiv, e0, nExp, dt, edot0, m)
          deEff = 10^(-15);
@@ -248,6 +304,30 @@ classdef MTS
          end
       end
       
+      function gradFes = mm10_calc_grads(ngp, geonl, rot_blk, jac, Rps, ~)         
+         Rt = zeros(ngp,3,3);
+         
+         % Get R components and stick in the right place
+         if (geonl)
+            jacinv = inv(jac);
+            for i = 1:ngp
+               Rt(i,1:3,1:3) = jacinv*reshape(Rps(1:9,i),3,3)*reshape(rot_blk(1:9,i),3,3)';
+            end
+         else
+            Rt = reshape(Rps',ngp, 3,3);
+         end
+         
+         intermat = 1/sqrt(3)*[...
+            -1 +1 -1 +1 -1 +1 -1 +1
+            -1 -1 +1 +1 -1 -1 +1 +1
+            -1 -1 -1 -1 +1 +1 +1 +1];
+         %       Vector:
+         LHS = reshape(Rt,ngp,9)';
+         RHS = LHS/intermat;
+         
+         grads = reshape(RHS,3,3,3);
+         
+         gradFes = repmat(reshape(grads(1:3,1:3,1:3), 27, 1),1,ngp); 
+      end
    end
-end
-
+end  

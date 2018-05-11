@@ -18,6 +18,7 @@ classdef Q4
       ctan;
       D;
       U;
+      U_n;
    end
    
    properties (Hidden)
@@ -51,7 +52,7 @@ classdef Q4
       function obj = Q4(num, finiteDisp)
          obj.dNdxi_3D = obj.compute_dNdxi(obj);
          [obj.Nmat, obj.Ninv] = obj.compute_Nmat(obj);
-         obj.det_dXdxi_list = zeros(4,num.el);
+         obj.det_dXdxi_list = zeros(num.el,1);
          obj.dNdX_list = zeros(4,2,4,num.el);
          obj.finiteDisp = finiteDisp;
          %             obj.adof = num.ndof - num.ndm;
@@ -71,7 +72,7 @@ classdef Q4
       end
       
       function value = get.J(obj)
-         value = obj.det_dXdxi_list(obj.i,obj.iel);
+         value = obj.det_dXdxi_list(obj.iel);
       end
       
       function value = get.dNdX(obj)

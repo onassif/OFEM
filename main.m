@@ -12,6 +12,7 @@ for step=1:num.steps % Steps loop
    NR.mult = step/num.steps;
    NR.iter = 0; fprintf('\n');
    NR.correction = inf;
+   el.iter = 0; % To save U_n when overwriting with U_n+1
    globl.w = zeros(num.eq,1);
    
    while (NR.correction > NR.tol)
@@ -25,10 +26,11 @@ for step=1:num.steps % Steps loop
       for iel =1:num.el
          %% Start elements loop
          % Get information related to current element:
-         el.i = iel;             % element number
-         coor = el.coor;         % element coordinates
-         Umt  = el.Umt;          % element unknowns (array form)
-         props= el.props;        % element material properties
+         el.i  = iel;             % element number
+         coor  = el.coor;         % element coordinates
+         Umt   = el.Umt;          % element unknowns (array form)
+         Umt_n = el.Umt_n;
+         props = el.props;        % element material properties
          
          % clear previous values of elemental K and Fint
          el.K    = 0;
@@ -37,7 +39,7 @@ for step=1:num.steps % Steps loop
             %%   Start Loop over Gauss points
             
             %%%   2gp. Gauss points geometry-related values
-            gp = Compute_gp_info(gp, coor, Umt, iel, num);
+            gp = Compute_gp_info(gp, coor, Umt, Umt_n, iel, num);
             
             %%%   3gp. Strain tensor
             [gp.eps, mat]        = mat.computeStrain(gp, el, step);
