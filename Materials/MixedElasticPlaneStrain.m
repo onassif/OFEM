@@ -48,11 +48,6 @@ classdef MixedElasticPlaneStrain
       end
       %% Sigma
       function [sigma_voigt, obj] = computeCauchy(obj, gp, ~)
-         %             eps = [...
-         %                 1.0*gp.eps(1) 0.5*gp.eps(3)
-         %                 0.5*gp.eps(3) 1.0*gp.eps(2) ];
-         %             sigma = zeros(obj.ndm);
-         
          sigma_voigt = gp.D *gp.eps;
       end
       %% Tangential stiffness
@@ -70,7 +65,7 @@ classdef MixedElasticPlaneStrain
             0           0           0           0 0 G];
          
          
-         D =[c(1,1) c(1,2) c(1,4)
+         D=[c(1,1) c(1,2) c(1,4)
             c(2,1) c(2,2) c(2,4)
             c(4,1) c(4,2) c(4,4)];
          ctan = reshape(c([1,4,6,4,2,5,6,5,3],[1,4,6,4,2,5,6,5,3]),3,3,3,3);
@@ -94,4 +89,3 @@ classdef MixedElasticPlaneStrain
       end
    end
 end
-

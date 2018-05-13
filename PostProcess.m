@@ -50,19 +50,19 @@ mat_perm = permute(hist.strss.mat,[3,1,2,4,5]);
 
 % Extrapolate from gp to nodes
 for i= 1:num.nen
-    temp_strss(:,:,i,:,:) = sum(Ninv(i,:)'.*squeeze(mat_perm));
+    temp_strss(:,:,i,:,:) = squeeze(sum(Ninv(i,:)'.*mat_perm, 1));
 end
 
 % Average values at the nodes
 for i=1:num.np
     sm = 0;
-    for j=1:hist.nconn(i,num.nen+1)
+    for j=1:hist.nconn(i,end)
         el = hist.nconn(i,j);
-        gauss = hist.conn(hist.nconn(i,j),:)==i;
+        node = hist.conn(el,:)==i;
         
-        sm = sm + temp_strss(:,:,gauss,el,:);
+        sm = sm + temp_strss(:,:,node,el,:);
     end
-    hist.strss.mat_n(:,:,i,:) = sm./hist.nconn(i,num.nen+1);
+    hist.strss.mat_n(:,:,i,:) = sm./hist.nconn(i,end);
 end
 end
 

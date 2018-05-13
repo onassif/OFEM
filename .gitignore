@@ -16,3 +16,5 @@ Materials/ClassicPlasticityRI\.m~
 normBench\.m
 
 initialize\.asv
+
+*.asv

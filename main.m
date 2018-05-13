@@ -19,7 +19,7 @@ for step=1:num.steps % Steps loop
       %% Start NR loop
       % Clear global K and Fint
       globl.K    = sparse(num.eq, num.eq);
-      globl.Fint = zeros(num.eq,1);
+      globl.Fint = zeros (num.eq,1);
       
       % Send new U to the element object
       el.U_global = globl.U;

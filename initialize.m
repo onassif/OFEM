@@ -15,7 +15,14 @@ hist.stre  = zeros(numstr, ngp, numel, 'single');
 hist.ctan  = zeros(3,3,3,3,ngp, numel, 'single');
 hist.resid = zeros(max_iter,1,'single');
 hist.conn  = uint32(elements(:,1:nen));
-hist.nconn = zeros(numnp,nen+1);
+maxSharedNode = 0;
+for i =1:numnp
+  occurances =  length(find(hist.conn==i));
+  if occurances > maxSharedNode
+     maxSharedNode = occurances;
+  end
+end
+hist.nconn = zeros(numnp, maxSharedNode+1);
 for i=1:numnp
    count = 0;
    for j =1:numel
@@ -24,7 +31,7 @@ for i=1:numnp
          hist.nconn(i,count) = j;
       end
    end
-   hist.nconn(i,nen+1) = count;
+   hist.nconn(i,end) = count;
 end
 
 num.el    = numel;
@@ -82,7 +89,7 @@ switch eltype
    case 'Q9'
     gp = Q9;
    case 'T3'
-    gp = T3(numel, mat.finiteDisp);
+    gp = T3(num, mat.finiteDisp);
    case 'T6'
     gp = T6;
    case 'Q8'
