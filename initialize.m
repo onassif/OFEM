@@ -108,8 +108,8 @@ inpt.FORCE = FORCE;
 
 mon_str={'Jan','Feb','Mar','Apr','May','June','Jul','Aug','Sep','Oct','Nov','Dec'};
 current = fix(clock);
-hist.start= sprintf('hist%shist_%d-%d-%s_%d:%d:%d',...
-   filesep, current([1,3]), mon_str{current(2)}, current(4:6));
+hist.start= sprintf('%s%shist%shist_%d-%d-%s_%d.%d.%d',...
+   pwd,filesep,filesep, current([1,3]), mon_str{current(2)}, current(4:6));
 mkdir(hist.start);
 
 clearvars -except dU el elements Fext globl gp hist inpt mat nodes NR num hard slip
