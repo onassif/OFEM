@@ -363,6 +363,27 @@ for i=1:size(old_BC,1)
     
 end
 new_BC = new_BC(:,2:5);
+rowsToDelete = [];
+for i = 1:numnp
+   targetNode = find(new_BC(:,1)==i);
+   if length(targetNode)>1
+      for j = 1:ndm
+         sameDir = find(new_BC(targetNode,2)==j);
+         targetHomoBC    = find(new_BC(targetNode(sameDir),3) == 0);
+         targetNoHomoBC  = find(new_BC(targetNode(sameDir),3) ~= 0);
+         if isempty(targetHomoBC) && length(targetNoHomoBC)>1
+            error("One node, one direction but two non-homogeneous BCs");
+         elseif length(targetHomoBC)>=1 && length(targetNoHomoBC)>=1
+            for k=1:length(targetNoHomoBC)
+               rowsToDelete = [rowsToDelete;targetNode(sameDir(targetNoHomoBC))];
+            end
+         end
+      end
+   end
+end
+rowsToKeep = logical(1:size(new_BC,1))';
+rowsToKeep(rowsToDelete) = 0;
+new_BC = new_BC(rowsToKeep,:);
 %%
 % FORCE
 new_FORCE = 0;
