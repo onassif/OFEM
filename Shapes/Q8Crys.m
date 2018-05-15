@@ -139,7 +139,7 @@ classdef Q8Crys
       end
       
       function value = get.dXdxi_list(obj)
-           value(:,:,obj.i,obj.iel) = obj.dXdxi;
+           value(:,:,obj.iel) = obj.dXdxi;
       end
       
       function value = get.q(obj)
