@@ -14,6 +14,8 @@ classdef Elements
         Uvc
         coor
         indices
+        conn
+        nconn
     end
     properties (SetAccess = private, Hidden)
         elements
@@ -29,7 +31,7 @@ classdef Elements
     
     methods
         %% Construct
-        function obj = Elements(elements, nodes, num, Props, U_global)
+        function obj = Elements(elements, nodes, num, Props, U_global, hist)
             obj.elements     = elements(:,1:num.nen);
             obj.nodes        = nodes;
             obj.numel        = num.el;
@@ -40,6 +42,8 @@ classdef Elements
             obj.property_num = elements(:,end);
             obj.props        = Props;
             obj.U_global     = U_global;
+            obj.conn         = hist.conn;
+            obj.nconn        = hist.nconn;
             if num.ndof == num.ndm
                 obj.K            = zeros(num.ndof*num.nen, num.ndof*num.nen);
                 obj.Fint         = zeros(num.ndof*num.nen, 1);

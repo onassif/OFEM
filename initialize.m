@@ -87,7 +87,7 @@ switch eltype
    case 'Q4'
     gp = Q4(num, mat.finiteDisp);
    case 'Q9'
-    gp = Q9;
+    gp = Q9(num, mat.finiteDisp);
    case 'T3'
     gp = T3(num, mat.finiteDisp);
    case 'T6'
@@ -99,7 +99,7 @@ switch eltype
 end
 
 % Element-related
-el = Elements(elements, nodes, num, props, globl.U);
+el = Elements(elements, nodes, num, props, globl.U, hist);
 
 % NR-related
 if exist('time','var') && exist('fctr','var')
