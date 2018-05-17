@@ -122,8 +122,16 @@ function plotDeformation(hist,num)
 coor = hist.coor;
 title('Undeformed vs Deformed')
 if (num.ndm == 2)
-    V0 = coor(:,:,1);
-    F0 = hist.conn;
+    if (num.gp == 4 || num.gp == 1)
+        V0 = coor(:,:,1);
+        F0 = hist.conn;
+    elseif (num.gp == 9)
+        el = hist.conn(:,[1 5 2 6 3 7 4 8 9]);
+        V0 = coor(reshape(el(:,1:num.nen-1)',num.el*(num.nen-1),1),:,1);
+        F0 = reshape(1:(num.nen-1)*num.el,(num.nen-1),num.el)';
+    else
+        error("unsupported shape function plot");
+    end
 elseif (num.ndm == 3)
     i = [1 2 6 5 2 3 7 6 3 4 8 7 4 1 5 8 1 2 3 4 5 6 7 8];
     fac = reshape(1:num.nen*num.el,num.nen,num.el);
@@ -134,24 +142,36 @@ elseif (num.ndm == 3)
     view (gca,[-0.8 -0.4 0.1])
 end
 patch('Vertices', V0,'Faces',F0,'FaceColor','none',...
-    'EdgeColor','g','Marker', 'o','MarkerFaceColor','g','MarkerSize',3);
+    'EdgeColor','g');
 axis equal
 axisH = gca; %
 axisH.XLim = [min(min(hist.coor(:,1,:))) max(max(hist.coor(:,1,:)))];
 axisH.YLim = [min(min(hist.coor(:,2,:))) max(max(hist.coor(:,2,:)))];
 
 hold on
+scatter(coor(:,1,1), coor(:,2,1), 'Marker', 'o', 'MarkerFaceColor', 'g',...
+    'SizeData', 24);
+
 if (num.ndm == 2)
-    Vf = coor(:,:,end);
-    Ff = hist.conn;
+    if (num.gp == 4 || num.gp == 1) 
+        Vf = coor(:,:,end);
+        Ff = hist.conn;
+    elseif (num.gp == 9)
+        el = hist.conn(:,[1 5 2 6 3 7 4 8 9]);
+        Vf = coor(reshape(el(:,1:num.nen-1)',num.el*(num.nen-1),1),:,end);
+        Ff = reshape(1:(num.nen-1)*num.el,(num.nen-1),num.el)';
+    else
+        error("unsupported shape function plot");
+    end
 elseif (num.ndm == 3)
     i = [1 2 6 5 2 3 7 6 3 4 8 7 4 1 5 8 1 2 3 4 5 6 7 8];
     fac = reshape(1:num.nen*num.el,num.nen,num.el);
     Ff  = reshape(fac(i,:),num.nen/2,6*num.el)';
     Vf  = hist.coor(reshape(hist.conn',num.el*num.nen,1),:,end);
 end
-patch('Vertices',Vf,'Faces',Ff,'FaceColor', 'none',...
-    'EdgeColor','r','Marker', 'o','MarkerFaceColor','r');
+patch('Vertices',Vf,'Faces',Ff,'FaceColor', 'none', 'EdgeColor','r');
+scatter(coor(:,1,end), coor(:,2,end), 'Marker', 'o',...
+    'MarkerFaceColor', 'r', 'SizeData', 24);
 end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function plotcont(hist, num, contH,subH)
