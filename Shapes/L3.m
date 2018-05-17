@@ -1,9 +1,13 @@
-classdef L2
+classdef L3
    
    properties (Constant)
       % Isoparametric gp
-      xi = 1/sqrt(3) .*[-1; 1];
-      weights = [1 1];
+      xi = [...
+         -sqrt(0.6)  
+         0           
+         +sqrt(0.6)];
+      
+      weights = (1/9).*[5 8 5];
    end
    
    properties (SetAccess = public, GetAccess = public)
@@ -47,12 +51,12 @@ classdef L2
    end
    
    methods
-      function obj = L2(num, finiteDisp)
-         obj.dNdxi_3D         = obj.compute_dNdxi(obj);
-         [obj.Nmat, obj.Ninv] = obj.compute_Nmat(obj);
-         obj.det_dXdxi_list   = zeros(num.el, 1);
-         obj.dNdX_list        = zeros(2, 2, num.el);
-         obj.finiteDisp       = finiteDisp;
+      function obj = L3(num, finiteDisp)
+         obj.dNdxi_3D           = obj.compute_dNdxi(obj);
+         [obj.Nmat, obj.Ninv]   = obj.compute_Nmat(obj);
+         obj.det_dXdxi_list     = zeros(num.el,1);
+         obj.dNdX_list          = zeros(3,3,num.el);
+         obj.finiteDisp         = finiteDisp;
       end
       
       function value = get.dNdxi(obj)
@@ -100,21 +104,21 @@ classdef L2
          else
             dx = obj.dNdX;
          end
-         value=[dx(1), dx(2)];
-      end
-      
+         value=[dx(1), dx(2), dx(3)];
+      end 
    end
    
    methods (Static)
-      function dNdxi_3D = compute_dNdxi(~)
-            dNdxi_3D = 1/2 *[...
-                -1, -1
-                +1, +1];
+      function dNdxi_3D = compute_dNdxi(obj)
+         x1 = obj.xi(:,1)';
+             
+         dNdxi_3D = 1/2 *[2*x1-1; -4*x1; 2*x1+1];
       end
       
       function [Nmat, Ninv] = compute_Nmat(obj)
          xi = obj.xi;
-         Nmat = 1/2*[(1-xi), (1+xi)];
+         
+         Nmat = 1/2*[xi.*(xi-1), -2*(xi+1).*(xi-1), xi.*(xi+1)];
          Ninv = inv(Nmat);
       end
    end
