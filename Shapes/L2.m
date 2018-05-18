@@ -56,7 +56,7 @@ classdef L2
       end
       
       function value = get.dNdxi(obj)
-         value = squeeze(obj.dNdxi_3D(:,obj.i));
+         value = obj.dNdxi_3D(obj.i,:);
       end
       
       function value = get.N(obj)
@@ -108,8 +108,8 @@ classdef L2
    methods (Static)
       function dNdxi_3D = compute_dNdxi(~)
             dNdxi_3D = 1/2 *[...
-                -1, -1
-                +1, +1];
+                -1, +1
+                -1, +1];
       end
       
       function [Nmat, Ninv] = compute_Nmat(obj)
