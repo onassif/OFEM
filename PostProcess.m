@@ -141,8 +141,7 @@ elseif (num.ndm == 3)
     set(gca,'DataAspectRatio',[1 1 1],'PlotBoxAspectRatio',[570.5 570.5 570.5])
     view (gca,[-0.8 -0.4 0.1])
 end
-patch('Vertices', V0,'Faces',F0,'FaceColor','none',...
-    'EdgeColor','g');
+h = patch('Vertices',V0, 'Faces',F0, 'FaceColor','none', 'EdgeColor','g');
 axis equal
 axisH = gca; %
 axisH.XLim = [min(min(hist.coor(:,1,:))) max(max(hist.coor(:,1,:)))];
@@ -178,9 +177,15 @@ function plotcont(hist, num, contH,subH)
 title('Stress contour GUI');
 set(subH,'Position',[0.6,0.02,0.35,0.75])
 axis equal
-X = reshape(hist.coor(hist.conn',1,1),num.nen,num.el);
-Y = reshape(hist.coor(hist.conn',2,1),num.nen,num.el);
-C = reshape(hist.strss.P(3,hist.conn',1),num.nen,num.el);
+if num.gp == 9
+   conn = hist.conn(:,[1 5 2 6 3 7 4 8])';
+else
+   conn = hist.conn';
+end
+X = reshape(hist.coor(conn,1,1),   size(conn,1),size(conn,2));
+Y = reshape(hist.coor(conn,2,1),   size(conn,1),size(conn,2));
+C = reshape(hist.strss.P(3,conn,1),size(conn,1),size(conn,2));
+
 patchH = patch(X,Y,C, 'FaceAlpha',.7,'EdgeColor','r',...
     'Marker', 'o','MarkerFaceColor','r','MarkerSize',3);
 cbH = colorbar;
@@ -189,10 +194,10 @@ cbH.Limits = [min(min(hist.strss.P(3, :,:))) max(max(hist.strss.P(3, :,:)))];
 colormap jet
 subH.XLim = [min(min(hist.coor(:,1,:))) max(max(hist.coor(:,1,:)))];
 subH.YLim = [min(min(hist.coor(:,2,:))) max(max(hist.coor(:,2,:)))];
-uifunctions(contH, patchH, cbH, hist, num)
+uifunctions(contH, patchH, cbH, hist, num, conn)
 end
 
-function uifunctions(hFig, patchH, colorbarH, hist, num)
+function uifunctions(hFig, patchH, colorbarH, hist, num, conn)
 
 sliderH=uicontrol('Style','slider','Units','normalized',...
     'Position',[0.75,0.8,0.15,0.03],'Value',1,...
@@ -210,18 +215,18 @@ names = {'Principle stress 1', 'Principle stress 2', 'Principle stress 3',...
 listH=uicontrol('Parent',hFig,'Style','listbox','Units','normalized',...
     'String',names,'Position', [0.6 0.77 0.1 0.19], 'Visible','on');
 
-sliderH.Callback = @(sliderH , event) ChangeStep(sliderH, slidertext, patchH, hist, num);
-listH.Callback = @(listH, event) ChangeStress(listH, legH, colorbarH, patchH, hist, slidertext, num);
+sliderH.Callback = @(sliderH , event) ChangeStep(sliderH, slidertext, patchH, hist, num, conn);
+listH.Callback = @(listH, event) ChangeStress(listH, legH, colorbarH, patchH, hist, slidertext, num, conn);
 end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function ChangeStep(sliderH, slidertext, h, hist, num)
+function ChangeStep(sliderH, slidertext, h, hist, num, conn)
 i = sliderH.Value;
 step = int8(i);
 if (step < 1.0001*i && step > 0.9999*i)
     
-    h.XData = reshape(hist.coor(hist.conn',1,step),num.nen,num.el);
-    h.YData = reshape(hist.coor(hist.conn',2,step),num.nen,num.el);
-    h.CData = reshape(hist.strss.P(3,hist.conn',step),num.nen,num.el);
+    h.XData = reshape(hist.coor(conn,1,step),size(conn,1),size(conn,2));
+    h.YData = reshape(hist.coor(conn,2,step),size(conn,1),size(conn,2));
+    h.CData = reshape(hist.strss.P(3,conn,step),size(conn,1),size(conn,2));
     
     slidertext.String = ['$step~~',num2str(step-1),'$'];
     axis equal
@@ -230,68 +235,68 @@ else
 end
 end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function ChangeStress(listH, legH, colorbarH, h, hist, slidertext, num)
+function ChangeStress(listH, legH, colorbarH, h, hist, slidertext, num, conn)
 i = listH.Value;
 indx1 = strfind(slidertext.String,'~');
 indx2 = strfind(slidertext.String,'$');
 step = str2double(slidertext.String(indx1(end)+1:indx2(end)-1))+1;
 switch i
     case 1
-        h.CData = reshape(hist.strss.P(3,hist.conn',step),num.nen,num.el);
+        h.CData = reshape(hist.strss.P(3,conn,step),size(conn,1),size(conn,2));
         legH.String = '$\sigma_{1}$';
         L_limit = min(min(hist.strss.P(1, :,:)));
         U_limit = max(max(hist.strss.P(1, :,:)));
         colorbarH.Limits = [L_limit U_limit+(U_limit==L_limit)*0.001];
     case 2
-        h.CData = reshape(hist.strss.P(2,hist.conn',step),num.nen,num.el);
+        h.CData = reshape(hist.strss.P(2,conn,step),size(conn,1),size(conn,2));
         legH.String = '$\sigma_{2}$';
         L_limit = min(min(hist.strss.P(1, :,:)));
         U_limit = max(max(hist.strss.P(1, :,:)));
         colorbarH.Limits = [L_limit U_limit+(U_limit==L_limit)*0.001];
     case 3
-        h.CData = reshape(hist.strss.P(1,hist.conn',step),num.nen,num.el);
+        h.CData = reshape(hist.strss.P(1,conn,step),size(conn,1),size(conn,2));
         legH.String = '$\sigma_{3}$';
         L_limit = min(min(hist.strss.P(1, :,:)));
         U_limit = max(max(hist.strss.P(1, :,:)));
         colorbarH.Limits = [L_limit U_limit+(U_limit==L_limit)*0.001];
     case 4
-        h.CData = reshape(hist.strss.mat_n(1,1,hist.conn',step),num.nen,num.el);
+        h.CData = reshape(hist.strss.mat_n(1,1,conn,step),size(conn,1),size(conn,2));
         legH.String = '$\sigma_{11}$';
         L_limit = min(min(hist.strss.mat_n(1,1, :,:)));
         U_limit = max(max(hist.strss.mat_n(1,1, :,:)));
         colorbarH.Limits = [L_limit U_limit+(U_limit==L_limit)*0.001];
     case 5
-        h.CData = reshape(hist.strss.mat_n(2,2,hist.conn',step),num.nen,num.el);
+        h.CData = reshape(hist.strss.mat_n(2,2,conn,step),size(conn,1),size(conn,2));
         legH.String = '$\sigma_{22}$';
         L_limit = min(min(hist.strss.mat_n(2,2, :,:)));
         U_limit = max(max(hist.strss.mat_n(2,2, :,:)));
         colorbarH.Limits = [L_limit U_limit+(U_limit==L_limit)*0.001];
     case 6
-        h.CData = reshape(hist.strss.mat_n(3,3,hist.conn',step),num.nen,num.el);
+        h.CData = reshape(hist.strss.mat_n(3,3,conn,step),size(conn,1),size(conn,2));
         legH.String = '$\sigma_{33}$';
         L_limit = min(min(hist.strss.mat_n(3,3, :,:)));
         U_limit = max(max(hist.strss.mat_n(3,3, :,:)));
         colorbarH.Limits = [L_limit U_limit+(U_limit==L_limit)*0.001];
     case 7
-        h.CData = reshape(hist.strss.mat_n(1,2,hist.conn',step),num.nen,num.el);
+        h.CData = reshape(hist.strss.mat_n(1,2,conn,step),size(conn,1),size(conn,2));
         legH.String = '$\sigma_{12}$';
         L_limit = min(min(hist.strss.mat_n(1,2, :,:)));
         U_limit = max(max(hist.strss.mat_n(1,2, :,:)));
         colorbarH.Limits = [L_limit U_limit+(U_limit==L_limit)*0.001];
     case 8
-        h.CData = reshape(hist.strss.mat_n(2,3,hist.conn',step),num.nen,num.el);
+        h.CData = reshape(hist.strss.mat_n(2,3,conn,step),size(conn,1),size(conn,2));
         legH.String = '$\sigma_{23}$';
         L_limit = min(min(hist.strss.mat_n(2,3, :,:)));
         U_limit = max(max(hist.strss.mat_n(2,3, :,:)));
         colorbarH.Limits = [L_limit U_limit+(U_limit==L_limit)*0.001];
     case 9
-        h.CData = reshape(hist.strss.mat_n(1,3,hist.conn',step),num.nen,num.el);
+        h.CData = reshape(hist.strss.mat_n(1,3,conn,step),size(conn,1),size(conn,2));
         legH.String = '$\sigma_{13}$';
         L_limit = min(min(hist.strss.mat_n(1,3, :,:)));
         U_limit = max(max(hist.strss.mat_n(1,3, :,:)));
         colorbarH.Limits = [L_limit U_limit+(U_limit==L_limit)*0.001];
     case 10
-        h.CData = reshape(hist.strss.vm(hist.conn',step),num.nen,num.el);
+        h.CData = reshape(hist.strss.vm(conn,step),size(conn,1),size(conn,2));
         legH.String = '$\sigma_{vm}$';
         L_limit = min(min(hist.strss.vm(:,:)));
         U_limit = max(max(hist.strss.vm(:,:)));
