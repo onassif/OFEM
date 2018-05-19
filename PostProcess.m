@@ -129,6 +129,10 @@ if (num.ndm == 2)
         el = hist.conn(:,[1 5 2 6 3 7 4 8 9]);
         V0 = coor(reshape(el(:,1:num.nen-1)',num.el*(num.nen-1),1),:,1);
         F0 = reshape(1:(num.nen-1)*num.el,(num.nen-1),num.el)';
+    elseif (num.gp == 3)
+       el = hist.conn(:,[1,4,2,5,3,6]);
+       V0 = coor(reshape(el',num.el*num.nen,1),:,1);
+       F0 = reshape(1:num.nen*num.el,(num.nen),num.el)';
     else
         error("unsupported shape function plot");
     end
@@ -159,6 +163,10 @@ if (num.ndm == 2)
         el = hist.conn(:,[1 5 2 6 3 7 4 8 9]);
         Vf = coor(reshape(el(:,1:num.nen-1)',num.el*(num.nen-1),1),:,end);
         Ff = reshape(1:(num.nen-1)*num.el,(num.nen-1),num.el)';
+    elseif (num.gp == 3)
+       el = hist.conn(:,[1,4,2,5,3,6]);
+       Vf = coor(reshape(el',num.el*num.nen,1),:,end);
+       Ff = reshape(1:num.nen*num.el,(num.nen),num.el)';  
     else
         error("unsupported shape function plot");
     end
@@ -179,6 +187,8 @@ set(subH,'Position',[0.6,0.02,0.35,0.75])
 axis equal
 if num.gp == 9
    conn = hist.conn(:,[1 5 2 6 3 7 4 8])';
+elseif num.gp == 3
+   conn = hist.conn(:,[1,4,2,5,3,6])';
 else
    conn = hist.conn';
 end

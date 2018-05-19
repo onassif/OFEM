@@ -91,7 +91,7 @@ switch eltype
    case 'T3'
     gp = T3(num, mat.finiteDisp);
    case 'T6'
-    gp = T6;
+    gp = T6(num, mat.finiteDisp);
    case 'Q8'
     gp = Q8(num, mat.finiteDisp);
    case 'Q8Crys'

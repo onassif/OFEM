@@ -2,7 +2,12 @@ classdef T6
    
    properties (Constant)
       % Isoparametric gp
-      xi = 1/3 .*[1 1];
+      xi = 1/6*[...
+         4 1
+         1 1
+         1 4];
+      
+      weights = 1/6* [1 1 1];
    end
    
    properties (SetAccess = public, GetAccess = public)
@@ -28,7 +33,6 @@ classdef T6
    properties (Hidden, SetAccess = private)
       dNdxi_3D;
       numel;
-      weights = 0.5;
       finiteDisp;
       adof;
    end
@@ -48,13 +52,13 @@ classdef T6
    
    methods
       function obj = T6(num, finiteDisp)
-         obj.dNdxi_3D = obj.compute_dNdxi(obj);
+         obj.dNdxi_3D         = obj.compute_dNdxi(obj);
          [obj.Nmat, obj.Ninv] = obj.compute_Nmat(obj);
+         
          obj.det_dXdxi_list = zeros(num.el,1);
-         obj.dNdX_list = zeros(3,2,1,num.el);
+         obj.dNdX_list      = zeros(6,2,3,num.el);
+         
          obj.finiteDisp = finiteDisp;
-         %             obj.adof = num.ndof - num.ndm;
-         obj.adof = 0;
       end
       
       function value = get.dNdxi(obj)
@@ -105,24 +109,46 @@ classdef T6
             dy = obj.dNdX(:,2);
          end
          value=[...
-            dx(1),   0.0, dx(2),   0.0, dx(3),   0.0
-            0.0,   dy(1),   0.0, dy(2),   0.0, dy(3)
-            dy(1), dx(1), dy(2), dx(2), dy(3), dx(3)];
+            dx(1),   0.0, dx(2),   0.0, dx(3),   0.0, dx(4),   0.0, dx(5),   0.0, dx(6),   0.0
+            0.000, dy(1),   0.0, dy(2),   0.0, dy(3),   0.0, dy(4),   0.0, dy(5),   0.0, dy(6)
+            dy(1), dx(1), dy(2), dx(2), dy(3), dx(3), dy(4), dx(4), dy(5), dx(5), dy(6), dx(6)];
       end
       
    end
    
    methods (Static)
-      function dNdxi_3D = compute_dNdxi(~)
-         dNdxi_3D =[...
-            -1 1 0
-            -1 0 1];
+      function dNdxi_3D = compute_dNdxi(obj)
+         dNdxi_3D = zeros(2,6,3);
+         for i=1:3
+            x1 = obj.xi(i,1);  x2 = obj.xi(i,2);
+            
+            dNdxi_3D(:,:,i) =[...
+                -3 + 4*(x1+x2), -3 + 4*(x1+x2)
+                4*x1-1        ,  0
+                0             ,  4*x2 - 1
+                4-8*x1-4*x2   , -4*x1
+                4*x2          ,  4*x1
+                -4*x2         , -8*x2 + 4 - 4*x1]';
+         end
       end
       
       function [Nmat, Ninv] = compute_Nmat(obj)
-         xi = obj.xi;
-         Nmat = [1-xi(1)-xi(2), xi(1), xi(2)];
-         Ninv = ones(3,1);
+         x1 = obj.xi(:,1);  x2 = obj.xi(:,2);
+         
+         Nmat = [...
+            (1-x1-x2).*(2*(1-x1-x2)-1),...
+            x1.*(2*x1-1),...
+            x2.*(2*x2-1),...
+            4*(1-x1-x2).*x1,...
+            4*x1.*x2,...
+            4*x2.*(1-x1-x2)];
+         Ninv =1/6*[...
+            -2 10 -2
+            10 -2 -2
+            -2 -2 10
+            +5  5 -4
+            +5 -4  5
+            -4  5  5];
       end
    end
 end
