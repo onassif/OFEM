@@ -6,6 +6,7 @@ classdef Q8
          -1  1  1 -1 -1  1  1 -1
          -1 -1  1  1 -1 -1  1  1
          -1 -1 -1 -1  1  1  1  1]';
+      weights = [1 1 1 1 1 1 1 1];
    end
    
    properties (SetAccess = public, GetAccess = public)
@@ -31,9 +32,7 @@ classdef Q8
    properties (Hidden, SetAccess = private)
       dNdxi_3D;
       numel;
-      weights = [1 1 1 1 1 1 1 1];
       finiteDisp;
-      adof;
    end
    
    properties (SetAccess = private)
@@ -58,8 +57,6 @@ classdef Q8
          obj.dNdX_list      = zeros(8,3,8,num.el);
          
          obj.finiteDisp = finiteDisp;
-         %             obj.adof = num.ndof - num.ndm;
-         obj.adof = 0;
       end
       
       function value = get.dNdxi(obj)
@@ -107,40 +104,31 @@ classdef Q8
          else
             dx = obj.dNdX(:,1); dy = obj.dNdX(:,2); dz = obj.dNdX(:,3);
          end
-         a = zeros(obj.adof,1);
          value =[...
             dx(1) 0     0     dy(1) 0     dz(1)
             0     dy(1) 0     dx(1) dz(1) 0
             0     0     dz(1) 0     dy(1) dx(1)
-            a     a     a     a     a     a
             dx(2) 0     0     dy(2) 0     dz(2)
             0     dy(2) 0     dx(2) dz(2) 0
             0     0     dz(2) 0     dy(2) dx(2)
-            a     a     a     a     a     a
             dx(3) 0     0     dy(3) 0     dz(3)
             0     dy(3) 0     dx(3) dz(3) 0
             0     0     dz(3) 0     dy(3) dx(3)
-            a     a     a     a     a     a
             dx(4) 0     0     dy(4) 0     dz(4)
             0     dy(4) 0     dx(4) dz(4) 0
             0     0     dz(4) 0     dy(4) dx(4)
-            a     a     a     a     a     a
             dx(5) 0     0     dy(5) 0     dz(5)
             0     dy(5) 0     dx(5) dz(5) 0
             0     0     dz(5) 0     dy(5) dx(5)
-            a     a     a     a     a     a
             dx(6) 0     0     dy(6) 0     dz(6)
             0     dy(6) 0     dx(6) dz(6) 0
             0     0     dz(6) 0     dy(6) dx(6)
-            a     a     a     a     a     a
             dx(7) 0     0     dy(7) 0     dz(7)
             0     dy(7) 0     dx(7) dz(7) 0
             0     0     dz(7) 0     dy(7) dx(7)
-            a     a     a     a     a     a
             dx(8) 0     0     dy(8) 0     dz(8)
             0     dy(8) 0     dx(8) dz(8) 0
-            0     0     dz(8) 0     dy(8) dx(8)
-            a     a     a     a     a     a    ]';
+            0     0     dz(8) 0     dy(8) dx(8)]';
       end
    end
    

@@ -2,7 +2,8 @@ classdef T3
    
    properties (Constant)
       % Isoparametric gp
-      xi = 1/3 .*[1 1];
+      xi      = 1/3 .*[1 1];
+      weights = 0.5;
    end
    
    properties (SetAccess = public, GetAccess = public)
@@ -28,9 +29,7 @@ classdef T3
    properties (Hidden, SetAccess = private)
       dNdxi_3D;
       numel;
-      weights = 0.5;
       finiteDisp;
-      adof;
    end
    
    properties (SetAccess = private)
@@ -48,13 +47,13 @@ classdef T3
    
    methods
       function obj = T3(num, finiteDisp)
-         obj.dNdxi_3D = obj.compute_dNdxi(obj);
+         obj.dNdxi_3D         = obj.compute_dNdxi(obj);
          [obj.Nmat, obj.Ninv] = obj.compute_Nmat(obj);
+         
          obj.det_dXdxi_list = zeros(num.el,1);
-         obj.dNdX_list = zeros(3,2,1,num.el);
+         obj.dNdX_list      = zeros(3,2,1,num.el);
+         
          obj.finiteDisp = finiteDisp;
-         %             obj.adof = num.ndof - num.ndm;
-         obj.adof = 0;
       end
       
       function value = get.dNdxi(obj)
@@ -122,7 +121,7 @@ classdef T3
       function [Nmat, Ninv] = compute_Nmat(obj)
          xi = obj.xi;
          Nmat = [1-xi(1)-xi(2), xi(1), xi(2)];
-         Ninv = ones(3,1);
+         Ninv = ((Nmat*Nmat')\Nmat)';
       end
    end
 end
