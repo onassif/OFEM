@@ -118,15 +118,15 @@ classdef Q4
    methods (Static)
       function dNdxi_3D = compute_dNdxi(obj)
          xi = obj.xi;
-         dNdxi_3D = zeros(2,4,4);
-         for i=1:4
-            dNdxi_3D(:,:,i) =...
-               1/4 *[...
-               -(1-xi(i,2)), -(1-xi(i,1))
-               ( 1-xi(i,2)), -(1+xi(i,1))
-               ( 1+xi(i,2)),  (1+xi(i,1))
-               -(1+xi(i,2)),  (1-xi(i,1))]';
-         end
+         dNdxi_3D = zeros(2,4,size(xi,1));
+         
+         dNdxi_3D(1,:,:) = 1/4*[...
+            -(1-xi(:,2)), ( 1-xi(:,2)), ( 1+xi(:,2)), -(1+xi(:,2))]';
+         
+         dNdxi_3D(2,:,:) = 1/4*[...
+            -(1-xi(:,1)), -(1+xi(:,1)), ( 1+xi(:,1)), ( 1-xi(:,1))]';         
+            
+
       end
       
       function [Nmat, Ninv] = compute_Nmat(obj)
@@ -136,7 +136,11 @@ classdef Q4
             (1+xi(:,1)).*(1-xi(:,2)),...
             (1+xi(:,1)).*(1+xi(:,2)),...
             (1-xi(:,1)).*(1+xi(:,2))];
-         Ninv = inv(Nmat);
+         if size(Nmat,1) == size(Nmat,2)
+            Ninv = inv(Nmat);
+         else
+            Ninv = 0;
+         end
       end
    end
 end
