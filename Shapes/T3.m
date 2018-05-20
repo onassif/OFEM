@@ -1,11 +1,4 @@
-classdef T3
-   
-   properties (Constant)
-      % Isoparametric gp
-      xi      = 1/3 .*[1 1];
-      weights = 0.5;
-   end
-   
+classdef T3  
    properties (SetAccess = public, GetAccess = public)
       i
       dXdxi;
@@ -43,10 +36,17 @@ classdef T3
       F;
       J; % det(dX/dxi) = J
       j; % or det( dx/dX*dX/dxi ) = det(dx/dxi) = j
+      xi      = 1/3 .*[1 1];
+      weights = 0.5;
    end
    
    methods
-      function obj = T3(num, finiteDisp)
+      function obj = T3(varargin)
+         num        = varargin{1};
+         finiteDisp = varargin{2};
+         if nargin == 3
+            obj.xi = varargin{3};
+         end
          obj.dNdxi_3D         = obj.compute_dNdxi(obj);
          [obj.Nmat, obj.Ninv] = obj.compute_Nmat(obj);
          

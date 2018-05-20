@@ -1,13 +1,4 @@
 classdef Q8Crys
-   
-   properties (Constant)
-      % Isoparametric gp
-      xi = 1/sqrt(3) .*[...
-         -1  1  1 -1 -1  1  1 -1
-         -1 -1  1  1 -1 -1  1  1
-         -1 -1 -1 -1  1  1  1  1]';
-   end
-   
    properties (SetAccess = public, GetAccess = public)
       i
       dXdxi;
@@ -36,7 +27,7 @@ classdef Q8Crys
    properties (Hidden, SetAccess = private)
       dNdxi_3D;
       numel;
-      weights = [1 1 1 1 1 1 1 1];
+      
       finiteDisp;
       I;
       bi;
@@ -69,11 +60,21 @@ classdef Q8Crys
       ms;
       qs;
       q_cr;
+      xi = 1/sqrt(3) .*[...
+         -1  1  1 -1 -1  1  1 -1
+         -1 -1  1  1 -1 -1  1  1
+         -1 -1 -1 -1  1  1  1  1]';
+     weights = [1 1 1 1 1 1 1 1]; 
    end
    
    methods
       %% Construct
-      function obj = Q8Crys(num, angles, slip)
+      function obj = Q8Crys(varargin)
+         num        = varargin{1};
+         finiteDisp = varargin{2};
+         if nargin == 3
+            obj.xi = varargin{3};
+         end
          obj.dNdxi_3D         = obj.compute_dNdxi(obj);
          [obj.Nmat, obj.Ninv] = obj.compute_Nmat(obj);
          

@@ -1,21 +1,4 @@
 classdef Q9
-   
-   properties (Constant)
-      % Isoparametric gp
-      xi = [...
-         -sqrt(0.6)  -sqrt(0.6)
-         +sqrt(0.6)  -sqrt(0.6)
-         +sqrt(0.6)  +sqrt(0.6)
-         -sqrt(0.6)  +sqrt(0.6)
-         0           -sqrt(0.6)
-         +sqrt(0.6)  0
-         0           +sqrt(0.6)
-         -sqrt(0.6)  0
-         0           0];
-      
-      weights = (1/81).*[25 25 25 25 40 40 40 40 64];
-   end
-   
    properties (SetAccess = public, GetAccess = public)
       i
       dXdxi;
@@ -54,10 +37,26 @@ classdef Q9
       F;
       J; % det(dX/dxi) = J
       j; % or det( dx/dX*dX/dxi ) = det(dx/dxi) = j
+      xi = [...
+         -sqrt(0.6)  -sqrt(0.6)
+         +sqrt(0.6)  -sqrt(0.6)
+         +sqrt(0.6)  +sqrt(0.6)
+         -sqrt(0.6)  +sqrt(0.6)
+         0           -sqrt(0.6)
+         +sqrt(0.6)  0
+         0           +sqrt(0.6)
+         -sqrt(0.6)  0
+         0           0]; 
+      weights = (1/81).*[25 25 25 25 40 40 40 40 64];
    end
    
    methods
-      function obj = Q9(num, finiteDisp)
+      function obj = Q9(varargin)
+         num        = varargin{1};
+         finiteDisp = varargin{2};
+         if nargin == 3
+            obj.xi = varargin{3};
+         end
          obj.dNdxi_3D           = obj.compute_dNdxi(obj);
          [obj.Nmat, obj.Ninv]   = obj.compute_Nmat(obj);
          obj.det_dXdxi_list     = zeros(num.el,1);

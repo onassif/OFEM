@@ -1,15 +1,4 @@
 classdef T6
-   
-   properties (Constant)
-      % Isoparametric gp
-      xi = 1/6*[...
-         4 1
-         1 1
-         1 4];
-      
-      weights = 1/6* [1 1 1];
-   end
-   
    properties (SetAccess = public, GetAccess = public)
       i
       dXdxi;
@@ -48,10 +37,21 @@ classdef T6
       F;
       J; % det(dX/dxi) = J
       j; % or det( dx/dX*dX/dxi ) = det(dx/dxi) = j
+      xi = 1/6*[...
+         4 1
+         1 1
+         1 4];
+      
+      weights = 1/6* [1 1 1];
    end
    
    methods
-      function obj = T6(num, finiteDisp)
+      function obj = T6(varargin)
+         num        = varargin{1};
+         finiteDisp = varargin{2};
+         if nargin == 3
+            obj.xi = varargin{3};
+         end
          obj.dNdxi_3D         = obj.compute_dNdxi(obj);
          [obj.Nmat, obj.Ninv] = obj.compute_Nmat(obj);
          

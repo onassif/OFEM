@@ -1,7 +1,6 @@
 classdef MixedElasticPlaneStrain
    %PlaneStrain Computes Cauchy stress based on 2D plane strain
    %   Currently only if ndm=2, ndof=2
-   
    properties (Hidden, SetAccess = private)
       ndm;
       ndof;
