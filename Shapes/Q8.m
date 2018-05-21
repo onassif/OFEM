@@ -54,7 +54,7 @@ classdef Q8
          [obj.Nmat, obj.Ninv] = obj.compute_Nmat(obj);
          
          obj.det_dXdxi_list = zeros(num.el,1);
-         obj.dNdX_list      = zeros(8,3,8,num.el);
+         obj.dNdX_list      = zeros(num.nen, num.ndm, num.gp, num.el);
          
          obj.finiteDisp = finiteDisp;
       end

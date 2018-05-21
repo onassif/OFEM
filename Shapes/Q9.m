@@ -60,7 +60,7 @@ classdef Q9
          obj.dNdxi_3D           = obj.compute_dNdxi(obj);
          [obj.Nmat, obj.Ninv]   = obj.compute_Nmat(obj);
          obj.det_dXdxi_list     = zeros(num.el,1);
-         obj.dNdX_list          = zeros(9,2,9,num.el);
+         obj.dNdX_list          = zeros(num.nen, num.ndm, num.gp, num.el);
          obj.finiteDisp         = finiteDisp;
          %             obj.adof = num.ndof - num.ndm;
          obj.adof = 0;

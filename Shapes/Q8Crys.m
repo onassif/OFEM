@@ -80,7 +80,7 @@ classdef Q8Crys
          
          obj.det_dXdxi_list = zeros(8,num.el);
          obj.dXdxi_list     = zeros(3,3,num.el);
-         obj.dNdX_list      = zeros(8,3,8,num.el);
+         obj.dNdX_list      = zeros(num.nen, num.ndm, num.gp, num.el);
          
          obj.Rpn_list = zeros(3,3,8,num.el);
          obj.Rpn_list(1,1,:,:) = 1;
