@@ -27,10 +27,16 @@ classdef MixedElasticPlaneStrain
          obj.ndof = num.ndof;
          obj.nen  = num.nen;
          obj.diff = obj.ndof - obj.ndm;
-         if (num.gp == 4)
-            obj.M.N = 1;
-         elseif (num.gp ==9)
-            xi = sqrt(0.6)*[...
+         switch num.nen
+            case {3,4} % T3 and Q4
+               obj.M.N = 1;
+            case 6 % T6
+               xi = 1/6*[...
+                  4 1 1
+                  1 1 4]';
+            obj.M = T3(num, 0, xi);
+            case 9 % Q9
+               xi = sqrt(0.6)*[...
                -1 +1 +1 -1  0 +1  0 -1 0
                -1 -1 +1 +1 -1  0 +1  0 0]';
             obj.M = Q4(num, 0, xi);

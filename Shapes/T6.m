@@ -23,7 +23,6 @@ classdef T6
       dNdxi_3D;
       numel;
       finiteDisp;
-      adof;
    end
    
    properties (SetAccess = private)
@@ -56,7 +55,7 @@ classdef T6
          [obj.Nmat, obj.Ninv] = obj.compute_Nmat(obj);
          
          obj.det_dXdxi_list = zeros(num.el,1);
-         obj.dNdX_list      = zeros(6,2,3,num.el);
+         obj.dNdX_list      = zeros(num.nen, num.ndm, num.gp, num.el);
          
          obj.finiteDisp = finiteDisp;
       end
@@ -66,7 +65,7 @@ classdef T6
       end
       
       function value = get.N(obj)
-         value = obj.Nmat;
+         value = obj.Nmat(obj.i, :);
       end
       
       function value = get.w(obj)
@@ -142,13 +141,14 @@ classdef T6
             4*(1-x1-x2).*x1,...
             4*x1.*x2,...
             4*x2.*(1-x1-x2)];
-         Ninv =1/6*[...
-            -2 10 -2
-            10 -2 -2
-            -2 -2 10
-            +5  5 -4
-            +5 -4  5
-            -4  5  5];
+%          Ninv =1/6*[...
+%             -2 10 -2
+%             10 -2 -2
+%             -2 -2 10
+%             +5  5 -4
+%             +5 -4  5
+%             -4  5  5];
+           Ninv = ((Nmat*Nmat')\Nmat)';
       end
    end
 end

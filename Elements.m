@@ -49,8 +49,10 @@ classdef Elements
                 obj.Fint         = zeros(num.ndof*num.nen, 1);
             elseif (num.ndof - num.ndm) == 1
                switch num.nen
-                  case 4
+                  case {3,4}
                      sz = (num.ndof-1)*num.nen + 1;
+                  case 6
+                     sz = (num.ndof-1)*num.nen + 3;
                   case 9
                      sz = (num.ndof-1)*num.nen + 4;
                end
@@ -90,12 +92,14 @@ classdef Elements
             value = sub2ind([obj.ndm  obj.numnp], dofs_col, conns_col);
             if (obj.ndof - obj.ndm) == 1
                switch obj.nen
-                  case 4
-                     value = [value; obj.numnp*obj.ndm+obj.i];
+                  case {3,4}
+                     extra = obj.i;
+                  case 6
+                     extra = (1 + 3*(obj.i-1):3*obj.i)';
                   case 9
-                     ex = (1 + 4*(obj.i-1):4*obj.i)';
-                     value = [value; obj.numnp*obj.ndm+ex];
+                     extra = (1 + 4*(obj.i-1):4*obj.i)';
                end
+               value = [value; obj.numnp*obj.ndm+extra];
             end
         end
         

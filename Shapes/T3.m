@@ -51,7 +51,7 @@ classdef T3
          [obj.Nmat, obj.Ninv] = obj.compute_Nmat(obj);
          
          obj.det_dXdxi_list = zeros(num.el,1);
-         obj.dNdX_list      = zeros(3,2,1,num.el);
+         obj.dNdX_list      = zeros(num.nen, num.ndm, num.gp, num.el);
          
          obj.finiteDisp = finiteDisp;
       end
@@ -61,7 +61,12 @@ classdef T3
       end
       
       function value = get.N(obj)
-         value = obj.Nmat;
+         if size(obj.xi, 1)>1
+            value = obj.Nmat(obj.i,:);
+         else
+            value = obj.Nmat;
+         end
+            
       end
       
       function value = get.w(obj)
@@ -105,7 +110,7 @@ classdef T3
          end
          value=[...
             dx(1),   0.0, dx(2),   0.0, dx(3),   0.0
-            0.0,   dy(1),   0.0, dy(2),   0.0, dy(3)
+            0.0  , dy(1),   0.0, dy(2),   0.0, dy(3)
             dy(1), dx(1), dy(2), dx(2), dy(3), dx(3)];
       end
       
@@ -120,7 +125,7 @@ classdef T3
       
       function [Nmat, Ninv] = compute_Nmat(obj)
          xi = obj.xi;
-         Nmat = [1-xi(1)-xi(2), xi(1), xi(2)];
+         Nmat = [1-xi(:,1)-xi(:,2), xi(:,1), xi(:,2)];
          Ninv = ((Nmat*Nmat')\Nmat)';
       end
    end
