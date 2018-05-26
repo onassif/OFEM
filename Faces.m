@@ -73,8 +73,8 @@ classdef Faces
                      el(i,[2,1,5,6])
                      el(i,[3,4,8,7])];
                end
-               num.el = obj.numFaces;
-               obj.gp = Q4(num, 0);
+               num = struct('el',obj.numFaces, 'nen', 4, 'gp', 4, 'ndm', 2); 
+               obj.gp  = Q4(num, 0);
          end
       end
       %% get functions
