@@ -6,7 +6,7 @@ classdef Elements
         Fint
         iter = 0;
         U_global
-        U_glb_n
+        U_glb_n  
     end    
     properties (SetAccess = private, GetAccess = public)
         Umt
@@ -16,6 +16,7 @@ classdef Elements
         indices
         conn
         nconn
+        im
     end
     properties (SetAccess = private, Hidden)
         elements
@@ -76,6 +77,9 @@ classdef Elements
         end 
         function value = get.Uvc(obj)
             value = reshape(obj.Umt', obj.ndm*obj.nen, 1);
+        end
+        function value = get.im(obj)
+           value = obj.property_num(obj.i);
         end
         function value = get.indices(obj)
             indc = obj.elements(obj.i,:);

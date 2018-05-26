@@ -64,39 +64,47 @@ if exist('hardType','var')
 %    end
 end
 
-% Material-related
-switch material
-    case 1
-        mat = Elastic(num, props);
-    case 2
-        mat = HypoElastic(num, props, ident.threeD.second);
-    case 3
-        mat = HyperNeo(num, props);
-    case 4
-        mat = ViscoPlastic(num, props, time, ident.threeD.second);
-    case 5
-        mat = PlasticRI(num, props, ident.threeD.second);
-    case 6
-        mat = MixedElasticPlaneStrain(num, props);
-    case 7 
-        mat = MTS(num, props, hardProps, slip, time, ident.threeD.second);
+for i=1:length(material)
+   if length(material) == 1
+      prps = props;
+   else
+      prps = props{i};
+   end
+   % Material-related
+   switch material(i)
+      case 1
+         mat(i) = Elastic(num, prps);
+      case 2
+         mat(i) = HypoElastic(num, prps, ident.threeD.second);
+      case 3
+         mat(i) = HyperNeo(num, prps);
+      case 4
+         mat(i) = ViscoPlastic(num, prps, time, ident.threeD.second);
+      case 5
+         mat(i) = PlasticRI(num, prps, ident.threeD.second);
+      case 6
+         mat(i) = MixedElasticPlaneStrain(num, prps);
+      case 7
+         mat(i) = MTS(num, prps, hardProps, slip, time, ident.threeD.second);
+   end
 end
 
 % gp-related
 switch eltype
    case 'Q4'
-    gp = Q4(num, mat.finiteDisp);
+    gp = Q4(num, mat(1).finiteDisp);
    case 'Q9'
-    gp = Q9(num, mat.finiteDisp);
+    gp = Q9(num, mat(1).finiteDisp);
    case 'T3'
-    gp = T3(num, mat.finiteDisp);
+    gp = T3(num, mat(1).finiteDisp);
    case 'T6'
-    gp = T6(num, mat.finiteDisp);
+    gp = T6(num, mat(1).finiteDisp);
    case 'Q8'
-    gp = Q8(num, mat.finiteDisp);
+    gp = Q8(num, mat(1).finiteDisp);
    case 'Q8Crys'
-    gp = Q8Crys(num, mat.hardProps.angles, slip);  
+    gp = Q8Crys(num, mat(i1).hardProps.angles, slip);  
 end
+
 
 % Element-related
 el = Elements(elements, nodes, num, props, globl.U, hist);

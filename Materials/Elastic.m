@@ -2,10 +2,9 @@ classdef Elastic
    %Elastic 3D elastic class
    %   Detailed explanation goes here
    
-   properties (Hidden, SetAccess = private)
+   properties (SetAccess = private)
       ndm;
       ndof;
-      dNdX;
       finiteDisp = 0;
       
       Young;
