@@ -45,6 +45,7 @@ classdef Q4
    end
    
    methods
+      %% Construct
       function obj = Q4(varargin)
          num        = varargin{1};
          finiteDisp = varargin{2};
@@ -56,10 +57,9 @@ classdef Q4
          
          obj.det_dXdxi_list = zeros(num.el,1);
          obj.dNdX_list      = zeros(num.nen, num.ndm, num.gp, num.el);
-         
          obj.finiteDisp = finiteDisp;
       end
-      
+      %% Get functions
       function value = get.dNdxi(obj)
          value = squeeze(obj.dNdxi_3D(:,:,obj.i));
       end
@@ -112,7 +112,22 @@ classdef Q4
             0.0  , dy(1),   0.0, dy(2),   0.0, dy(3),   0.0, dy(4)
             dy(1), dx(1), dy(2), dx(2), dy(3), dx(3), dy(4), dx(4)];
       end
+      %% Set functions
+      function obj = set.U(obj, value)
+         if size(value,3)==1 % Normal
+            obj.U = value';
+         elseif size(value,3) == 2 % DG
+            obj.U = permute(value,[2 1 3]);
+         end
+      end
       
+      function obj = set.U_n(obj, value)
+         if size(value,3)==1 % Normal
+            obj.U_n = value';
+         elseif size(value,3) == 2 % DG
+            obj.U_n = permute(value,[2 1 3]);
+         end
+      end
    end
    
    methods (Static)
@@ -125,8 +140,6 @@ classdef Q4
          
          dNdxi_3D(2,:,:) = 1/4*[...
             -(1-xi(:,1)), -(1+xi(:,1)), ( 1+xi(:,1)), ( 1-xi(:,1))]';         
-            
-
       end
       
       function [Nmat, Ninv] = compute_Nmat(obj)

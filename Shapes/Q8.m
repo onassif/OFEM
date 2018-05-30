@@ -44,6 +44,7 @@ classdef Q8
    end
    
    methods
+      %% Consturct
       function obj = Q8(varargin)
          num        = varargin{1};
          finiteDisp = varargin{2};
@@ -55,10 +56,10 @@ classdef Q8
          
          obj.det_dXdxi_list = zeros(num.el,1);
          obj.dNdX_list      = zeros(num.nen, num.ndm, num.gp, num.el);
-         
+
          obj.finiteDisp = finiteDisp;
       end
-      
+      %% Get functions
       function value = get.dNdxi(obj)
          value = squeeze(obj.dNdxi_3D(:,:,obj.i));
       end
@@ -129,6 +130,22 @@ classdef Q8
             dx(8) 0     0     dy(8) 0     dz(8)
             0     dy(8) 0     dx(8) dz(8) 0
             0     0     dz(8) 0     dy(8) dx(8)]';
+      end
+      %% Set functions
+      function obj = set.U(obj, value)
+         if size(value,3)==1 % Normal
+            obj.U = value';
+         elseif size(value,3) == 2 % DG
+            obj.U = permute(value,[2 1 3]);
+         end
+      end
+      
+      function obj = set.U_n(obj, value)
+         if size(value,3)==1 % Normal
+            obj.U_n = value';
+         elseif size(value,3) == 2 % DG
+            obj.U_n = permute(value,[2 1 3]);
+         end
       end
    end
    

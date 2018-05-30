@@ -115,7 +115,11 @@ classdef L2
       function [Nmat, Ninv] = compute_Nmat(obj)
          xi = obj.xi;
          Nmat = 1/2*[(1-xi), (1+xi)];
-         Ninv = inv(Nmat);
+         if size(Nmat,1) == size(Nmat,2)
+            Ninv = inv(Nmat);
+         else
+            Ninv = 0;
+         end
       end
    end
 end

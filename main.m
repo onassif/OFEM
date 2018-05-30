@@ -27,11 +27,11 @@ for step=1:num.steps % Steps loop
       for iel =1:num.el
          %% Start elements loop
          % Get information related to current element:
-         el.i  = iel;             % element number
-         coor  = el.coor;         % element coordinates
-         Umt   = el.Umt;          % element unknowns (array form)
-         Umt_n = el.Umt_n;
-         props = el.props;        % element material properties
+         el.i   = iel;        % element number
+         coor   = el.coor;    % element coordinates
+         gp.U   = el.Umt;     % element unknowns (array form)
+         gp.U_n = el.Umt_n;
+         props  = el.props;   % element material properties
          
          % clear previous values of elemental K and Fint
          el.K    = 0;
@@ -40,7 +40,7 @@ for step=1:num.steps % Steps loop
             %%   Start Loop over Gauss points
             
             %%%   2gp. Gauss points geometry-related values
-            gp = Compute_gp_info(gp, coor, Umt, Umt_n, iel, num);
+            gp = Compute_gp_info(gp, coor, iel);
             
             %%%   3gp. Strain tensor
             [gp.eps, mat{el.im}]        = mat{el.im}.computeStrain(gp, el, step);

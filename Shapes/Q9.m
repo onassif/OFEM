@@ -23,7 +23,6 @@ classdef Q9
       dNdxi_3D;
       numel;
       finiteDisp;
-      adof;
    end
    
    properties (SetAccess = private)
@@ -51,6 +50,7 @@ classdef Q9
    end
    
    methods
+      %% Construct
       function obj = Q9(varargin)
          num        = varargin{1};
          finiteDisp = varargin{2};
@@ -61,11 +61,10 @@ classdef Q9
          [obj.Nmat, obj.Ninv]   = obj.compute_Nmat(obj);
          obj.det_dXdxi_list     = zeros(num.el,1);
          obj.dNdX_list          = zeros(num.nen, num.ndm, num.gp, num.el);
+         
          obj.finiteDisp         = finiteDisp;
-         %             obj.adof = num.ndof - num.ndm;
-         obj.adof = 0;
       end
-      
+      %% Get functions
       function value = get.dNdxi(obj)
          value = squeeze(obj.dNdxi_3D(:,:,obj.i));
       end
@@ -117,7 +116,23 @@ classdef Q9
             dx(1),   0.0, dx(2),   0.0, dx(3),   0.0, dx(4),   0.0, dx(5),   0.0, dx(6),   0.0, dx(7),   0.0, dx(8),   0.0, dx(9),   0.0
             0.0  , dy(1),   0.0, dy(2),   0.0, dy(3),   0.0, dy(4),   0.0, dy(5),   0.0, dy(6),   0.0, dy(7),   0.0, dy(8),   0.0, dy(9) 
             dy(1), dx(1), dy(2), dx(2), dy(3), dx(3), dy(4), dx(4), dy(5), dx(5), dy(6), dx(6), dy(7), dx(7), dy(8), dx(8), dy(9), dx(9)];
-      end 
+      end
+      %% Set functions
+      function obj = set.U(obj, value)
+         if size(value,3)==1 % Normal
+            obj.U = value';
+         elseif size(value,3) == 2 % DG
+            obj.U = permute(value,[2 1 3]);
+         end
+      end
+      
+      function obj = set.U_n(obj, value)
+         if size(value,3)==1 % Normal
+            obj.U_n = value';
+         elseif size(value,3) == 2 % DG
+            obj.U_n = value';
+         end
+      end
    end
    
    methods (Static)

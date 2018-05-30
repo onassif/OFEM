@@ -101,7 +101,7 @@ classdef Q8Crys
             error("Wrong angle convention/type");
          end
       end
-      
+      %% Get functions
       function value = get.dNdxi(obj)
          value = squeeze(obj.dNdxi_3D(:,:,obj.i));
       end
@@ -273,6 +273,22 @@ classdef Q8Crys
             0      dz(1) -dx(1)  0      dz(2) -dx(2)  0      dz(3) -dx(3)  0      dz(4) -dx(4)  0      dz(5) -dx(5)  0      dz(6) -dx(6)  0      dz(7) -dx(7)  0      dz(8) -dx(8)  
            -dz(1)  0      dx(1) -dz(2)  0      dx(2) -dz(3)  0      dx(3) -dz(4)  0      dx(4) -dz(5)  0      dx(5) -dz(6)  0      dx(6) -dz(7)  0      dx(7) -dz(8)  0      dx(8) 
            ];
+      end
+      %% Set functions
+      function obj = set.U(obj, value)
+         if size(value,3)==1 % Normal
+            obj.U = value';
+         elseif size(value,3) == 2 % DG
+            obj.U = permute(value,[2 1 3]);
+         end
+      end
+      
+      function obj = set.U_n(obj, value)
+         if size(value,3)==1 % Normal
+            obj.U_n = value';
+         elseif size(value,3) == 2 % DG
+            obj.U_n = permute(value,[2 1 3]);
+         end
       end
    end
    

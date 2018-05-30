@@ -113,7 +113,11 @@ classdef L3
          xi = obj.xi;
          
          Nmat = 1/2*[xi.*(xi-1), -2*(xi+1).*(xi-1), xi.*(xi+1)];
-         Ninv = inv(Nmat);
+         if size(Nmat,1) == size(Nmat,2)
+            Ninv = inv(Nmat);
+         else
+            Ninv = 0;
+         end
       end
    end
 end
