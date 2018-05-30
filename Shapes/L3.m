@@ -1,15 +1,4 @@
 classdef L3
-   
-   properties (Constant)
-      % Isoparametric gp
-      xi = [...
-         -sqrt(0.6)  
-         0           
-         +sqrt(0.6)];
-      
-      weights = (1/9).*[5 8 5];
-   end
-   
    properties (SetAccess = public, GetAccess = public)
       i
       dXdxi;
@@ -48,14 +37,21 @@ classdef L3
       F;
       J; % det(dX/dxi) = J
       j; % or det( dx/dX*dX/dxi ) = det(dx/dxi) = j
+      xi      = [-sqrt(0.6); 0; sqrt(0.6)];
+      weights = (1/9).*[5 8 5];
    end
    
    methods
-      function obj = L3(num, finiteDisp)
+      function obj = L3(varargin)
+         num        = varargin{1};
+         finiteDisp = varargin{2};
+         if nargin == 3
+            obj.xi = varargin{3};
+         end
          obj.dNdxi_3D           = obj.compute_dNdxi(obj);
          [obj.Nmat, obj.Ninv]   = obj.compute_Nmat(obj);
          obj.det_dXdxi_list     = zeros(num.el,1);
-         obj.dNdX_list          = zeros(3,3,num.el);
+         obj.dNdX_list          = zeros(num.nen, num.gp, num.el);
          obj.finiteDisp         = finiteDisp;
       end
       

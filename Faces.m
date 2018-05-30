@@ -48,7 +48,7 @@ classdef Faces
                   obj.faceList(1+(3*(i-1): 3*i-1),:) = [...
                      el(i,[1,2]); el(i,[2,3]); el(i,[3,1])];
                end
-               num.el = obj.numFaces;
+               num = struct('el',obj.numFaces, 'nen', 2, 'gp', 2, 'ndm', 1);
                obj.gp = L2(num, 0);
             case 'T6'
                obj.numFaces = 3*numel;
@@ -58,7 +58,7 @@ classdef Faces
                   obj.faceList(1+(3*(i-1): 3*i-1),:) = [...
                      el(i, [1,4,2]); el(i, [2,5,3]); el(i, [3,6,1])];
                end
-               num.el = obj.numFaces;
+               num = struct('el',obj.numFaces, 'nen', 3, 'gp', 3, 'ndm', 1);
                obj.gp = L3(num, 0);
             case 'Q8'
                obj.numFaces = 6*numel;

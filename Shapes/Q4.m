@@ -77,7 +77,7 @@ classdef Q4
       end
       
       function value = get.dNdX(obj)
-         value = obj.dNdX_list(:,:,obj.i,obj.iel);
+         value = obj.dNdX_list(:,:,obj.i,obj.iel);   
       end
       
       function value = get.F(obj)
