@@ -2,7 +2,8 @@ clear; close all
 
 % Dialog
 run(ReadInput())
-initialize
+initialize; 
+mat = mat; % Becauce MATLAB is crazy
 
 for step=1:num.steps % Steps loop
    %% Start time loop
@@ -42,19 +43,19 @@ for step=1:num.steps % Steps loop
             gp = Compute_gp_info(gp, coor, Umt, Umt_n, iel, num);
             
             %%%   3gp. Strain tensor
-            [gp.eps, mat(el.im)]        = mat(el.im).computeStrain(gp, el, step);
+            [gp.eps, mat{el.im}]        = mat{el.im}.computeStrain(gp, el, step);
             
             %%%   4gp. Tangential stifness
-            [gp.D, gp.ctan, mat(el.im)] = mat(el.im).computeTangentStiffness(gp, step);
+            [gp.D, gp.ctan, mat{el.im}] = mat{el.im}.computeTangentStiffness(gp, step);
             
             %%%   5gp. Stress
-            [gp.sigma, mat(el.im)]      = mat(el.im).computeCauchy(gp, step);
+            [gp.sigma, mat{el.im}]      = mat{el.im}.computeCauchy(gp, step);
             
             %%%   6gp. K
-            el.K                 = mat(el.im).computeK_el(el.K, gp, num.gp);
+            el.K                 = mat{el.im}.computeK_el(el.K, gp, num.gp);
             
             %%%   7gp. Fint
-            el.Fint              = mat(el.im).computeFint(gp, el);
+            el.Fint              = mat{el.im}.computeFint(gp, el);
             
             % store states
             hist.eps (:,igp,iel)       = gp.eps;
@@ -73,7 +74,7 @@ for step=1:num.steps % Steps loop
          NR.mult, globl.K, Fext, globl.Fint, globl.U, inpt, num.ndm);
       
       %%%   10i. dU and update Ui
-      dU      = globl.K\G .* ~(mat(el.im).linear==1 && NR.iter>0);
+      dU      = globl.K\G .* ~(mat{el.im}.linear==1 && NR.iter>0);
       globl.w = globl.w + dU;
       globl.U = globl.U + dU;
       NR.correction = norm(dU)/norm(globl.w);

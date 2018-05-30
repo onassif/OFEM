@@ -14,9 +14,10 @@ hist.eps   = zeros(numstr, ngp, numel, 'single');
 hist.stre  = zeros(numstr, ngp, numel, 'single');
 hist.ctan  = zeros(3,3,3,3,ngp, numel, 'single');
 hist.resid = zeros(max_iter,1,'single');
-hist.conn  = uint32(elements(:,1:nen));
+hist.conn  = uint32(elements(1:numel,1:nen));
 maxSharedNode = 0;
-for i =1:numnp
+realnumnp = size(nodes,1);
+for i =1: numnp
   occurances =  length(find(hist.conn==i));
   if occurances > maxSharedNode
      maxSharedNode = occurances;
@@ -36,6 +37,7 @@ end
 
 num.el    = numel;
 num.np    = numnp;
+% num.rnp   = realnumnp;
 num.nen   = nen;
 num.ndof  = ndof;
 num.eq    = numeq;
@@ -63,7 +65,7 @@ if exist('hardType','var')
 %          hard = MTS(hardProps, slip);
 %    end
 end
-
+mat = cell(length(material),1);
 for i=1:length(material)
    if length(material) == 1
       prps = props;
@@ -73,36 +75,38 @@ for i=1:length(material)
    % Material-related
    switch material(i)
       case 1
-         mat(i) = Elastic(num, prps);
+         mat{i} = Elastic(num, prps);
       case 2
-         mat(i) = HypoElastic(num, prps, ident.threeD.second);
+         mat{i} = HypoElastic(num, prps, ident.threeD.second);
       case 3
-         mat(i) = HyperNeo(num, prps);
+         mat{i} = HyperNeo(num, prps);
       case 4
-         mat(i) = ViscoPlastic(num, prps, time, ident.threeD.second);
+         mat{i} = ViscoPlastic(num, prps, time, ident.threeD.second);
       case 5
-         mat(i) = PlasticRI(num, prps, ident.threeD.second);
+         mat{i} = PlasticRI(num, prps, ident.threeD.second);
       case 6
-         mat(i) = MixedElasticPlaneStrain(num, prps);
+         mat{i} = MixedElasticPlaneStrain(num, prps);
       case 7
-         mat(i) = MTS(num, prps, hardProps, slip, time, ident.threeD.second);
+         mat{i} = MTS(num, prps, hardProps, slip, time, ident.threeD.second);
+      case 8
+         mat{i} = DG(num, prps, props); 
    end
 end
 
 % gp-related
 switch eltype
    case 'Q4'
-    gp = Q4(num, mat(1).finiteDisp);
+    gp = Q4(num, mat{1}.finiteDisp);
    case 'Q9'
-    gp = Q9(num, mat(1).finiteDisp);
+    gp = Q9(num, mat{1}.finiteDisp);
    case 'T3'
-    gp = T3(num, mat(1).finiteDisp);
+    gp = T3(num, mat{1}.finiteDisp);
    case 'T6'
-    gp = T6(num, mat(1).finiteDisp);
+    gp = T6(num, mat{1}.finiteDisp);
    case 'Q8'
-    gp = Q8(num, mat(1).finiteDisp);
+    gp = Q8(num, mat{1}.finiteDisp);
    case 'Q8Crys'
-    gp = Q8Crys(num, mat(i1).hardProps.angles, slip);  
+    gp = Q8Crys(num, mat{1}.hardProps.angles, slip);  
 end
 
 
@@ -127,4 +131,5 @@ hist.start= sprintf('%s%shist%shist_%d-%d-%s_%d.%d.%d',...
    pwd,filesep,filesep, current([1,3]), mon_str{current(2)}, current(4:6));
 mkdir(hist.start);
 
+num.el = numel + (size(elements,1)-numel)/2;
 clearvars -except dU el elements Fext globl gp hist inpt mat nodes NR num hard slip

@@ -68,15 +68,25 @@ classdef Elements
             value = obj.nodes(obj.elements(obj.i,:),:);
         end
         function value = get.Umt(obj)
-            reshaped_U = reshape(obj.U_global(1:obj.ndm*obj.numnp), obj.ndm, obj.numnp);
-            value = reshaped_U(:, obj.elements(obj.i,:))';
+           reshaped_U = reshape(obj.U_global(1:obj.ndm*obj.numnp), obj.ndm, obj.numnp);
+           if (obj.i <= obj.numel)
+              value = reshaped_U(:, obj.elements(obj.i,:))';
+           else % DG
+              value(:,:,1) = reshaped_U(:, obj.elements(obj.i  ,:))';
+              value(:,:,2) = reshaped_U(:, obj.elements(obj.i+1,:))';
+           end
         end
         function value = get.Umt_n(obj)
             reshaped_U = reshape(obj.U_glb_n(1:obj.ndm*obj.numnp), obj.ndm, obj.numnp);
             value = reshaped_U(:, obj.elements(obj.i,:))';
         end 
         function value = get.Uvc(obj)
-            value = reshape(obj.Umt', obj.ndm*obj.nen, 1);
+           if (obj.i <= obj.numel)
+              value = reshape(obj.Umt', obj.ndm*obj.nen, 1);
+           else % DG
+              value(:,1) = reshape(obj.Umt(:,:,1)', obj.ndm*obj.nen, 1);
+              value(:,2) = reshape(obj.Umt(:,:,2)', obj.ndm*obj.nen, 1);
+           end
         end
         function value = get.im(obj)
            value = obj.property_num(obj.i);

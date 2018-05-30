@@ -17,7 +17,7 @@ classdef MTS
       
       hard
       
-      name = 'mm10';
+      name = 'MTS';
    end
    
    properties (SetAccess = private)
