@@ -28,7 +28,7 @@ classdef Faces
                   obj.faceList(1+(4*(i-1): 4*i-1),:) =[...
                      el(i,[1,2]); el(i,[2,3]); el(i,[4,3]); el(i,[1,4])];
                end
-               num.el = obj.numFaces;
+               num = struct('el',obj.numFaces, 'nen', 2, 'gp', 2, 'ndm', 1);
                obj.gp = L2(num, 0);
             case 'Q9'
                obj.numFaces = 4*numel;
@@ -38,7 +38,7 @@ classdef Faces
                   obj.faceList(1+(4*(i-1): 4*i-1),:) = [...
                      el(i,[1,5,2]); el(i,[2,6,3]); el(i,[3,7,4]); el(i,[4,8,1])];
                end
-               num.el = obj.numFaces;
+               num = struct('el',obj.numFaces, 'nen', 3, 'gp', 3, 'ndm', 1);
                obj.gp = L3(num, 0);
             case 'T3'
                obj.numFaces = 3*numel;
