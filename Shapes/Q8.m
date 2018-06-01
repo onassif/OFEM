@@ -72,9 +72,21 @@ classdef Q8
          value = obj.weights(obj.i);
       end
       
+      function value = get.det_dXdxi_list(obj)
+         value          = obj.det_dXdxi_list;
+         if value(obj.iel) == 0 % only compute it once
+            value(obj.iel) = det(obj.dXdxi);
+         end
+      end
+      
       function value = get.J(obj)
          value = obj.det_dXdxi_list(obj.iel);
       end
+      
+      function value = get.dNdX_list(obj)
+         value = obj.dNdX_list;
+         value(:,:,obj.i,obj.iel) = obj.dNdxi' / obj.dXdxi;   
+      end   
       
       function value = get.dNdX(obj)
          value = obj.dNdX_list(:,:,obj.i,obj.iel);

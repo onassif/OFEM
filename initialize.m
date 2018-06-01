@@ -15,6 +15,7 @@ hist.stre  = zeros(numstr, ngp, numel, 'single');
 hist.ctan  = zeros(3,3,3,3,ngp, numel, 'single');
 hist.resid = zeros(max_iter,1,'single');
 hist.conn  = uint32(elements(1:numel,1:nen));
+hist.nodes = nodes;
 maxSharedNode = 0;
 realnumnp = size(nodes,1);
 for i =1: numnp
@@ -52,19 +53,18 @@ num.FORCE = FORCE(end,end);
 run('identities.m');
 
 %%%%%%%%%%%%%%%%%%%%% Create objects:
+% Element-related
+el = Elements(elements, nodes, num, props, globl.U, hist);
+
 % Hardening-related
-if exist('hardType','var')
-   
+if exist('hardType','var')   
    switch slipType
       case {'FCC', 'fcc'}
          slip = FCC();
    end
-   
-%    switch hardType
-%       case {'MTS', 'mts'}
-%          hard = MTS(hardProps, slip);
-%    end
 end
+
+% Material-related
 mat = cell(length(material),1);
 for i=1:length(material)
    if length(material) == 1
@@ -72,7 +72,6 @@ for i=1:length(material)
    else
       prps = props{i};
    end
-   % Material-related
    switch material(i)
       case 1
          mat{i} = Elastic(num, prps);
@@ -89,29 +88,25 @@ for i=1:length(material)
       case 7
          mat{i} = MTS(num, prps, hardProps, slip, time, ident.threeD.second);
       case 8
-         mat{i} = DG(num, prps, props); 
+         mat{i} = DG(num, prps, props, el); 
    end
 end
 
 % gp-related
 switch eltype
    case 'Q4'
-    gp = Q4(num, mat{1}.finiteDisp);
+    gp = Q4(num, hist, mat{1}.finiteDisp);
    case 'Q9'
-    gp = Q9(num, mat{1}.finiteDisp);
+    gp = Q9(num, hist, mat{1}.finiteDisp);
    case 'T3'
-    gp = T3(num, mat{1}.finiteDisp);
+    gp = T3(num, hist, mat{1}.finiteDisp);
    case 'T6'
-    gp = T6(num, mat{1}.finiteDisp);
+    gp = T6(num, hist, mat{1}.finiteDisp);
    case 'Q8'
-    gp = Q8(num, mat{1}.finiteDisp);
+    gp = Q8(num, hist, mat{1}.finiteDisp);
    case 'Q8Crys'
-    gp = Q8Crys(num, mat{1}.hardProps.angles, slip);  
+    gp = Q8Crys(num, hist, mat{1}.hardProps.angles, slip);  
 end
-
-
-% Element-related
-el = Elements(elements, nodes, num, props, globl.U, hist);
 
 % NR-related
 if exist('time','var') && exist('fctr','var')

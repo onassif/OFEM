@@ -15,7 +15,7 @@ classdef Q4
    
    properties (Hidden)
       iel;
-      det_dXdxi_list;
+%       det_dXdxi_list;
       dNdX_list;
    end
    
@@ -42,28 +42,29 @@ classdef Q4
          +1 +1
          -1 +1];
       weights = [1 1 1 1];
+      det_dXdxi_list;
+   end
+   properties (Dependent)
+            
    end
    
    methods
       %% Construct
       function obj = Q4(varargin)
          num        = varargin{1};
-         finiteDisp = varargin{2};
-         if nargin == 3
-            obj.xi = varargin{3};
+         hist       = varargin{2};
+         finiteDisp = varargin{3};
+         if nargin == 4
+            obj.xi = varargin{4};
          end
          obj.dNdxi_3D         = obj.compute_dNdxi(obj);
          [obj.Nmat, obj.Ninv] = obj.compute_Nmat(obj);
+         [obj.det_dXdxi_list, obj.dNdX_list] =...
+            obj.compute_det_dXdxi_list(hist.nodes, hist.conn, obj.dNdxi_3D, num);
          
-         obj.det_dXdxi_list = zeros(num.el,1);
-         obj.dNdX_list      = zeros(num.nen, num.ndm, num.gp, num.el);
          obj.finiteDisp = finiteDisp;
       end
-      %% Get functions
-      function value = get.dNdxi(obj)
-         value = squeeze(obj.dNdxi_3D(:,:,obj.i));
-      end
-      
+      %% Get functions      
       function value = get.N(obj)
          value = obj.Nmat(obj.i,:);
       end
@@ -74,7 +75,7 @@ classdef Q4
       
       function value = get.J(obj)
          value = obj.det_dXdxi_list(obj.iel);
-      end
+      end 
       
       function value = get.dNdX(obj)
          value = obj.dNdX_list(:,:,obj.i,obj.iel);   
@@ -133,13 +134,13 @@ classdef Q4
    methods (Static)
       function dNdxi_3D = compute_dNdxi(obj)
          xi = obj.xi;
-         dNdxi_3D = zeros(2,4,size(xi,1));
+         dNdxi_3D = zeros(4, 2, size(xi,1));
          
-         dNdxi_3D(1,:,:) = 1/4*[...
-            -(1-xi(:,2)), ( 1-xi(:,2)), ( 1+xi(:,2)), -(1+xi(:,2))]';
+         dNdxi_3D(:,1,:) = 1/4*[...
+            -(1-xi(:,2)), ( 1-xi(:,2)), ( 1+xi(:,2)), -(1+xi(:,2))];
          
-         dNdxi_3D(2,:,:) = 1/4*[...
-            -(1-xi(:,1)), -(1+xi(:,1)), ( 1+xi(:,1)), ( 1-xi(:,1))]';         
+         dNdxi_3D(:,2,:) = 1/4*[...
+            -(1-xi(:,1)), -(1+xi(:,1)), ( 1+xi(:,1)), ( 1-xi(:,1))];         
       end
       
       function [Nmat, Ninv] = compute_Nmat(obj)
@@ -153,6 +154,20 @@ classdef Q4
             Ninv = inv(Nmat);
          else
             Ninv = 0;
+         end
+      end
+      
+      function [det_dXdxi_list, dNdX_list] = compute_det_dXdxi_list(nodes, conn, dNdxi_3D, num)
+         det_dXdxi_list = zeros(num.el,1);
+         dNdX_list      = zeros(num.nen, num.ndm, num.gp, num.el);
+         for i = 1:num.el
+            coor  = nodes(conn(i,:),:)';
+            dXdxi = coor*dNdxi_3D(:,:,1);
+            det_dXdxi_list(i) = det(dXdxi);
+            
+            for j = 1:num.gp
+               dNdX_list(:,:,j,i) = dNdxi_3D(:,:,j) / dXdxi';
+            end
          end
       end
    end

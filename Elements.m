@@ -17,10 +17,10 @@ classdef Elements
         conn
         nconn
         im
-    end
-    properties (SetAccess = private, Hidden)
         elements
         nodes
+    end
+    properties (SetAccess = private, Hidden)
         numel
         numnp
         ndm
