@@ -18,12 +18,13 @@ classdef DG
       linear = true;
       
       sGP;
+      el;
       name = 'DG';
    end
    %%
    methods
       %% Construct
-      function obj = DG(num, props, propsList)
+      function obj = DG(num, props, propsList, el)
          obj.ndm  = num.ndm - 1;
          obj.ndof = num.ndof;
          for i = 1:2
@@ -40,7 +41,11 @@ classdef DG
       obj.muR    = obj.ER/(2*(1+obj.vR));
       obj.muL    = obj.EL/(2*(1+obj.vL));
       
-      obj.sGP = L2(num,0
+      num = struct('el', 2, 'nen', 2, 'gp', 4, 'ndm', 1);
+      xi = 1/sqrt(3) .*[-1; 1; 1; -1];
+      obj.sGP = L2(num, 0, xi);
+      
+      obj.el = el.elements;
       end
       %% Epsilon
       function [eps, obj] = computeStrain(obj, ~, ~, ~)
@@ -55,7 +60,7 @@ classdef DG
          sigma_voigt = gp.D*gp.eps;
       end
       %% Tangential stiffness
-      function [D, ctan, obj] = computeTangentStiffness(obj, ~, ~)
+      function [D, ctan, obj] = computeTangentStiffness(obj, gp, ~)
          lamdaR = obj.lamdaR;
          lamdaL = obj.lamdaL;
          muR = obj.muR;
@@ -64,7 +69,16 @@ classdef DG
          DmatR = muR*diag([2 2 1]) + lamdaR*[1; 1; 0]*[1 1 0];
          DmatL = muL*diag([2 2 1]) + lamdaL*[1; 1; 0]*[1 1 0];
          
+         ulresL = [0 0 0 0 0.1 0 0.1 0];
+         ulresR = [0 0 0 0 0.0 0 0.0 0];
+
+         obj.sGP.i = 1;
+         obj.sGP.dXdxi = obj.sGP.dNdxi*[1; -1];
+         obj.sGP.det_dXdxi_list(1) = det(obj.sGP.dXdxi);
+         obj.sGP.iel = 1;
          
+         num = struct('el', 2, 'nen', 9, 'gp', 9, 'ndm', 2);
+         eGP = Q9(num, 0);
          
       end
       %% Element K
@@ -90,4 +104,3 @@ classdef DG
       
    end
 end
-   
