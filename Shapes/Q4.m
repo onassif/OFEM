@@ -134,13 +134,15 @@ classdef Q4
    methods (Static)
       function dNdxi_3D = compute_dNdxi(obj)
          xi = obj.xi;
-         dNdxi_3D = zeros(4, 2, size(xi,1));
+         dNdxi_3D = zeros(2,4,size(xi,1));
          
-         dNdxi_3D(:,1,:) = 1/4*[...
-            -(1-xi(:,2)), ( 1-xi(:,2)), ( 1+xi(:,2)), -(1+xi(:,2))];
+         dNdxi_3D(1,:,:) = 1/4*[...
+            -(1-xi(:,2)), ( 1-xi(:,2)), ( 1+xi(:,2)), -(1+xi(:,2))]';
          
-         dNdxi_3D(:,2,:) = 1/4*[...
-            -(1-xi(:,1)), -(1+xi(:,1)), ( 1+xi(:,1)), ( 1-xi(:,1))];         
+         dNdxi_3D(2,:,:) = 1/4*[...
+            -(1-xi(:,1)), -(1+xi(:,1)), ( 1+xi(:,1)), ( 1-xi(:,1))]';
+         
+         dNdxi_3D = permute(dNdxi_3D, [2 1 3]);
       end
       
       function [Nmat, Ninv] = compute_Nmat(obj)
