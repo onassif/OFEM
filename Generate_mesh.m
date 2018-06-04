@@ -355,14 +355,11 @@ for i=1:size(old_FORCE,1)
       fc.nodes = affected_nodes;
       for ifc = 1:size(fc.faces, 1)
          fc.ifc = ifc;
-         fc.coor = nde(fc.faces(ifc,:), (1:ndm ~= dir));
+         fc.gp.mesh = struct('nodes', nde, 'conn', fc.faces);
          for igp = 1:fc.numGP
-            fc.gp.i = igp;
-            if igp == 1 % No need to compute J for each gp
-               fc.gp.dXdxi = (fc.gp.dNdxi*fc.coor)';
-               J = abs(det(fc.gp.dXdxi));
-            end
-            nF(fc.indices, 3) = nF(fc.indices, 3) + fc.gp.N'*old_FORCE{i,4}*J*fc.gp.w;
+            fc.gp.i = igp; fc.gp.iel = ifc;
+            
+            nF(fc.indices, 3) = nF(fc.indices, 3) + fc.gp.N'*old_FORCE{i,4}*abs(fc.gp.J)*fc.gp.w;
          end
       end
       new_FORCE = [new_FORCE; nF];

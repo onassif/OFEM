@@ -10,7 +10,6 @@ classdef Faces
       numGP
       faces
       indices
-      
       faceList
    end
    properties (SetAccess = private, Hidden)
@@ -28,8 +27,7 @@ classdef Faces
                   obj.faceList(1+(4*(i-1): 4*i-1),:) =[...
                      el(i,[1,2]); el(i,[2,3]); el(i,[4,3]); el(i,[1,4])];
                end
-               num = struct('el',obj.numFaces, 'nen', 2, 'gp', 2, 'ndm', 1);
-               obj.gp = L2(num, 0);
+               obj.gp = L2(0);
             case 'Q9'
                obj.numFaces = 4*numel;
                obj.numGP    = 3;
@@ -38,8 +36,7 @@ classdef Faces
                   obj.faceList(1+(4*(i-1): 4*i-1),:) = [...
                      el(i,[1,5,2]); el(i,[2,6,3]); el(i,[3,7,4]); el(i,[4,8,1])];
                end
-               num = struct('el',obj.numFaces, 'nen', 3, 'gp', 3, 'ndm', 1);
-               obj.gp = L3(num, 0);
+               obj.gp = L3(0);
             case 'T3'
                obj.numFaces = 3*numel;
                obj.numGP    = 2;
@@ -48,8 +45,7 @@ classdef Faces
                   obj.faceList(1+(3*(i-1): 3*i-1),:) = [...
                      el(i,[1,2]); el(i,[2,3]); el(i,[3,1])];
                end
-               num = struct('el',obj.numFaces, 'nen', 2, 'gp', 2, 'ndm', 1);
-               obj.gp = L2(num, 0);
+               obj.gp = L2(0);
             case 'T6'
                obj.numFaces = 3*numel;
                obj.numGP    = 3;
@@ -58,8 +54,7 @@ classdef Faces
                   obj.faceList(1+(3*(i-1): 3*i-1),:) = [...
                      el(i, [1,4,2]); el(i, [2,5,3]); el(i, [3,6,1])];
                end
-               num = struct('el',obj.numFaces, 'nen', 3, 'gp', 3, 'ndm', 1);
-               obj.gp = L3(num, 0);
+               obj.gp = L3(0);
             case 'Q8'
                obj.numFaces = 6*numel;
                obj.numGP    = 4;
@@ -73,8 +68,7 @@ classdef Faces
                      el(i,[2,1,5,6])
                      el(i,[3,4,8,7])];
                end
-               num = struct('el',obj.numFaces, 'nen', 4, 'gp', 4, 'ndm', 2); 
-               obj.gp  = Q4(num, 0);
+               obj.gp  = Q4(0);
          end
       end
       %% get functions

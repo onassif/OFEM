@@ -95,17 +95,17 @@ end
 % gp-related
 switch eltype
    case 'Q4'
-    gp = Q4(num, hist, mat{1}.finiteDisp);
+    gp = Q4(mat{1}.finiteDisp, hist);
    case 'Q9'
-    gp = Q9(num, hist, mat{1}.finiteDisp);
+    gp = Q9(mat{1}.finiteDisp, hist);
    case 'T3'
-    gp = T3(num, hist, mat{1}.finiteDisp);
+    gp = T3(mat{1}.finiteDisp, hist);
    case 'T6'
-    gp = T6(num, hist, mat{1}.finiteDisp);
+    gp = T6(mat{1}.finiteDisp, hist);
    case 'Q8'
-    gp = Q8(num, hist, mat{1}.finiteDisp);
+    gp = Q8(mat{1}.finiteDisp, hist);
    case 'Q8Crys'
-    gp = Q8Crys(num, hist, mat{1}.hardProps.angles, slip);  
+    gp = Q8Crys(hist, mat{1}.hardProps.angles, slip);  
 end
 
 % NR-related

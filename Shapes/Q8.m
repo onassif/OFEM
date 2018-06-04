@@ -11,15 +11,16 @@ classdef Q8
       D;
       U;
       U_n;
+      mesh;
    end
    
-   properties (Hidden)
+   properties
       iel;
       det_dXdxi_list;
       dNdX_list;
    end
    
-   properties (Hidden, SetAccess = private)
+   properties (SetAccess = private)
       dNdxi_3D;
       numel;
       finiteDisp;
@@ -46,24 +47,20 @@ classdef Q8
    methods
       %% Consturct
       function obj = Q8(varargin)
-         num        = varargin{1};
-         finiteDisp = varargin{2};
+         finiteDisp     = varargin{1};
+         obj.finiteDisp = finiteDisp;
+         
          if nargin == 3
             obj.xi = varargin{3};
          end
+         [obj.Nmat, obj.Ninv] = obj.compute_Nmat( obj);
          obj.dNdxi_3D         = obj.compute_dNdxi(obj);
-         [obj.Nmat, obj.Ninv] = obj.compute_Nmat(obj);
-         
-         obj.det_dXdxi_list = zeros(num.el,1);
-         obj.dNdX_list      = zeros(num.nen, num.ndm, num.gp, num.el);
 
-         obj.finiteDisp = finiteDisp;
+         if nargin >= 2
+            obj.mesh = varargin{2};
+         end
       end
       %% Get functions
-      function value = get.dNdxi(obj)
-         value = squeeze(obj.dNdxi_3D(:,:,obj.i));
-      end
-      
       function value = get.N(obj)
          value = obj.Nmat(obj.i,:);
       end
@@ -72,35 +69,23 @@ classdef Q8
          value = obj.weights(obj.i);
       end
       
-      function value = get.det_dXdxi_list(obj)
-         value          = obj.det_dXdxi_list;
-         if value(obj.iel) == 0 % only compute it once
-            value(obj.iel) = det(obj.dXdxi);
-         end
-      end
-      
       function value = get.J(obj)
          value = obj.det_dXdxi_list(obj.iel);
       end
-      
-      function value = get.dNdX_list(obj)
-         value = obj.dNdX_list;
-         value(:,:,obj.i,obj.iel) = obj.dNdxi' / obj.dXdxi;   
-      end   
       
       function value = get.dNdX(obj)
          value = obj.dNdX_list(:,:,obj.i,obj.iel);
       end
       
       function value = get.F(obj)
-        I     = eye(size(obj.U,1));
-        value = obj.U*obj.dNdX + I;
+         I     = eye(size(obj.U,1));
+         value = obj.U*obj.dNdX + I;
       end
       
-      function value = get.j(obj)     
+      function value = get.j(obj)
          value = det(obj.F) * obj.J;
       end
-      
+
       function value = get.dNdx(obj)
          value = obj.dNdX / obj.F;
       end
@@ -159,23 +144,32 @@ classdef Q8
             obj.U_n = permute(value,[2 1 3]);
          end
       end
+      
+      function obj = set.mesh(obj, val)
+         [obj.det_dXdxi_list, obj.dNdX_list] =...
+            obj.computeJ_and_dNdX(val.nodes, val.conn, obj.dNdxi_3D);
+      end
    end
    
    methods (Static)
       function dNdxi_3D = compute_dNdxi(obj)
          xi = obj.xi;
-         dNdxi_3D = zeros(3,8,8);
-         for i=1:8
+         ngp = size(xi,1);
+         ndm = size(xi,2);
+         nen = 8;
+         dNdxi_3D = zeros(ndm, nen, ngp);
+         for i=1:size(xi,1)
             dNdxi_3D(:,:,i) =1/8*...
                [ -(xi(i,2)- 1)*(xi(i,3)- 1), -(xi(i,1)- 1)*(xi(i,3)- 1), -(xi(i,1)- 1)*(xi(i,2)- 1)
-                  (xi(i,2)- 1)*(xi(i,3)- 1),  (xi(i,1)+ 1)*(xi(i,3)- 1),  (xi(i,1)+ 1)*(xi(i,2)- 1)
-                 -(xi(i,2)+ 1)*(xi(i,3)- 1), -(xi(i,1)+ 1)*(xi(i,3)- 1), -(xi(i,1)+ 1)*(xi(i,2)+ 1)
-                  (xi(i,2)+ 1)*(xi(i,3)- 1),  (xi(i,1)- 1)*(xi(i,3)- 1),  (xi(i,1)- 1)*(xi(i,2)+ 1)
-                  (xi(i,2)- 1)*(xi(i,3)+ 1),  (xi(i,1)- 1)*(xi(i,3)+ 1),  (xi(i,1)- 1)*(xi(i,2)- 1)
-                 -(xi(i,2)- 1)*(xi(i,3)+ 1), -(xi(i,1)+ 1)*(xi(i,3)+ 1), -(xi(i,1)+ 1)*(xi(i,2)- 1)
-                  (xi(i,2)+ 1)*(xi(i,3)+ 1),  (xi(i,1)+ 1)*(xi(i,3)+ 1),  (xi(i,1)+ 1)*(xi(i,2)+ 1)
-                 -(xi(i,2)+ 1)*(xi(i,3)+ 1), -(xi(i,1)- 1)*(xi(i,3)+ 1), -(xi(i,1)- 1)*(xi(i,2)+ 1)]';
+               (xi(i,2)- 1)*(xi(i,3)- 1),  (xi(i,1)+ 1)*(xi(i,3)- 1),  (xi(i,1)+ 1)*(xi(i,2)- 1)
+               -(xi(i,2)+ 1)*(xi(i,3)- 1), -(xi(i,1)+ 1)*(xi(i,3)- 1), -(xi(i,1)+ 1)*(xi(i,2)+ 1)
+               (xi(i,2)+ 1)*(xi(i,3)- 1),  (xi(i,1)- 1)*(xi(i,3)- 1),  (xi(i,1)- 1)*(xi(i,2)+ 1)
+               (xi(i,2)- 1)*(xi(i,3)+ 1),  (xi(i,1)- 1)*(xi(i,3)+ 1),  (xi(i,1)- 1)*(xi(i,2)- 1)
+               -(xi(i,2)- 1)*(xi(i,3)+ 1), -(xi(i,1)+ 1)*(xi(i,3)+ 1), -(xi(i,1)+ 1)*(xi(i,2)- 1)
+               (xi(i,2)+ 1)*(xi(i,3)+ 1),  (xi(i,1)+ 1)*(xi(i,3)+ 1),  (xi(i,1)+ 1)*(xi(i,2)+ 1)
+               -(xi(i,2)+ 1)*(xi(i,3)+ 1), -(xi(i,1)- 1)*(xi(i,3)+ 1), -(xi(i,1)- 1)*(xi(i,2)+ 1)]';
          end
+         dNdxi_3D = permute(dNdxi_3D, [2 1 3]);
       end
       
       function [Nmat, Ninv] = compute_Nmat(obj)
@@ -191,6 +185,26 @@ classdef Q8
             (1-xi(:,1)).*(1+xi(:,2)).*(1+xi(:,3))];
          Ninv = inv(Nmat);
       end
+      
+      function [det_dXdxi_list, dNdX_list] = computeJ_and_dNdX(nodes, conn, dNdxi_3D)
+         numel = size(conn    , 1);
+         nen   = size(conn    , 2);
+         ndm   = size(dNdxi_3D, 2);
+         ngp   = size(dNdxi_3D, 3);
+         
+         det_dXdxi_list = zeros(numel,1);
+         dNdX_list      = zeros(nen, ndm, ngp, numel);
+         for i = 1:numel
+            coor  = nodes(conn(i,:),:)';
+            dXdxi = coor*dNdxi_3D(:,:,1);
+            det_dXdxi_list(i) = det(dXdxi);
+            
+            for j = 1:ngp
+               dNdX_list(:,:,j,i) = dNdxi_3D(:,:,j) / dXdxi';
+            end
+         end
+      end
+      
    end
 end
 

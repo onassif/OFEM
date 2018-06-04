@@ -1,41 +1,34 @@
 classdef T3  
-   properties (SetAccess = public, GetAccess = public)
+   properties
       i
-      dXdxi;
-      dxdX;
-      dNdx;
-      b;
-      eps;
-      sigma;
-      ctan;
-      D;
-      U;
-      U_n;
-   end
-   
-   properties (Hidden)
-      iel;
-      det_dXdxi_list;
-      dNdX_list;
-   end
-   
-   properties (Hidden, SetAccess = private)
-      dNdxi_3D;
-      numel;
-      finiteDisp;
+      iel
+
+      b
+      eps
+      sigma
+      ctan
+      D
+      U
+      U_n
+      mesh
    end
    
    properties (SetAccess = private)
-      Nmat;
-      Ninv;
-      dNdX;
-      B;
-      N;
-      w;
-      dNdxi;
-      F;
-      J; % det(dX/dxi) = J
-      j; % or det( dx/dX*dX/dxi ) = det(dx/dxi) = j
+      finiteDisp
+      Nmat
+      Ninv
+      dNdX_list
+      dNdX
+      dNdx
+      dNdxi_3D
+      dNdxi
+      det_dXdxi_list
+      B
+      N
+      w
+      F
+      J % det(dX/dxi) = J
+      j % or det( dx/dX*dX/dxi ) = det(dx/dxi) = j
       xi      = 1/3 .*[1 1];
       weights = 0.5;
    end
@@ -43,24 +36,24 @@ classdef T3
    methods
       %% Construct
       function obj = T3(varargin)
-         num        = varargin{1};
-         finiteDisp = varargin{2};
+         finiteDisp     = varargin{1};
+         obj.finiteDisp = finiteDisp;
+         
          if nargin == 3
             obj.xi = varargin{3};
          end
+         [obj.Nmat, obj.Ninv] = obj.compute_Nmat( obj);
          obj.dNdxi_3D         = obj.compute_dNdxi(obj);
-         [obj.Nmat, obj.Ninv] = obj.compute_Nmat(obj);
-         
-         obj.det_dXdxi_list = zeros(num.el,1);
-         obj.dNdX_list      = zeros(num.nen, num.ndm, num.gp, num.el);
-         
-         obj.finiteDisp = finiteDisp;
+
+         if nargin >= 2
+            obj.mesh = varargin{2};
+         end
       end
       %% Get functions
       function value = get.dNdxi(obj)
          value = squeeze(obj.dNdxi_3D(:,:,obj.i));
       end
-      
+
       function value = get.N(obj)
          if size(obj.xi, 1)>1
             value = obj.Nmat(obj.i,:);
@@ -68,50 +61,38 @@ classdef T3
             value = obj.Nmat;
          end
       end
-      
+
       function value = get.w(obj)
          value = obj.weights(obj.i);
       end
-      
-      function value = get.det_dXdxi_list(obj)
-         value          = obj.det_dXdxi_list;
-         if value(obj.iel) == 0 % only compute it once
-            value(obj.iel) = det(obj.dXdxi);
-         end
-      end
-      
+
       function value = get.J(obj)
          value = obj.det_dXdxi_list(obj.iel);
       end
-      
-      function value = get.dNdX_list(obj)
-         value = obj.dNdX_list;
-         value(:,:,obj.i,obj.iel) = obj.dNdxi' / obj.dXdxi;   
-      end
-      
+
       function value = get.dNdX(obj)
          value = obj.dNdX_list(:,:,obj.i,obj.iel);
       end
-      
+
       function value = get.F(obj)
          I     = eye(size(obj.U,1));
          value = obj.U*obj.dNdX + I;
       end
-      
-      function value = get.j(obj)     
+
+      function value = get.j(obj)
          value = det(obj.F) * obj.J;
       end
-       
+
       function value = get.dNdx(obj)
          value = obj.dNdX / obj.F;
       end
-      
+
       function value = get.b(obj)
          if obj.finiteDisp
             value = obj.F*obj.F';
          end
       end
-      
+
       function value = get.B(obj)
          if (obj.finiteDisp)
             dx = obj.dNdx(:,1);
@@ -126,20 +107,25 @@ classdef T3
             dy(1), dx(1), dy(2), dx(2), dy(3), dx(3)];
       end
       %% Set functions
-      function obj = set.U(obj, value)
-         if size(value,3)==1 % Normal
-            obj.U = value';
-         elseif size(value,3) == 2 % DG
-            obj.U = permute(value,[2 1 3]);
+      function obj = set.U(obj, val)
+         if size(val,3)==1 % Normal
+            obj.U = val';
+         elseif size(val,3) == 2 % DG
+            obj.U = permute(val,[2 1 3]);
          end
       end
-      
-      function obj = set.U_n(obj, value)
-         if size(value,3)==1 % Normal
-            obj.U_n = value';
-         elseif size(value,3) == 2 % DG
-            obj.U_n = permute(value,[2 1 3]);
+
+      function obj = set.U_n(obj, val)
+         if size(val,3)==1 % Normal
+            obj.U_n = val';
+         elseif size(val,3) == 2 % DG
+            obj.U_n = permute(val,[2 1 3]);
          end
+      end
+
+      function obj = set.mesh(obj, val)
+         [obj.det_dXdxi_list, obj.dNdX_list] =...
+            obj.computeJ_and_dNdX(val.nodes, val.conn, obj.dNdxi_3D);
       end
    end
    
@@ -147,7 +133,7 @@ classdef T3
       function dNdxi_3D = compute_dNdxi(~)
          dNdxi_3D =[...
             -1 1 0
-            -1 0 1];
+            -1 0 1]';
       end
       
       function [Nmat, Ninv] = compute_Nmat(obj)
@@ -155,6 +141,36 @@ classdef T3
          Nmat = [1-xi(:,1)-xi(:,2), xi(:,1), xi(:,2)];
          Ninv = ((Nmat*Nmat')\Nmat)';
       end
+      
+      function [det_dXdxi_list, dNdX_list] = computeJ_and_dNdX(nodes, conn, dNdxi_3D)
+         numel = size(conn    , 1);
+         nen   = size(conn    , 2);
+         ndm   = size(dNdxi_3D, 2);
+         ngp   = size(dNdxi_3D, 3);
+         
+         det_dXdxi_list = zeros(numel,1);
+         dNdX_list      = zeros(nen, ndm, ngp, numel);
+         
+         for i = 1:numel
+            coor  = T3.removePlane(nodes(conn(i,:),:)');
+            dXdxi = coor*dNdxi_3D(:,:,1);
+            det_dXdxi_list(i) = det(dXdxi);
+            
+            for j = 1:ngp
+               dNdX_list(:,:,j,i) = dNdxi_3D(:,:,j) / dXdxi';
+            end
+         end
+      end
+      
+      function fcoor = removePlane(coor)
+         if size(coor, 1) == 2
+            fcoor = coor;
+         elseif size(coor, 1) == 3
+            indc  = std(coor,0,2) > 1e-8;
+            fcoor = coor(indc,:);
+         end
+      end
+      
    end
 end
 
