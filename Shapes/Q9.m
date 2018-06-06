@@ -48,8 +48,11 @@ classdef Q9
          finiteDisp     = varargin{1};
          obj.finiteDisp = finiteDisp;
          
-         if nargin == 3
+         if nargin >= 3
             obj.xi = varargin{3};
+         end
+         if nargin == 4
+            obj.weights = varargin{4};
          end
          [obj.Nmat, obj.Ninv] = obj.compute_Nmat( obj);
          obj.dNdxi_3D         = obj.compute_dNdxi(obj);
@@ -173,7 +176,11 @@ classdef Q9
             -2 * (x1+1) .* (x1-1) .* (x2+1) .*     x2,...
             -2 *     x1 .* (x1-1) .* (x2+1) .* (x2-1),...
             +4 * (x1+1) .* (x1-1) .* (x2+1) .* (x2-1)];
-         Ninv = inv(Nmat);
+         if size(Nmat, 1) == size(Nmat, 2)
+            Ninv = inv(Nmat);
+         else
+            Ninv = 0;
+         end
       end
       
       function [det_dXdxi_list, dNdX_list] = computeJ_and_dNdX(nodes, conn, dNdxi_3D)
@@ -187,11 +194,11 @@ classdef Q9
          
          for i = 1:numel
             coor  = Q9.removePlane(nodes(conn(i,:),:)');
-            dXdxi = coor*dNdxi_3D(:,:,1);
+            dXdxi = coor*dNdxi_3D(1:nen,:,1);
             det_dXdxi_list(i) = det(dXdxi);
             
             for j = 1:ngp
-               dNdX_list(:,:,j,i) = dNdxi_3D(:,:,j) / dXdxi;
+               dNdX_list(:,:,j,i) = dNdxi_3D(1:nen,:,j) / dXdxi;
             end
          end
       end

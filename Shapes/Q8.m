@@ -50,8 +50,11 @@ classdef Q8
          finiteDisp     = varargin{1};
          obj.finiteDisp = finiteDisp;
          
-         if nargin == 3
+         if nargin >= 3
             obj.xi = varargin{3};
+         end
+         if nargin == 4
+            obj.weights = varargin{4};
          end
          [obj.Nmat, obj.Ninv] = obj.compute_Nmat( obj);
          obj.dNdxi_3D         = obj.compute_dNdxi(obj);

@@ -39,8 +39,11 @@ classdef L2
          finiteDisp     = varargin{1};
          obj.finiteDisp = finiteDisp;
          
-         if nargin == 3
+         if nargin >= 3
             obj.xi = varargin{3};
+         end
+         if nargin == 4
+            obj.weights = varargin{4};
          end
          [obj.Nmat, obj.Ninv] = obj.compute_Nmat( obj);
          obj.dNdxi_3D         = obj.compute_dNdxi(obj);
@@ -125,11 +128,10 @@ classdef L2
       function [det_dXdxi_list, dNdX_list] = computeJ_and_dNdX(nodes, conn, dNdxi_3D)
          numel = size(conn    , 1);
          nen   = size(conn    , 2);
-         ndm   = 1;
          ngp   = size(dNdxi_3D, 2);
          
          det_dXdxi_list = zeros(numel,1);
-         dNdX_list      = zeros(nen, ndm, ngp, numel);
+         dNdX_list      = zeros(nen, ngp, numel);
          
          for i = 1:numel
             coor  = L2.removePlane(nodes(conn(i,:),:)');

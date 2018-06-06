@@ -40,7 +40,7 @@ classdef Elastic
          sigma_voigt = gp.D*gp.eps;
       end
       %% Tangential stiffness
-      function [D, ctan, obj] = computeTangentStiffness(obj, ~, ~)
+      function [D, ctan, obj] = computeTangentStiffness(obj, ~, ~, ~)
          E = obj.Young;
          v = obj.Poisson;
          

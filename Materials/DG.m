@@ -18,6 +18,7 @@ classdef DG
       linear = true;
       
       sGP;
+      bGP;
       el;
       name = 'DG';
    end
@@ -41,9 +42,16 @@ classdef DG
       obj.muR    = obj.ER/(2*(1+obj.vR));
       obj.muL    = obj.EL/(2*(1+obj.vL));
       
-      num = struct('el', 2, 'nen', 2, 'gp', 4, 'ndm', 1);
       xi = 1/sqrt(3) .*[-1; 1; 1; -1];
-      obj.sGP = L2(num, 0, xi);
+      obj.sGP = L2(0, 0, xi);
+%       xi = 1/sqrt(3) .*[...
+%          -1 +1 +1 -1
+%          -1 -1 +1 +1]';
+xi = sqrt(0.6)*[...
+   -1 +1 +1 -1 0 +1 0 -1 0
+   -1 -1 +1 +1 -1 0 +1 0 0]';
+w = (1/81).*[25 25 25 25 40 40 40 40 64];
+      obj.bGP = Q4(0, 0, xi, w);
       
       obj.el = el.elements;
       end
@@ -60,7 +68,7 @@ classdef DG
          sigma_voigt = gp.D*gp.eps;
       end
       %% Tangential stiffness
-      function [D, ctan, obj] = computeTangentStiffness(obj, gp, ~)
+      function [D, ctan, obj] = computeTangentStiffness(obj, gp, el, ~)
          lamdaR = obj.lamdaR;
          lamdaL = obj.lamdaL;
          muR = obj.muR;
@@ -69,13 +77,17 @@ classdef DG
          DmatR = muR*diag([2 2 1]) + lamdaR*[1; 1; 0]*[1 1 0];
          DmatL = muL*diag([2 2 1]) + lamdaL*[1; 1; 0]*[1 1 0];
          
-         ulresL = [0 0 0 0 0.1 0 0.1 0];
-         ulresR = [0 0 0 0 0.0 0 0.0 0];
+         ulresL = [0 0 0 0 0.1 0 0.1 0]';
+         ulresR = [0 0 0 0 0.0 0 0.0 0]';
 
-         obj.sGP.i = 1;
-         obj.sGP.dXdxi = obj.sGP.dNdxi*[1; -1];
-         obj.sGP.det_dXdxi_list(1) = det(obj.sGP.dXdxi);
-         obj.sGP.iel = 1;
+         obj.sGP.mesh = struct('nodes', el.nodes, 'conn', el.conn(el.i+(0:1),1:2));
+         obj.sGP.i = 1; obj.sGP.iel = 1;
+         
+         obj.bGP.mesh = struct('nodes', el.nodes, 'conn', el.conn(el.i,:));
+         obj.bGP;
+%          obj.sGP.dXdxi = [1; -1]'*obj.sGP.dNdxi*;
+%          obj.sGP.det_dXdxi_list(1) = det(obj.sGP.dXdxi);
+         
          
          num = struct('el', 2, 'nen', 9, 'gp', 9, 'ndm', 2);
          eGP = Q9(num, 0);

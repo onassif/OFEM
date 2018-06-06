@@ -1,13 +1,11 @@
 clear; close all
-
 % Dialog
 run(ReadInput())
-initialize; 
+initialize;
 mat = mat; % Becauce MATLAB is crazy
 
 for step=1:num.steps % Steps loop
    %% Start time loop
-   
    %%% 1n - Load multiplier
    NR.step = step;
    NR.mult = step/num.steps;
@@ -36,12 +34,12 @@ for step=1:num.steps % Steps loop
          el.K    = 0;
          el.Fint = 0;
          for igp = 1:num.gp;     gp.i = igp;
-            %%   Start Loop over Gauss points            
+            %%   Start Loop over Gauss points
             %%%   2gp. Strain tensor
             [gp.eps, mat{el.im}]        = mat{el.im}.computeStrain(gp, el, step);
             
             %%%   3gp. Tangential stifness
-            [gp.D, gp.ctan, mat{el.im}] = mat{el.im}.computeTangentStiffness(gp, step);
+            [gp.D, gp.ctan, mat{el.im}] = mat{el.im}.computeTangentStiffness(gp, el, step);
             
             %%%   4gp. Stress
             [gp.sigma, mat{el.im}]      = mat{el.im}.computeCauchy(gp, step);
@@ -63,7 +61,6 @@ for step=1:num.steps % Steps loop
       end
       
       %% Finished gauss points loop, back to NR loop
-      
       %%%   7i. Fext and apply constrains
       [globl.K, Fext, globl.Fint, G]  =  ApplyConstraints_and_Loads(...
          NR.mult, globl.K, Fext, globl.Fint, globl.U, inpt, num.ndm);
