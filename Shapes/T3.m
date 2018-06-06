@@ -157,7 +157,7 @@ classdef T3
             det_dXdxi_list(i) = det(dXdxi);
             
             for j = 1:ngp
-               dNdX_list(:,:,j,i) = dNdxi_3D(:,:,j) / dXdxi';
+               dNdX_list(:,:,j,i) = dNdxi_3D(:,:,j) / dXdxi;
             end
          end
       end

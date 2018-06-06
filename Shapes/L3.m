@@ -48,7 +48,7 @@ classdef L3
          if nargin >= 2 && isstruct(varargin{2})
             obj.mesh = varargin{2};
          end
-      enda
+      end
       %% Get functions
       function value = get.dNdxi(obj)
          value = obj.dNdxi_3D(:,obj.i);
@@ -135,7 +135,7 @@ classdef L3
             det_dXdxi_list(i) = det(dXdxi);
             
             for j = 1:ngp
-               dNdX_list(:,j,i) = dNdxi_3D(:,j) / dXdxi';
+               dNdX_list(:,j,i) = dNdxi_3D(:,j) / dXdxi;
             end
          end
       end
