@@ -50,7 +50,7 @@ classdef HyperNeo
          end
       end
       %% Tangential stiffness
-      function [D, ctan, obj] = computeTangentStiffness(obj, gp, ~)
+      function [D, ctan, obj] = computeTangentStiffness(obj, gp, ~, ~)
          mu     = obj.shear;
          lambda = obj.lame1;
          

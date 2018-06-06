@@ -116,7 +116,7 @@ classdef ViscoPlastic
          sigma_voigt = obj.voigtize(sigma,'col', obj.ndm);
       end
       %% Tangential stiffness
-      function [D, ctan, obj] = computeTangentStiffness(obj, gp, step)
+      function [D, ctan, obj] = computeTangentStiffness(obj, gp, ~, step)
          dt   = obj.dt(step);
          % Identities
          I4_dev  = obj.I4_dev;

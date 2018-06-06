@@ -1,8 +1,8 @@
-classdef T3  
+classdef T3
    properties
       i
       iel
-
+      
       b
       eps
       sigma
@@ -20,8 +20,10 @@ classdef T3
       dNdX_list
       dNdX
       dNdx
-      dNdxi_3D
+      dNdxi_list
+      d2Ndxi2_list
       dNdxi
+      d2Ndxi2
       det_dXdxi_list
       B
       N
@@ -45,18 +47,15 @@ classdef T3
          if nargin == 4
             obj.weights = varargin{4};
          end
-         [obj.Nmat, obj.Ninv] = obj.compute_Nmat( obj);
-         obj.dNdxi_3D         = obj.compute_dNdxi(obj);
-
+         [obj.Nmat, obj.Ninv] = obj.compute_Nmat(   obj);
+         obj.dNdxi_list       = obj.compute_dNdxi(  obj);
+         obj.d2Ndxi2_list     = obj.compute_d2Ndxi2(obj);
+         
          if nargin >= 2 && isstruct(varargin{2})
             obj.mesh = varargin{2};
          end
       end
       %% Get functions
-      function value = get.dNdxi(obj)
-         value = squeeze(obj.dNdxi_3D(:,:,obj.i));
-      end
-
       function value = get.N(obj)
          if size(obj.xi, 1)>1
             value = obj.Nmat(obj.i,:);
@@ -64,38 +63,46 @@ classdef T3
             value = obj.Nmat;
          end
       end
+      
+      function value = get.dNdxi(obj)
+         value = obj.dNdxi_list;
+      end
 
+      function value = get.d2Ndxi2(obj)
+         value = obj.d2Ndxi2_list;
+      end
+      
       function value = get.w(obj)
          value = obj.weights(obj.i);
       end
-
+      
       function value = get.J(obj)
          value = obj.det_dXdxi_list(obj.iel);
       end
-
+      
       function value = get.dNdX(obj)
          value = obj.dNdX_list(:,:,obj.i,obj.iel);
       end
-
+      
       function value = get.F(obj)
          I     = eye(size(obj.U,1));
          value = obj.U*obj.dNdX + I;
       end
-
+      
       function value = get.j(obj)
          value = det(obj.F) * obj.J;
       end
-
+      
       function value = get.dNdx(obj)
          value = obj.dNdX / obj.F;
       end
-
+      
       function value = get.b(obj)
          if obj.finiteDisp
             value = obj.F*obj.F';
          end
       end
-
+      
       function value = get.B(obj)
          if (obj.finiteDisp)
             dx = obj.dNdx(:,1);
@@ -117,7 +124,7 @@ classdef T3
             obj.U = permute(val,[2 1 3]);
          end
       end
-
+      
       function obj = set.U_n(obj, val)
          if size(val,3)==1 % Normal
             obj.U_n = val';
@@ -125,18 +132,26 @@ classdef T3
             obj.U_n = permute(val,[2 1 3]);
          end
       end
-
+      
       function obj = set.mesh(obj, val)
          [obj.det_dXdxi_list, obj.dNdX_list] =...
-            obj.computeJ_and_dNdX(val.nodes, val.conn, obj.dNdxi_3D);
+            obj.computeJ_and_dNdX(val.nodes, val.conn, obj.dNdxi_list);
       end
    end
    
    methods (Static)
-      function dNdxi_3D = compute_dNdxi(~)
-         dNdxi_3D =[...
-            -1 1 0
-            -1 0 1]';
+      function dNdxi_list = compute_dNdxi(~)
+         dNdxi_list =[...
+            -1 -1
+            +1  0
+            +0  1];
+      end
+      
+      function d2Ndxi2_list = compute_d2Ndxi2(~)
+         d2Ndxi2_list =[...
+            0 0 0
+            0 0 0
+            0 0 0];
       end
       
       function [Nmat, Ninv] = compute_Nmat(obj)
@@ -145,22 +160,22 @@ classdef T3
          Ninv = ((Nmat*Nmat')\Nmat)';
       end
       
-      function [det_dXdxi_list, dNdX_list] = computeJ_and_dNdX(nodes, conn, dNdxi_3D)
+      function [det_dXdxi_list, dNdX_list] = computeJ_and_dNdX(nodes, conn, dNdxi_list)
          numel = size(conn    , 1);
          nen   = size(conn    , 2);
-         ndm   = size(dNdxi_3D, 2);
-         ngp   = size(dNdxi_3D, 3);
+         ndm   = size(dNdxi_list, 2);
+         ngp   = size(dNdxi_list, 3);
          
          det_dXdxi_list = zeros(numel,1);
          dNdX_list      = zeros(nen, ndm, ngp, numel);
          
          for i = 1:numel
             coor  = T3.removePlane(nodes(conn(i,:),:)');
-            dXdxi = coor*dNdxi_3D(:,:,1);
+            dXdxi = coor*dNdxi_list(:,:,1);
             det_dXdxi_list(i) = det(dXdxi);
             
             for j = 1:ngp
-               dNdX_list(:,:,j,i) = dNdxi_3D(:,:,j) / dXdxi;
+               dNdX_list(:,:,j,i) = dNdxi_list(:,:,j) / dXdxi;
             end
          end
       end

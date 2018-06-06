@@ -92,7 +92,7 @@ classdef HypoElastic
          sigma_voigt = obj.voigtize(sigma,'col', obj.ndm);
       end
       %% Tangential stiffness
-      function [D, ctan, obj] = computeTangentStiffness(obj, ~, ~)
+      function [D, ctan, obj] = computeTangentStiffness(obj, ~, ~, ~)
          K    = obj.K;
          sig0 = obj.sig0;
          eps0 = obj.eps0;
