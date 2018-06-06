@@ -47,7 +47,7 @@ classdef Q4
          [obj.Nmat, obj.Ninv] = obj.compute_Nmat( obj);
          obj.dNdxi_3D         = obj.compute_dNdxi(obj);
 
-         if nargin >= 2
+         if nargin >= 2 && isstruct(varargin{2})
             obj.mesh = varargin{2};
          end
       end

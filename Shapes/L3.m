@@ -45,10 +45,10 @@ classdef L3
          [obj.Nmat, obj.Ninv] = obj.compute_Nmat( obj);
          obj.dNdxi_3D         = obj.compute_dNdxi(obj);
 
-         if nargin >= 2
+         if nargin >= 2 && isstruct(varargin{2})
             obj.mesh = varargin{2};
          end
-      end
+      enda
       %% Get functions
       function value = get.dNdxi(obj)
          value = obj.dNdxi_3D(:,obj.i);

@@ -34,12 +34,12 @@ classdef MixedElasticPlaneStrain
                xi = 1/6*[...
                   4 1 1
                   1 1 4]';
-            obj.M = T3(num, 0, xi);
+            obj.M = T3(0, 0, xi);
             case 9 % Q9
                xi = sqrt(0.6)*[...
                -1 +1 +1 -1  0 +1  0 -1 0
                -1 -1 +1 +1 -1  0 +1  0 0]';
-            obj.M = Q4(num, 0, xi);
+            obj.M = Q4(0, 0, xi);
          end
          
          if strcmp(props{1,1} ,'E') && strcmp(props{2,1} ,'v')
