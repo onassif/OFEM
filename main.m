@@ -27,36 +27,30 @@ for step=1:num.steps % Steps loop
       for iel =1:num.el
          %% Start elements loop
          % Get information related to current element:
-         el.i   = iel;        % element number
-         gp.iel = iel;
-         coor   = el.coor;    % element coordinates
-         gp.U   = el.Umt;     % element unknowns (array form)
-         gp.U_n = el.Umt_n;
-         props  = el.props;   % element material properties
+         el.i   = iel;        gp.iel = iel;        % element number
+         coor   = el.coor;                         % element coordinates
+         gp.U   = el.Umt;     gp.U_n = el.Umt_n;   % element unknowns (array form, n and n+1)
+         props  = el.props;                        % element material properties
          
          % clear previous values of elemental K and Fint
          el.K    = 0;
          el.Fint = 0;
          for igp = 1:num.gp;     gp.i = igp;
-            %%   Start Loop over Gauss points
-            
-            %%%   2gp. Gauss points geometry-related values
-%             gp.dXdxi = (gp.dNdxi*coor)';
-            
-            %%%   3gp. Strain tensor
+            %%   Start Loop over Gauss points            
+            %%%   2gp. Strain tensor
             [gp.eps, mat{el.im}]        = mat{el.im}.computeStrain(gp, el, step);
             
-            %%%   4gp. Tangential stifness
+            %%%   3gp. Tangential stifness
             [gp.D, gp.ctan, mat{el.im}] = mat{el.im}.computeTangentStiffness(gp, step);
             
-            %%%   5gp. Stress
+            %%%   4gp. Stress
             [gp.sigma, mat{el.im}]      = mat{el.im}.computeCauchy(gp, step);
             
-            %%%   6gp. K
-            el.K                 = mat{el.im}.computeK_el(el.K, gp, num.gp);
+            %%%   5gp. K
+            el.K    = mat{el.im}.computeK_el(el.K, gp, num.gp);
             
-            %%%   7gp. Fint
-            el.Fint              = mat{el.im}.computeFint(gp, el);
+            %%%   6gp. Fint
+            el.Fint = mat{el.im}.computeFint(gp, el);
             
             % store states
             hist.eps (:,igp,iel)       = gp.eps;
@@ -70,11 +64,11 @@ for step=1:num.steps % Steps loop
       
       %% Finished gauss points loop, back to NR loop
       
-      %%%   8i. Fext and apply constrains
+      %%%   7i. Fext and apply constrains
       [globl.K, Fext, globl.Fint, G]  =  ApplyConstraints_and_Loads(...
          NR.mult, globl.K, Fext, globl.Fint, globl.U, inpt, num.ndm);
       
-      %%%   10i. dU and update Ui
+      %%%   8i. dU and update Ui
       dU      = globl.K\G .* ~(mat{el.im}.linear==1 && NR.iter>0);
       globl.w = globl.w + dU;
       globl.U = globl.U + dU;
@@ -86,7 +80,7 @@ for step=1:num.steps % Steps loop
       fprintf('step: %4.0d\t iteration:%2.0d\t correction: %.10f\t residual: %.10f\n',...
          step, NR.iter, NR.correction, NR.residual);
       
-      %%%   11i. History arrays
+      %%%   9i. History arrays
       hist.resid(NR.iter) = NR.residual;
       % write to file
       if (NR.correction < NR.tol)
@@ -100,6 +94,6 @@ for step=1:num.steps % Steps loop
    end
    %% Finished NR loop, back to time step loop
 end
-%%%     12. Post Processing
+%%%     10. Post Processing
 [hist, num] = WriteReadHistory(hist, num, nodes);
 PostProcess(hist, num, gp);
