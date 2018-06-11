@@ -225,6 +225,7 @@ classdef Q8
             det_dXdxi_list(i) = det(dXdxi);
             
             for j = 1:ngp
+               dXdxi = coor*dNdxi_list(:,:,j);
                dNdX_list(:,:,j,i) = dNdxi_list(:,:,j) / dXdxi;
             end
          end

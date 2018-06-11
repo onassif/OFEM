@@ -24,6 +24,8 @@ classdef Q4
       d2Ndxi2_list
       dNdxi
       d2Ndxi2
+      dXdxi
+      dXdxi_list
       det_dXdxi_list
       B
       N
@@ -70,6 +72,9 @@ classdef Q4
          value = squeeze(obj.d2Ndxi2_list(:,:,obj.i));
       end
       
+      function value = get.dXdxi(obj)
+         value = obj.dXdxi_list(:,:,obj.i,obj.iel);
+      end
       function value = get.w(obj)
          value = obj.weights(obj.i);
       end
@@ -132,7 +137,7 @@ classdef Q4
       end
       
       function obj = set.mesh(obj, val)
-         [obj.det_dXdxi_list, obj.dNdX_list] =...
+         [obj.det_dXdxi_list, obj.dNdX_list, obj.dXdxi_list] =...
             obj.computeJ_and_dNdX(val.nodes, val.conn, obj.dNdxi_list);
       end
    end
@@ -181,7 +186,7 @@ classdef Q4
          end
       end
       
-      function [det_dXdxi_list, dNdX_list] = computeJ_and_dNdX(nodes, conn, dNdxi_list)
+      function [det_dXdxi_list, dNdX_list, dXdxi_list] = computeJ_and_dNdX(nodes, conn, dNdxi_list)
          numel = size(conn    , 1);
          nen   = size(conn    , 2);
          ndm   = size(dNdxi_list, 2);
@@ -189,24 +194,18 @@ classdef Q4
          
          det_dXdxi_list = zeros(numel,1);
          dNdX_list      = zeros(nen, ndm, ngp, numel);
+         dXdxi_list     = zeros(ndm, ndm, ngp, numel);
          
          for i = 1:numel
-            coor  = Q4.removePlane(nodes(conn(i,:),:)');
+            coor  = nodes(conn(i,:),:)';
             dXdxi = coor*dNdxi_list(:,:,1);
             det_dXdxi_list(i) = det(dXdxi);
             
             for j = 1:ngp
-               dNdX_list(:,:,j,i) = dNdxi_list(:,:,j) / dXdxi;
+               dXdxi = coor*dNdxi_list(:,:,j);
+               dNdX_list(:,:,j,i)  = dNdxi_list(:,:,j) / dXdxi;
+               dXdxi_list(:,:,j,i) = dXdxi;
             end
-         end
-      end
-      
-      function fcoor = removePlane(coor)
-         if size(coor, 1) == 2
-            fcoor = coor;
-         elseif size(coor, 1) == 3
-            indc  = std(coor,0,2) > 1e-8;
-            fcoor = coor(indc,:);
          end
       end
       

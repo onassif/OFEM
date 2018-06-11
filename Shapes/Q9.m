@@ -217,22 +217,14 @@ classdef Q9
          dNdX_list      = zeros(nen, ndm, ngp, numel);
          
          for i = 1:numel
-            coor  = Q9.removePlane(nodes(conn(i,:),:)');
+            coor  = nodes(conn(i,:),:)';
             dXdxi = coor*dNdxi_list(1:nen,:,1);
             det_dXdxi_list(i) = det(dXdxi);
             
             for j = 1:ngp
+               dXdxi = coor*dNdxi_list(1:nen,:,j);
                dNdX_list(:,:,j,i) = dNdxi_list(1:nen,:,j) / dXdxi;
             end
-         end
-      end
-      
-      function fcoor = removePlane(coor)
-         if size(coor, 1) == 2
-            fcoor = coor;
-         elseif size(coor, 1) == 3
-            indc  = std(coor,0,2) > 1e-8;
-            fcoor = coor(indc,:);
          end
       end
       

@@ -117,7 +117,7 @@ classdef L2
       function [Nmat, Ninv] = compute_Nmat(obj)
          xi = obj.xi;
          
-         Nmat = 1/2*[(1-xi), (1+xi)];
+         Nmat = 1/2*[(1-xi(:,1)), (1+xi(:,1))];
          if size(Nmat,1) == size(Nmat,2)
             Ninv = inv(Nmat);
          else
@@ -134,22 +134,14 @@ classdef L2
          dNdX_list      = zeros(nen, ngp, numel);
          
          for i = 1:numel
-            coor  = L2.removePlane(nodes(conn(i,:),:)');
-            dXdxi = coor*dNdxi_3D(:,1);
+            coor  = nodes(conn(i,:),:)';
+            
+            dXdxi = coor*dNdxi_3D(:,1:size(coor,1));
             det_dXdxi_list(i) = det(dXdxi);
             
             for j = 1:ngp
                dNdX_list(:,j,i) = dNdxi_3D(:,j) / dXdxi;
             end
-         end
-      end
-      
-      function fcoor = removePlane(coor)
-         if size(coor, 1) == 1
-            fcoor = coor;
-         elseif size(coor, 1) == 2
-            indc  = std(coor,0,2) > 1e-8;
-            fcoor = coor(indc,:);
          end
       end
       
