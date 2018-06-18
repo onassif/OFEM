@@ -1,7 +1,8 @@
-function [K, Fext, Fint, G]=ApplyConstraints_and_Loads(mult, K, Fext, Fint, U, inpt, ndof)
+function [K, Fext, Fint, rmG, adG, indc]=ApplyConstraints_and_Loads(mult, K, Fext, Fint, U, tK, inpt, ndof)
 BC    = inpt.BC;
 FORCE = inpt.FORCE;
-
+tBC = zeros(size(Fext));
+indc = true(size(K,1),1);
 %   Loads
 for i = 1:size(FORCE,1)
    index=FORCE(i,1);
@@ -17,6 +18,16 @@ for i = 1:size(FORCE,1)
    Fext(f_index) = FORCE(i,3)*mult(FORCE(i,4),2);
 end
 G = Fext - Fint;
+if ~isempty(tK)
+   for i = 1:size(BC,1)
+      index = BC(i,1);     direction = BC(i,2);
+
+      k_index = ndof*(index-1) + direction;
+      tBC(k_index)  = BC(i,3)*mult(BC(i,4),1);
+   end
+   tF = -tK*tBC;
+   G =  tF - G;
+end
 
 %   BC
 for i = 1:size(BC,1)
@@ -25,13 +36,14 @@ for i = 1:size(BC,1)
    
    %       Locate the index in the global matrix
    k_index = ndof*(index-1) + direction;
-   
-   %       Change the global stiffness matrix
-   K(k_index,:) = 0.0;
-   K(k_index,k_index) = 1.0;
+   indc(k_index) = false;
    
    %       Change the Fs
    Fint(k_index) = BC(i,3)*mult(BC(i,4),1) - U(k_index);
    G(k_index)    = BC(i,3)*mult(BC(i,4),1) - U(k_index);
 end
+
+K = K(indc,indc);
+rmG = G(indc);
+adG = G(~indc); 
 end

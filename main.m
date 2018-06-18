@@ -19,7 +19,7 @@ for step=1:num.steps % Steps loop
       % Clear global K and Fint
       globl.K    = sparse(num.eq, num.eq);
       globl.Fint = zeros (num.eq,1);
-      
+      dU         = zeros (num.eq,1);
       % Send new U to the element object
       el.U_global = globl.U;
       for iel =1:num.el
@@ -57,16 +57,21 @@ for step=1:num.steps % Steps loop
          end
          
          % Assemble to global arrays
+         if isa(mat{el.im},'DG')
+            tempK = globl.K;
+         end
          [globl.K, globl.Fint] = Assemble(globl.K, globl.Fint, el);
       end
       
       %% Finished gauss points loop, back to NR loop
       %%%   7i. Fext and apply constrains
-      [globl.K, Fext, globl.Fint, G]  =  ApplyConstraints_and_Loads(...
-         NR.mult, globl.K, Fext, globl.Fint, globl.U, inpt, num.ndm);
+      [globl.K, Fext, globl.Fint, G, knwndU, rmIndc]  =  ApplyConstraints_and_Loads(...
+         NR.mult, globl.K, Fext, globl.Fint, globl.U, tempK, inpt, num.ndm);
       
       %%%   8i. dU and update Ui
-      dU      = globl.K\G .* ~(mat{el.im}.linear==1 && NR.iter>0);
+     
+      dU( rmIndc) = globl.K\G .* ~(mat{el.im}.linear==1 && NR.iter>0);
+      dU(~rmIndc) = knwndU .* ~(mat{el.im}.linear==1 && NR.iter>0);
       globl.w = globl.w + dU;
       globl.U = globl.U + dU;
       NR.correction = norm(dU)/norm(globl.w);
