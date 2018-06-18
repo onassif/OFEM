@@ -1,5 +1,5 @@
 function [nde, el, nen, ngp, numnp, numel, ndm]= ...
-   Generate_mesh(elmtype,coor, plot, numelx, numely, varargin)
+   generateMesh(elmtype,coor, plot, numelx, numely, varargin)
 
 switch elmtype
    case  'Q4'
