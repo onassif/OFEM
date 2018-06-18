@@ -129,14 +129,14 @@ classdef Elements
       end
       function obj = set.K(obj, value)
          if size(value,1) == 1 && value == 0
-            obj.K = zeros(size(obj.K));
+            obj.K = zeros(obj.numnp);
          else
             obj.K = value;
          end
       end
       function obj = set.Fint(obj, value)
          if size(value,1) == 1 && value == 0
-            obj.Fint = zeros(size(obj.Fint));
+            obj.Fint = zeros(obj.numnp,1);
          else
             obj.Fint = value;
          end

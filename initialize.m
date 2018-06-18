@@ -8,6 +8,7 @@ G          = zeros(numeq,1);
 globl.U    = zeros(numeq,1);
 globl.w    = zeros(numeq,1);
 globl.Fint = zeros(numeq,1);
+tempK      = [];
 step       = cell (n_steps+1,1);
 
 hist.eps   = zeros(numstr, ngp, numel, 'single');
@@ -127,4 +128,4 @@ hist.start= sprintf('%s%shist%shist_%d-%d-%s_%d.%d.%d',...
 mkdir(hist.start);
 
 num.el = numel + (size(elements,1)-numel)/2;
-clearvars -except dU el elements Fext globl gp hist inpt mat nodes NR num hard slip
+clearvars -except dU el elements Fext globl gp hist inpt mat nodes NR num hard slip tempK
