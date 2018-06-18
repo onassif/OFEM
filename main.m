@@ -57,7 +57,8 @@ for step=1:num.steps % Steps loop
          end
          
          % Assemble to global arrays
-         if isa(mat{el.im},'DG')
+         if isa(mat{el.im},'DG') && firstInstance
+            firstInstance = false;
             tempK = globl.K;
          end
          [globl.K, globl.Fint] = Assemble(globl.K, globl.Fint, el);

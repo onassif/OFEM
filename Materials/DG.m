@@ -5,6 +5,7 @@ classdef DG
    properties (SetAccess = private)
       ndm;
       ndof;
+      numeq;
       finiteDisp = 0;
       
       EL;
@@ -23,6 +24,7 @@ classdef DG
       tvtr
       jumpu
       ep
+      toggle = false;
       linear = true;
       
       pencoeff = 4
@@ -36,8 +38,9 @@ classdef DG
    methods
       %% Construct
       function obj = DG(num, props, propsList, el)
-         obj.ndm  = num.ndm;
-         obj.ndof = num.ndof;
+         obj.ndm   = num.ndm;
+         obj.ndof  = num.ndof;
+         obj.numeq = num.nen*num.ndm;
          for i = 1:2
             switch props{i,1}
                case 'L'
@@ -85,7 +88,10 @@ classdef DG
          obj.jumpu = zeros(ndm, ngpS);
       end
       %% Epsilon
-      function [eps, obj] = computeStrain(obj, ~, ~, ~)
+      function [eps, obj] = computeStrain(obj, gp, ~, ~)
+         if gp.i == 1
+            obj.toggle = ~obj.toggle;
+         end
          if obj.ndm == 2
             eps = zeros(3,1);
          elseif obj.ndm == 3
@@ -98,59 +104,60 @@ classdef DG
       end
       %% Tangential stiffness
       function [D, ctan, obj] = computeTangentStiffness(obj, gp, el, ~)
-         ndm  = obj.ndm;
-         ngpS = size(obj.sGPL.xi,1);
-         
-         lamdaL = obj.lamdaL;    lamdaR = obj.lamdaR;
-         muL = obj.muL;          muR = obj.muR;
-         
-         DmatL = muL*diag([2 2 1]) + lamdaL*[1; 1; 0]*[1 1 0];
-         DmatR = muR*diag([2 2 1]) + lamdaR*[1; 1; 0]*[1 1 0];
-         
-         ulresL = [0 0 0 0 0.1 0 0.1 0]';
-         ulresR = [0 0 0 0 0.0 0 0.0 0]';
-         
-         obj.bGP.mesh = struct('nodes', el.nodes, 'conn', el.conn(el.i,:));
-         [tauL, ~] = obj.computeTau(obj.bGP, DmatL, obj.ndm-1);
-         
-         obj.bGP.mesh = struct('nodes', el.nodes, 'conn', el.conn(el.i+1,:));
-         [tauR, ~] = obj.computeTau(obj.bGP, DmatR, obj.ndm-1);
-         
-         obj.sGPL.mesh = struct('nodes', el.nodes, 'conn', el.conn(el.i,:));
-         obj.sGPL.iel = 1;
-         [ebL, intedge, obj.c1, nvect] = obj.edgeInt(obj.sGPL);
-         
-         obj.sGPR.mesh = struct('nodes', el.nodes, 'conn', el.conn(el.i+1,:));
-         obj.sGPR.iel = 1;
-         [ebR, ~, ~, ~] = obj.edgeInt(obj.sGPR);
-         
-         edgeK  = tauL*ebL^2 + tauR*ebR^2;
-         gamL   = ebL^2*(edgeK\tauL);
-         gamR   = ebR^2*(edgeK\tauR);
-         obj.ep = obj.pencoeff*intedge*inv(edgeK);
-         
-         nen = size(el.conn,2);
-         for i = 1:ngpS
-            obj.sGPL.i = i;   obj.sGPR.i = i;
-            NL = obj.sGPL.N;  NR = obj.sGPR.N;
-            pad = zeros(ndm, nen);
+         if obj.toggle
+            ndm  = obj.ndm;
+            ngpS = size(obj.sGPL.xi,1);
             
-            NmatL = reshape([ NL; repmat([pad; NL],ndm-1,1) ], ndm, ndm*nen);
-            NmatR = reshape([ NR; repmat([pad; NR],ndm-1,1) ], ndm, ndm*nen);
+            lamdaL = obj.lamdaL;    lamdaR = obj.lamdaR;
+            muL = obj.muL;          muR = obj.muR;
             
-            BmatL = obj.sGPL.B;
-            BmatR = obj.sGPR.B;
+            DmatL = muL*diag([2 2 1]) + lamdaL*[1; 1; 0]*[1 1 0];
+            DmatR = muR*diag([2 2 1]) + lamdaR*[1; 1; 0]*[1 1 0];
             
-            bnAdN1 = gamL*nvect*DmatL*BmatL;
-            bnAdN2 = gamR*nvect*DmatR*BmatR;
+            ulresL = [0 0 0 0 0.1 0 0.1 0]';
+            ulresR = [0 0 0 0 0.0 0 0.0 0]';
             
-            obj.tvtr(:,i)  = (bnAdN1*ulresL + bnAdN2*ulresR);
-            obj.jumpu(:,i) = NmatR*ulresR - NmatL*ulresL;
+            obj.bGP.mesh = struct('nodes', el.nodes, 'conn', el.conn(el.i,:));
+            [tauL, ~] = obj.computeTau(obj.bGP, DmatL, obj.ndm-1);
             
-            obj.NmatL(:,:,i)  = NmatL;    obj.NmatR(:,:,i)  = NmatR;
-            obj.bnAdN1(:,:,i) = bnAdN1;   obj.bnAdN2(:,:,i) = bnAdN2;
+            obj.bGP.mesh = struct('nodes', el.nodes, 'conn', el.conn(el.i+1,:));
+            [tauR, ~] = obj.computeTau(obj.bGP, DmatR, obj.ndm-1);
+            
+            obj.sGPL.mesh = struct('nodes', el.nodes, 'conn', el.conn(el.i,:));
+            obj.sGPL.iel = 1;
+            [ebL, intedge, obj.c1, nvect] = obj.edgeInt(obj.sGPL);
+            
+            obj.sGPR.mesh = struct('nodes', el.nodes, 'conn', el.conn(el.i+1,:));
+            obj.sGPR.iel = 1;
+            [ebR, ~, ~, ~] = obj.edgeInt(obj.sGPR);
+            
+            edgeK  = tauL*ebL^2 + tauR*ebR^2;
+            gamL   = ebL^2*(edgeK\tauL);
+            gamR   = ebR^2*(edgeK\tauR);
+            obj.ep = obj.pencoeff*intedge*inv(edgeK);
+            
+            nen = size(el.conn,2);
+            for i = 1:ngpS
+               obj.sGPL.i = i;   obj.sGPR.i = i;
+               NL = obj.sGPL.N;  NR = obj.sGPR.N;
+               pad = zeros(ndm, nen);
+               
+               NmatL = reshape([ NL; repmat([pad; NL],ndm-1,1) ], ndm, ndm*nen);
+               NmatR = reshape([ NR; repmat([pad; NR],ndm-1,1) ], ndm, ndm*nen);
+               
+               BmatL = obj.sGPL.B;
+               BmatR = obj.sGPR.B;
+               
+               bnAdN1 = gamL*nvect*DmatL*BmatL;
+               bnAdN2 = gamR*nvect*DmatR*BmatR;
+               
+               obj.tvtr(:,i)  = (bnAdN1*ulresL + bnAdN2*ulresR);
+               obj.jumpu(:,i) = NmatR*ulresR - NmatL*ulresL;
+               
+               obj.NmatL(:,:,i)  = NmatL;    obj.NmatR(:,:,i)  = NmatR;
+               obj.bnAdN1(:,:,i) = bnAdN1;   obj.bnAdN2(:,:,i) = bnAdN2;
+            end
          end
-         
          Eh= obj.EL/(1-2*obj.vL)/(1+obj.vL);
          G = 0.5*obj.EL/(1+obj.vL);
          v = obj.vL;
@@ -169,54 +176,61 @@ classdef DG
       end
       %% Element K
       function Kel = computeK_el(obj, ~, ~, ~)
-         ngpS = size(obj.sGPL.xi,1);
-         
-         ElemKLL = zeros(8,8);
-         ElemKLR = zeros(8,8);
-         ElemKRL = zeros(8,8);
-         ElemKRR = zeros(8,8);
-         for i = 1:ngpS
-            NL = obj.NmatL(:,:,i);
-            NR = obj.NmatR(:,:,i);
-            
-            c = obj.c1(i);
-            
-            bnAdN1 = obj.bnAdN1(:,:,i);
-            bnAdN2 = obj.bnAdN2(:,:,i);
-            
-            ElemKLL = ElemKLL + c*( - NL'*bnAdN1 - bnAdN1'*NL + (NL'*obj.ep*NL));
-            ElemKLR = ElemKLR + c*( - NL'*bnAdN2 + bnAdN1'*NR - (NL'*obj.ep*NR));
-            ElemKRL = ElemKRL + c*( + NR'*bnAdN1 - bnAdN2'*NL - (NR'*obj.ep*NL));
-            ElemKRR = ElemKRR + c*( + NR'*bnAdN2 + bnAdN2'*NR + (NR'*obj.ep*NR));
+         ElemKLL = zeros(obj.numeq, obj.numeq);
+         ElemKLR = zeros(obj.numeq, obj.numeq);
+         ElemKRL = zeros(obj.numeq, obj.numeq);
+         ElemKRR = zeros(obj.numeq, obj.numeq);
+         if obj.toggle
+            ngpS = size(obj.sGPL.xi,1);
+            for i = 1:ngpS
+               NL = obj.NmatL(:,:,i);
+               NR = obj.NmatR(:,:,i);
+               
+               c = obj.c1(i);
+               
+               bnAdN1 = obj.bnAdN1(:,:,i);
+               bnAdN2 = obj.bnAdN2(:,:,i);
+               
+               ElemKLL = ElemKLL + c*( - NL'*bnAdN1 - bnAdN1'*NL + (NL'*obj.ep*NL));
+               ElemKLR = ElemKLR + c*( - NL'*bnAdN2 + bnAdN1'*NR - (NL'*obj.ep*NR));
+               ElemKRL = ElemKRL + c*( + NR'*bnAdN1 - bnAdN2'*NL - (NR'*obj.ep*NL));
+               ElemKRR = ElemKRR + c*( + NR'*bnAdN2 + bnAdN2'*NR + (NR'*obj.ep*NR));
+            end
+            Kel = [...
+               ElemKLL ElemKLR
+               ElemKRL ElemKRR];
+         else
+            Kel = zeros(obj.numeq, obj.numeq);
          end
-         Kel = [...
-            ElemKLL ElemKLR
-            ElemKRL ElemKRR];
+         
       end
       %% Element Fint
       function Fint = computeFint(obj, ~, ~)
          ngpS = size(obj.sGPL.xi,1);
          
-         ElemFL = zeros(8,1);
-         ElemFR = zeros(8,1);
-         
-         for i = 1:ngpS
-            NL = obj.NmatL(:,:,i);
-            NR = obj.NmatR(:,:,i);
-            
-            c = obj.c1(i);
-            
-            bnAdN1 = obj.bnAdN1(:,:,i);
-            bnAdN2 = obj.bnAdN2(:,:,i);
-            
-            tvtr  = obj.tvtr(:,i);
-            jumpu = obj.jumpu(:,i);
-            
-            ElemFL = ElemFL - c*( - NL'*(tvtr + obj.ep*jumpu) + bnAdN1'*jumpu);
-            ElemFR = ElemFR - c*( + NR'*(tvtr + obj.ep*jumpu) + bnAdN2'*jumpu);
+         ElemFL = zeros(obj.numeq,1);
+         ElemFR = zeros(obj.numeq,1);
+         if obj.toggle
+            for i = 1:ngpS
+               NL = obj.NmatL(:,:,i);
+               NR = obj.NmatR(:,:,i);
+               
+               c = obj.c1(i);
+               
+               bnAdN1 = obj.bnAdN1(:,:,i);
+               bnAdN2 = obj.bnAdN2(:,:,i);
+               
+               tvtr  = obj.tvtr(:,i);
+               jumpu = obj.jumpu(:,i);
+               
+               ElemFL = ElemFL - c*( - NL'*(tvtr + obj.ep*jumpu) + bnAdN1'*jumpu);
+               ElemFR = ElemFR - c*( + NR'*(tvtr + obj.ep*jumpu) + bnAdN2'*jumpu);
+            end
+            Fint = [ElemFL; ElemFR];
+         else
+            Fint = zeros(obj.numeq,1);
          end
          
-         Fint = [ElemFL; ElemFR];
       end
    end
    methods (Static)

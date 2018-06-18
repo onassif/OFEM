@@ -126,6 +126,6 @@ current = fix(clock);
 hist.start= sprintf('%s%shist%shist_%d-%d-%s_%d.%d.%d',...
    pwd,filesep,filesep, current([1,3]), mon_str{current(2)}, current(4:6));
 mkdir(hist.start);
-
-num.el = numel + (size(elements,1)-numel)/2;
-clearvars -except dU el elements Fext globl gp hist inpt mat nodes NR num hard slip tempK
+firstInstance = true;
+num.el = size(elements,1);
+clearvars -except dU el elements Fext globl gp hist inpt mat nodes NR num hard slip tempK firstInstance
