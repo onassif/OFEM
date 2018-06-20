@@ -5,6 +5,7 @@ classdef MixedElasticPlaneStrain
       ndm;
       ndof;
       nen;
+      ngp;
       dNdX;
       diff;
       finiteDisp = 0;
@@ -26,6 +27,7 @@ classdef MixedElasticPlaneStrain
          obj.ndm  = num.ndm;
          obj.ndof = num.ndof;
          obj.nen  = num.nen;
+         obj.ngp  = num.gp;
          obj.diff = obj.ndof - obj.ndm;
          switch num.nen
             case {3,4} % T3 and Q4
@@ -89,17 +91,26 @@ classdef MixedElasticPlaneStrain
          dN      = reshape(gp.dNdx',obj.nen*obj.ndm,1);
          obj.M.i = gp.i;
          K = obj.Bulk;
+         if gp.i == 1
+         kel = [...
+            (gp.B'*gp.D*gp.B) - (K*(dN*dN'))    dN*obj.M.N
+            obj.M.N'*dN'                          (1/K)*obj.M.N'*obj.M.N] .*gp.j*gp.w;
+         else
          kel = kel + [...
             (gp.B'*gp.D*gp.B) - (K*(dN*dN'))    dN*obj.M.N
             obj.M.N'*dN'                          (1/K)*obj.M.N'*obj.M.N] .*gp.j*gp.w;
+         end
       end
       %% Element Fint
       function Fint = computeFint(obj, gp, el)
          dN = reshape(gp.dNdx',obj.nen*obj.ndm,1);
          K = obj.Bulk;
-         
+         if gp.i == 1
+         Fint = [(gp.B'*gp.sigma - (K*(dN*dN'))*el.Uvc ); zeros(size(obj.M.N,2),1)] *gp.j *gp.w;
+         else
          Fint = el.Fint +...
-            [(gp.B'*gp.sigma - (K*(dN*dN'))*el.Uvc ); zeros(size(obj.M.N,2),1)] *gp.j *gp.w;
+            [(gp.B'*gp.sigma - (K*(dN*dN'))*el.Uvc ); zeros(size(obj.M.N,2),1)] *gp.j *gp.w;  
+         end
       end
    end
 end

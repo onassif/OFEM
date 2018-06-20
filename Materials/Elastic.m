@@ -5,6 +5,7 @@ classdef Elastic
    properties (SetAccess = private)
       ndm;
       ndof;
+      ngp;
       finiteDisp = 0;
       
       Young;
@@ -19,6 +20,7 @@ classdef Elastic
       function obj = Elastic(num, props)
          obj.ndm  = num.ndm;
          obj.ndof = num.ndof;
+         obj.ngp  = num.gp;
          
          if strcmp(props{1,1} ,'E') && strcmp(props{2,1} ,'v')
             obj.Young  = props{1,2};
@@ -62,11 +64,19 @@ classdef Elastic
       end
       %% Element K
       function Kel = computeK_el(~, Kel, gp, ~)
-         Kel = Kel + (gp.B'*gp.D*gp.B) *gp.J *gp.w;
+         if gp.i == 1
+            Kel = (gp.B'*gp.D*gp.B) *gp.J *gp.w;
+         else
+            Kel = Kel + (gp.B'*gp.D*gp.B) *gp.J *gp.w;
+         end
       end
       %% Element Fint
       function Fint = computeFint(~, gp, el)
-         Fint = el.Fint + (gp.B'*gp.sigma) *gp.J *gp.w;
+         if gp.i == 1
+            Fint = (gp.B'*gp.sigma) *gp.J *gp.w;
+         else
+            Fint = el.Fint + (gp.B'*gp.sigma) *gp.J *gp.w;
+         end
       end
    end
 end

@@ -11,9 +11,9 @@ globl.Fint = zeros(numeq,1);
 tempK      = [];
 step       = cell (n_steps+1,1);
 
-hist.eps   = zeros(numstr, ngp, numel, 'single');
-hist.stre  = zeros(numstr, ngp, numel, 'single');
-hist.ctan  = zeros(3,3,3,3,ngp, numel, 'single');
+hist.eps   = zeros(numstr, ngp, size(elements,1), 'single');
+hist.stre  = zeros(numstr, ngp, size(elements,1), 'single');
+hist.ctan  = zeros(3,3,3,3,ngp, size(elements,1), 'single');
 hist.resid = zeros(max_iter,1,'single');
 hist.conn  = uint32(elements(:,1:nen));
 hist.nodes = nodes;
@@ -120,6 +120,9 @@ end
 
 inpt.BC    = BC;
 inpt.FORCE = FORCE;
+el.ulres = getInitU(1/num.steps, inpt, el);
+
+num.el = size(elements,1);
 
 mon_str={'Jan','Feb','Mar','Apr','May','June','Jul','Aug','Sep','Oct','Nov','Dec'};
 current = fix(clock);
@@ -127,5 +130,4 @@ hist.start= sprintf('%s%shist%shist_%d-%d-%s_%d.%d.%d',...
    pwd,filesep,filesep, current([1,3]), mon_str{current(2)}, current(4:6));
 mkdir(hist.start);
 firstInstance = true;
-num.el = size(elements,1);
 clearvars -except dU el elements Fext globl gp hist inpt mat nodes NR num hard slip tempK firstInstance

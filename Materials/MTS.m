@@ -6,6 +6,7 @@ classdef MTS
       ndm;
       ndof;
       nen;
+      ngp;
       dNdX;
       finiteDisp = 1;
       
@@ -52,6 +53,7 @@ classdef MTS
          obj.ndm  = num.ndm;
          obj.ndof = num.ndof;
          obj.nen  = num.nen;
+         obj.ngp  = num.gp;
          obj.eEff = zeros(                 num.gp, num.el, num.steps+1);
          obj.ep   = zeros(obj.ndm,obj.ndm, num.gp, num.el, num.steps+1);
          

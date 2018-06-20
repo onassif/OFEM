@@ -29,11 +29,11 @@ for step=1:num.steps % Steps loop
          coor   = el.coor;                         % element coordinates
          gp.U   = el.Umt;     gp.U_n = el.Umt_n;   % element unknowns (array form, n and n+1)
          props  = el.props;                        % element material properties
-         
-         % clear previous values of elemental K and Fint
-         el.K    = 0;
-         el.Fint = 0;
-         for igp = 1:num.gp;     gp.i = igp;
+         if isa(mat{el.im},'DG') && firstInstance
+            firstInstance = false;
+            tempK = globl.K;
+         end
+         for igp = 1:mat{el.im}.ngp;     gp.i = igp;
             %%   Start Loop over Gauss points
             %%%   2gp. Strain tensor
             [gp.eps, mat{el.im}]        = mat{el.im}.computeStrain(gp, el, step);
@@ -57,10 +57,6 @@ for step=1:num.steps % Steps loop
          end
          
          % Assemble to global arrays
-         if isa(mat{el.im},'DG') && firstInstance
-            firstInstance = false;
-            tempK = globl.K;
-         end
          [globl.K, globl.Fint] = Assemble(globl.K, globl.Fint, el);
       end
       

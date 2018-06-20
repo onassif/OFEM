@@ -6,6 +6,7 @@ classdef PlasticRI
       ndm;
       ndof;
       dNdX;
+      ngp;
       finiteDisp = 0;
       
       I
@@ -37,6 +38,7 @@ classdef PlasticRI
       function obj = PlasticRI(num, props, identity)
          obj.ndm  = num.ndm;
          obj.ndof = num.ndof;
+         obj.ngp  = num.gp;
          obj.eEff    = zeros(     num.gp, num.el, num.steps+1);
          obj.bkStrss = zeros(num.ndm,num.ndm, num.gp, num.el, num.steps+1);
          obj.ep      = zeros(num.ndm,num.ndm, num.gp, num.el, num.steps+1);
@@ -160,15 +162,19 @@ classdef PlasticRI
       end
       %% Element K
       function Kel = computeK_el(~, Kel, gp, ~)
-         % Definitions
-         B=gp.B;
-         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-         
-         Kel = Kel + (B'*gp.D*B) *gp.J *gp.w;
+         if gp.i == 1
+            Kel = (gp.B'*gp.D*gp.B) *gp.J *gp.w;
+         else
+            Kel = Kel + (gp.B'*gp.D*gp.B) *gp.J *gp.w;            
+         end
       end
       %% Element Fint
       function Fint = computeFint(~, gp, el)
-         Fint = el.Fint + (gp.B'*gp.sigma) *gp.J *gp.w;
+         if gp.i == 1
+            Fint = (gp.B'*gp.sigma) *gp.J *gp.w;
+         else
+            Fint = el.Fint + (gp.B'*gp.sigma) *gp.J *gp.w;
+         end
       end
    end
    

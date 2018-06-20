@@ -18,6 +18,8 @@ for i = 1:size(FORCE,1)
    Fext(f_index) = FORCE(i,3)*mult(FORCE(i,4),2);
 end
 G = Fext - Fint;
+
+% For DG
 if ~isempty(tK)
    for i = 1:size(BC,1)
       index = BC(i,1);     direction = BC(i,2);
@@ -29,7 +31,7 @@ if ~isempty(tK)
    G =  tF - G;
 end
 
-%   BC
+% BC
 for i = 1:size(BC,1)
    index = BC(i,1);
    direction = BC(i,2);

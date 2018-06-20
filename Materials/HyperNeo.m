@@ -5,6 +5,7 @@ classdef HyperNeo
    properties (Hidden, SetAccess = private)
       ndm;
       ndof;
+      ngp;
       finiteDisp = 1;
       
       shear;
@@ -19,6 +20,7 @@ classdef HyperNeo
       function obj = HyperNeo(num, props)
          obj.ndm  = num.ndm;
          obj.ndof = num.ndof;
+         obj.ngp  = num.gp;
          
          if strcmp(props{1,1} ,'mu') && strcmp(props{2,1} ,'lambda')
             obj.shear  = props{1,2};
@@ -102,12 +104,19 @@ classdef HyperNeo
                end
             end
          end
-         Kel = Kel + ( (B'*D*B) + K_geo ) *gp.j*gp.w;
+         if gp.i == 1
+            Kel = ( (B'*D*B) + K_geo ) *gp.j*gp.w;
+         else
+            Kel = Kel + ( (B'*D*B) + K_geo ) *gp.j*gp.w;
+         end
       end
       %% Element Fint
       function Fint = computeFint(~, gp, el)
-         
-         Fint = el.Fint + (gp.B'*gp.sigma) *gp.j *gp.w;
+         if gp.i == 1
+            Fint = (gp.B'*gp.sigma) *gp.j *gp.w;
+         else
+            Fint = el.Fint + (gp.B'*gp.sigma) *gp.j *gp.w;
+         end
       end
    end
 end

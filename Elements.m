@@ -1,12 +1,12 @@
 classdef Elements
-   
-   properties (SetAccess = public, GetAccess = public)
+   properties
       i
       K
       Fint
       iter = 0;
       U_global
       U_glb_n
+      ulres
    end
    properties (SetAccess = private, GetAccess = public)
       Umt
@@ -126,20 +126,6 @@ classdef Elements
             end
          end
          obj.U_global = value;
-      end
-      function obj = set.K(obj, value)
-         if size(value,1) == 1 && value == 0
-            obj.K = zeros(obj.numnp);
-         else
-            obj.K = value;
-         end
-      end
-      function obj = set.Fint(obj, value)
-         if size(value,1) == 1 && value == 0
-            obj.Fint = zeros(obj.numnp,1);
-         else
-            obj.Fint = value;
-         end
       end
    end
 end

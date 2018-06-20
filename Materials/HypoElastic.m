@@ -5,6 +5,7 @@ classdef HypoElastic
    properties (Hidden, SetAccess = private)
       ndm;
       ndof;
+      ngp;
       finiteDisp = 0;
       
       sig0;
@@ -32,6 +33,7 @@ classdef HypoElastic
       function obj = HypoElastic(num, props, identity)
          obj.ndm  = num.ndm;
          obj.ndof = num.ndof;
+         obj.ngp  = num.gp;
          
          for i=1:length(props)
             switch props{i,1}
@@ -134,11 +136,19 @@ classdef HypoElastic
       end
       %% Element K
       function Kel = computeK_el(~, Kel, gp, ~)
-         Kel = Kel + (gp.B'*gp.D*gp.B) *gp.J *gp.w;
+         if gp.i == 1
+            Kel = (gp.B'*gp.D*gp.B) *gp.J *gp.w;
+         else
+            Kel = Kel + (gp.B'*gp.D*gp.B) *gp.J *gp.w;
+         end
       end
       %% Element Fint
       function Fint = computeFint(~, gp, el)
-         Fint = el.Fint + (gp.B'*gp.sigma) *gp.J *gp.w;
+         if gp.i == 1
+            Fint = (gp.B'*gp.sigma) *gp.J *gp.w;
+         else
+            Fint = el.Fint + (gp.B'*gp.sigma) *gp.J *gp.w;
+         end
       end
    end
    

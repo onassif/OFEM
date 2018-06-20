@@ -5,6 +5,7 @@ classdef ViscoPlastic
    properties (Hidden, SetAccess = private)
       ndm;
       ndof;
+      ngp;
       dNdX;
       finiteDisp = 0;
       
@@ -44,6 +45,7 @@ classdef ViscoPlastic
       function obj = ViscoPlastic(num, props, time, identity)
          obj.ndm  = num.ndm;
          obj.ndof = num.ndof;
+         obj.ngp  = num.gp;
          obj.eEff = zeros(                 num.gp, num.el, num.steps+1);
          obj.ep   = zeros(obj.ndm,obj.ndm, num.gp, num.el, num.steps+1);
          
@@ -179,15 +181,19 @@ classdef ViscoPlastic
       end
       %% Element K
       function Kel = computeK_el(~, Kel, gp, ~)
-         % Definitions
-         B=gp.B;
-         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-         
-         Kel = Kel + (B'*gp.D*B) *gp.J *gp.w;
+         if gp.i == 1
+            Kel = (gp.B'*gp.D*gp.B) *gp.J *gp.w;
+         else
+            Kel = Kel + (gp.B'*gp.D*gp.B) *gp.J *gp.w;            
+         end
       end
       %% Element Fint
       function Fint = computeFint(~, gp, el)
-         Fint = el.Fint + (gp.B'*gp.sigma) *gp.J *gp.w;
+         if gp.i == 1
+            Fint = (gp.B'*gp.sigma) *gp.J *gp.w;
+         else
+            Fint = el.Fint + (gp.B'*gp.sigma) *gp.J *gp.w;            
+         end
       end
    end
    
