@@ -75,6 +75,7 @@ classdef Q4
       function value = get.dXdxi(obj)
          value = obj.dXdxi_list(:,:,obj.i,obj.iel);
       end
+      
       function value = get.w(obj)
          value = obj.weights(obj.i);
       end

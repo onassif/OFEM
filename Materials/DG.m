@@ -43,12 +43,46 @@ classdef DG
          obj.ndof  = num.ndof;
          obj.numeq = num.nen*num.ndm;
          switch num.gp
+            case 1
+               obj.ngp = 3;
+               ngpS = 3; ndm = 2; nen = 3;
+               xi = [-sqrt(0.6)  0  sqrt(0.6); -1 -1 -1]';
+               xi = (1+xi)/2;
+               w = (1/18).*[5 8 5];
+               obj.sGPL = T3(0,0,xi,w);
+               xi = [sqrt(0.6)  0  -sqrt(0.6); -1 -1 -1]';
+               xi = (1+xi)/2;
+               obj.sGPR = T3(0,0,xi,w);
+               
+               xi = [...
+                  1/3 1/3
+                  0.05971587179 0.47014206410
+                  0.47014206410 0.05971587179
+                  0.47014206410 0.47014206410
+                  0.79742698540 0.10128650730
+                  0.10128650730 0.79742698540
+                  0.10128650730 0.10128650730];
+               w = [0.1125 0.0662 0.0662 0.0662 0.0630 0.0630 0.0630];
+               obj.bGP = T3(0, 0, xi, w);
             case 4
                obj.ngp = 3;
                ngpS = 3; ndm = 2; nen = 4;
+               xi = [-sqrt(0.6)  0  sqrt(0.6); -1 -1 -1]';
+               w = (1/9).*[5 8 5];
+               obj.sGPL = Q4(0,0,xi,w);
+               
+               xi = [sqrt(0.6)  0  -sqrt(0.6); -1 -1 -1]';
+               obj.sGPR = Q4(0,0,xi,w);
+               
+               xi = sqrt(0.6)*[...
+                  -1 +1 +1 -1 0 +1 0 -1 0
+                  -1 -1 +1 +1 -1 0 +1 0 0]';
+               w = (1/81).*[25 25 25 25 40 40 40 40 64];
+               obj.bGP = Q4(0, 0, xi, w);
             otherwise
                error("unimplemented shape");
          end
+         
          for i = 1:2
             switch props{i,1}
                case 'L'
@@ -61,24 +95,6 @@ classdef DG
          obj.lamdaR = obj.vR*obj.ER/((1+obj.vR)*(1-2*obj.vR));
          obj.muL    = obj.EL/(2*(1+obj.vL));
          obj.muR    = obj.ER/(2*(1+obj.vR));
-         
-         
-         xi = [...
-            -sqrt(0.6)  0  sqrt(0.6)
-            -1 -1 -1]';
-         w = (1/9).*[5 8 5];
-         obj.sGPL = Q4(0,0,xi,w);
-         
-         xi = [...
-            sqrt(0.6)  0  -sqrt(0.6)
-            -1 -1 -1]';
-         obj.sGPR = Q4(0,0,xi,w);
-         
-         xi = sqrt(0.6)*[...
-            -1 +1 +1 -1 0 +1 0 -1 0
-            -1 -1 +1 +1 -1 0 +1 0 0]';
-         w = (1/81).*[25 25 25 25 40 40 40 40 64];
-         obj.bGP = Q4(0, 0, xi, w);
          
          obj.el = el.elements;
          
@@ -118,24 +134,22 @@ classdef DG
             DmatL = muL*diag([2 2 1]) + lamdaL*[1; 1; 0]*[1 1 0];
             DmatR = muR*diag([2 2 1]) + lamdaR*[1; 1; 0]*[1 1 0];
             
-%             ulresL = [0 0 0 0 0.1 0 0.1 0]';
-%             ulresR = [0 0 0 0 0.0 0 0.0 0]';
             ulresL = el.ulres(el.i,:)';
             ulresR = el.ulres(el.i+1,:)';
             
             obj.bGP.mesh = struct('nodes', el.nodes, 'conn', el.conn(el.i,:));
-            [tauL, ~] = obj.computeTau(obj.bGP, DmatL, obj.ndm-1);
+            [tauL, ~] = obj.computeTau(obj.bGP, DmatL, obj.ndm-1, class(obj.bGP));
             
             obj.bGP.mesh = struct('nodes', el.nodes, 'conn', el.conn(el.i+1,:));
-            [tauR, ~] = obj.computeTau(obj.bGP, DmatR, obj.ndm-1);
+            [tauR, ~] = obj.computeTau(obj.bGP, DmatR, obj.ndm-1, class(obj.bGP));
             
             obj.sGPL.mesh = struct('nodes', el.nodes, 'conn', el.conn(el.i,:));
             obj.sGPL.iel = 1;
-            [ebL, intedge, obj.c1, nvect] = obj.edgeInt(obj.sGPL);
+            [ebL, intedge, obj.c1, nvect] = obj.edgeInt(obj.sGPL, class(obj.bGP));
             
             obj.sGPR.mesh = struct('nodes', el.nodes, 'conn', el.conn(el.i+1,:));
             obj.sGPR.iel = 1;
-            [ebR, ~, ~, ~] = obj.edgeInt(obj.sGPR);
+            [ebR, ~, ~, ~] = obj.edgeInt(obj.sGPR, class(obj.bGP));
             
             edgeK  = tauL*ebL^2 + tauR*ebR^2;
             gamL   = ebL^2*(edgeK\tauL);
@@ -216,7 +230,7 @@ classdef DG
       %% Element Fint
       function Fint = computeFint(obj, gp, el)
          i = gp.i;
-
+         
          if obj.toggle
             NL = obj.NmatL(:,:,i);
             NR = obj.NmatR(:,:,i);
@@ -255,13 +269,13 @@ classdef DG
          end
       end
       %% Compute tau
-      function [tau, intb] = computeTau(bGP, D, ndm)
+      function [tau, intb] = computeTau(bGP, D, ndm, elType)
          ngp = size(bGP.xi,1);
          bGP.iel=1; tau = zeros(ndm, ndm); intb = 0;
          for i = 1:ngp
             bGP.i = i;
             
-            [b,dbdX] = DG.edgeBubble(bGP.xi(i,1), bGP.xi(i,2), bGP.dXdxi);
+            [b,dbdX] = DG.edgeBubble(bGP.xi(i,1), bGP.xi(i,2), bGP.dXdxi, elType);
             B = [...
                dbdX(1) 0
                0       dbdX(2)
@@ -272,13 +286,13 @@ classdef DG
          tau = inv(tau);
       end
       %% Integrate normal vectors
-      function [eb, intedge, c1, nvect] = edgeInt(sGP)
+      function [eb, intedge, c1, nvect] = edgeInt(sGP, elType)
          ngp = size(sGP.xi,1);
          c1 = zeros(ngp,1);
          sGP.iel  = 1; eb = 0; intedge = 0;
          for i =1:ngp
             sGP.i = i;
-            [ebe, ~] = DG.edgeBubble(sGP.xi(i,1), sGP.xi(i,2), sGP.dXdxi);
+            [ebe, ~] = DG.edgeBubble(sGP.xi(i,1), sGP.xi(i,2), sGP.dXdxi, elType);
             t1 = [sGP.dXdxi(:,1); 0];
             t2 = [0 0 1];
             t3m = norm(cross(t1,t2));
@@ -292,11 +306,16 @@ classdef DG
             0        t3u(2)   t3u(1)];
       end
       %% Compute Edge Bubble shape function
-      function [b, dbdX] = edgeBubble(r,s,dXdxi)
-         dbdxi = [r*(s-1), 1/2*(r^2-1)];
-         
-         dbdX  = dbdxi / dXdxi;
-         b     = 1/2*(1-s)*(1-r^2);
+      function [b, dbdX] = edgeBubble(r,s,dXdxi,elType)
+         switch elType
+            case 'T3'
+               dbdX = 4*[(1-2*r-s), -r];
+               b = 4*(1-r-s)*r;
+            case 'Q4'
+               dbdxi = [r*(s-1), 1/2*(r^2-1)];
+               dbdX  = dbdxi / dXdxi;
+               b     = 1/2*(1-s)*(1-r^2);
+         end
       end
    end
 end
