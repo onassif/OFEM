@@ -19,6 +19,7 @@ classdef DG
       muL;
       NmatL;
       NmatR;
+      dNdxi
       c1;
       bnAdN1
       bnAdN2
@@ -31,6 +32,8 @@ classdef DG
       pencoeff = 4
       sGPL;
       sGPR;
+      oGPL;
+      oGPR;
       bGP;
       el;
       name = 'DG';
@@ -64,21 +67,27 @@ classdef DG
                   0.10128650730 0.10128650730];
                w = [0.1125 0.0662 0.0662 0.0662 0.0630 0.0630 0.0630];
                obj.bGP = T3(0, 0, xi, w);
+               obj.dNdxi = [-1;1;0];
             case 4
                obj.ngp = 3;
                ngpS = 3; ndm = 2; nen = 4;
                xi = [-sqrt(0.6)  0  sqrt(0.6); -1 -1 -1]';
-               w = (1/9).*[5 8 5];
+               w = (1/9).*[5 8 5]';
+               
                obj.sGPL = Q4(0,0,xi,w);
                
                xi = [sqrt(0.6)  0  -sqrt(0.6); -1 -1 -1]';
                obj.sGPR = Q4(0,0,xi,w);
+               obj.oGPL = L3(0);
+               obj.oGPR = L3(0);
                
                xi = sqrt(0.6)*[...
                   -1 +1 +1 -1 0 +1 0 -1 0
                   -1 -1 +1 +1 -1 0 +1 0 0]';
                w = (1/81).*[25 25 25 25 40 40 40 40 64];
                obj.bGP = Q4(0, 0, xi, w);
+               
+               obj.dNdxi = [-0.394337567;0.394337567;0.105662433;-0.105662433];
             otherwise
                error("unimplemented shape");
          end
@@ -98,16 +107,8 @@ classdef DG
          
          obj.el = el.elements;
          
-         obj.NmatL = zeros(el.ndm, el.ndm*el.nen, ngpS);
-         obj.NmatR = zeros(el.ndm, el.ndm*el.nen, ngpS);
-         
          obj.c1 = zeros(ngpS, 1);
-         
-         obj.bnAdN1 = zeros(ndm, ndm*nen, ngpS);
-         obj.bnAdN2 = zeros(ndm, ndm*nen, ngpS);
-         
-         obj.tvtr  = zeros(ndm, ngpS);
-         obj.jumpu = zeros(ndm, ngpS);
+
       end
       %% Epsilon
       function [eps, obj] = computeStrain(obj, gp, ~, ~)
@@ -123,10 +124,9 @@ classdef DG
          sigma_voigt = gp.D*gp.eps;
       end
       %% Tangential stiffness
-      function [D, ctan, obj] = computeTangentStiffness(obj, ~, el, ~)
+      function [D, ctan, obj] = computeTangentStiffness(obj, gp, el, ~)
          if obj.toggle
             ndm  = obj.ndm;
-            ngpS = size(obj.sGPL.xi,1);
             
             lamdaL = obj.lamdaL;    lamdaR = obj.lamdaR;
             muL = obj.muL;          muR = obj.muR;
@@ -144,12 +144,13 @@ classdef DG
             [tauR, ~] = obj.computeTau(obj.bGP, DmatR, obj.ndm-1, class(obj.bGP));
             
             obj.sGPL.mesh = struct('nodes', el.nodes, 'conn', el.conn(el.i,:));
+            surfTan = el.nodes(el.conn(el.i,:),:)'*obj.dNdxi;
             obj.sGPL.iel = 1;
-            [ebL, intedge, obj.c1, nvect] = obj.edgeInt(obj.sGPL, class(obj.bGP));
+            [ebL, intedge, obj.c1, nvect] = obj.edgeInt(obj.oGPL, surfTan);
             
             obj.sGPR.mesh = struct('nodes', el.nodes, 'conn', el.conn(el.i+1,:));
             obj.sGPR.iel = 1;
-            [ebR, ~, ~, ~] = obj.edgeInt(obj.sGPR, class(obj.bGP));
+            [ebR, ~, ~, ~] = obj.edgeInt(obj.oGPR, surfTan);
             
             edgeK  = tauL*ebL^2 + tauR*ebR^2;
             gamL   = ebL^2*(edgeK\tauL);
@@ -157,26 +158,21 @@ classdef DG
             obj.ep = obj.pencoeff*intedge*inv(edgeK);
             
             nen = size(el.conn,2);
-            for i = 1:ngpS
-               obj.sGPL.i = i;   obj.sGPR.i = i;
-               NL = obj.sGPL.N;  NR = obj.sGPR.N;
-               pad = zeros(ndm, nen);
-               
-               NmatL = reshape([ NL; repmat([pad; NL],ndm-1,1) ], ndm, ndm*nen);
-               NmatR = reshape([ NR; repmat([pad; NR],ndm-1,1) ], ndm, ndm*nen);
-               
-               BmatL = obj.sGPL.B;
-               BmatR = obj.sGPR.B;
-               
-               bnAdN1 = gamL*nvect*DmatL*BmatL;
-               bnAdN2 = gamR*nvect*DmatR*BmatR;
-               
-               obj.tvtr(:,i)  = (bnAdN1*ulresL + bnAdN2*ulresR);
-               obj.jumpu(:,i) = NmatR*ulresR - NmatL*ulresL;
-               
-               obj.NmatL(:,:,i)  = NmatL;    obj.NmatR(:,:,i)  = NmatR;
-               obj.bnAdN1(:,:,i) = bnAdN1;   obj.bnAdN2(:,:,i) = bnAdN2;
-            end
+            obj.sGPL.i = gp.i;   obj.sGPR.i = gp.i;
+            NL = obj.sGPL.N;  NR = obj.sGPR.N;
+            pad = zeros(ndm, nen);
+            
+            obj.NmatL = reshape([ NL; repmat([pad; NL],ndm-1,1) ], ndm, ndm*nen);
+            obj.NmatR = reshape([ NR; repmat([pad; NR],ndm-1,1) ], ndm, ndm*nen);
+            
+            BmatL = obj.sGPL.B;
+            BmatR = obj.sGPR.B;
+            
+            obj.bnAdN1 = gamL*nvect*DmatL*BmatL;
+            obj.bnAdN2 = gamR*nvect*DmatR*BmatR;
+            
+            obj.tvtr  = (obj.bnAdN1*ulresL + obj.bnAdN2*ulresR);
+            obj.jumpu = obj.NmatR*ulresR - obj.NmatL*ulresL;
          end
          Eh= obj.EL/(1-2*obj.vL)/(1+obj.vL);
          G = 0.5*obj.EL/(1+obj.vL);
@@ -199,14 +195,10 @@ classdef DG
          i = gp.i;
          
          if obj.toggle
-            NL = obj.NmatL(:,:,i);
-            NR = obj.NmatR(:,:,i);
-            
+            NL     = obj.NmatL;         NR = obj.NmatR;
+            bnAdN1 = obj.bnAdN1;    bnAdN2 = obj.bnAdN2;
             c = obj.c1(i);
-            
-            bnAdN1 = obj.bnAdN1(:,:,i);
-            bnAdN2 = obj.bnAdN2(:,:,i);
-            
+
             if gp.i == 1
                ElemKLL = c*( - NL'*bnAdN1 - bnAdN1'*NL + (NL'*obj.ep*NL));
                ElemKLR = c*( - NL'*bnAdN2 + bnAdN1'*NR - (NL'*obj.ep*NR));
@@ -232,16 +224,12 @@ classdef DG
          i = gp.i;
          
          if obj.toggle
-            NL = obj.NmatL(:,:,i);
-            NR = obj.NmatR(:,:,i);
-            
+            NL     = obj.NmatL;         NR = obj.NmatR;
+            bnAdN1 = obj.bnAdN1;    bnAdN2 = obj.bnAdN2;
             c = obj.c1(i);
             
-            bnAdN1 = obj.bnAdN1(:,:,i);
-            bnAdN2 = obj.bnAdN2(:,:,i);
-            
-            tvtr  = obj.tvtr(:,i);
-            jumpu = obj.jumpu(:,i);
+            tvtr  = obj.tvtr;
+            jumpu = obj.jumpu;
             if gp.i == 1
                ElemFL = - c*( - NL'*(tvtr + obj.ep*jumpu) + bnAdN1'*jumpu);
                ElemFR = - c*( + NR'*(tvtr + obj.ep*jumpu) + bnAdN2'*jumpu);
@@ -286,24 +274,16 @@ classdef DG
          tau = inv(tau);
       end
       %% Integrate normal vectors
-      function [eb, intedge, c1, nvect] = edgeInt(sGP, elType)
-         ngp = size(sGP.xi,1);
-         c1 = zeros(ngp,1);
-         sGP.iel  = 1; eb = 0; intedge = 0;
-         for i =1:ngp
-            sGP.i = i;
-            [ebe, ~] = DG.edgeBubble(sGP.xi(i,1), sGP.xi(i,2), sGP.dXdxi, elType);
-            t1 = [sGP.dXdxi(:,1); 0];
-            t2 = [0 0 1];
-            t3m = norm(cross(t1,t2));
-            t3u = cross(t1,t2)/t3m;
-            c1(i) = sGP.w*t3m;
-            eb      = eb + c1(i)*ebe;
-            intedge = intedge + c1(i);
-         end
+      function [eb, intedge, c1, nvect] = edgeInt(oGP, surfTan)
+         oGP.iel = 1;
+         J = norm(surfTan);
+         n = cross([surfTan;0],[0;0;1] )/J;
          nvect = [...
-            t3u(1)   0        t3u(2)
-            0        t3u(2)   t3u(1)];
+            n(1) 0    n(2)
+            0    n(2) n(1)];
+        c1 = J * oGP.weights;
+        eb = sum(J * oGP.weights .* oGP.Nmat(:,2));
+        intedge = sum(J * oGP.weights);         
       end
       %% Compute Edge Bubble shape function
       function [b, dbdX] = edgeBubble(r,s,dXdxi,elType)
