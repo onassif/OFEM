@@ -30,10 +30,9 @@ classdef DG
       linear = true;
       
       pencoeff = 4
-      sGPL;
-      sGPR;
-      oGPL;
-      oGPR;
+      eGPL;
+      eGPR;
+      sGP;
       bGP;
       el;
       name = 'DG';
@@ -45,17 +44,17 @@ classdef DG
          obj.ndm   = num.ndm;
          obj.ndof  = num.ndof;
          obj.numeq = num.nen*num.ndm;
+         if num.gp == 1 || num.gp == 4
+               obj.ngp = 3;
+               xiL = [-sqrt(0.6)  0  sqrt(0.6); -1 -1 -1]';
+               xiR = [sqrt(0.6)  0  -sqrt(0.6); -1 -1 -1]';
+               w = (1/18).*[5 8 5];
+         end
          switch num.gp
             case 1
-               obj.ngp = 3;
-               ngpS = 3; ndm = 2; nen = 3;
-               xi = [-sqrt(0.6)  0  sqrt(0.6); -1 -1 -1]';
-               xi = (1+xi)/2;
-               w = (1/18).*[5 8 5];
-               obj.sGPL = T3(0,0,xi,w);
-               xi = [sqrt(0.6)  0  -sqrt(0.6); -1 -1 -1]';
-               xi = (1+xi)/2;
-               obj.sGPR = T3(0,0,xi,w);
+               xiL = (1+xiL)/2;
+               xiR = (1+xiR)/2;
+               obj.eGPL = T3(0,0,xiL,w);     obj.eGPR = T3(0,0,xiR,w);
                
                xi = [...
                   1/3 1/3
@@ -69,24 +68,14 @@ classdef DG
                obj.bGP = T3(0, 0, xi, w);
                obj.dNdxi = [-1;1;0];
             case 4
-               obj.ngp = 3;
-               ngpS = 3; ndm = 2; nen = 4;
-               xi = [-sqrt(0.6)  0  sqrt(0.6); -1 -1 -1]';
-               w = (1/9).*[5 8 5]';
-               
-               obj.sGPL = Q4(0,0,xi,w);
-               
-               xi = [sqrt(0.6)  0  -sqrt(0.6); -1 -1 -1]';
-               obj.sGPR = Q4(0,0,xi,w);
-               obj.oGPL = L3(0);
-               obj.oGPR = L3(0);
+               obj.eGPL = Q4(0,0,xiL,w);     obj.eGPR = Q4(0,0,xiR,w);
+               obj.sGP = L3(0);
                
                xi = sqrt(0.6)*[...
                   -1 +1 +1 -1 0 +1 0 -1 0
                   -1 -1 +1 +1 -1 0 +1 0 0]';
                w = (1/81).*[25 25 25 25 40 40 40 40 64];
                obj.bGP = Q4(0, 0, xi, w);
-               
                obj.dNdxi = [-0.394337567;0.394337567;0.105662433;-0.105662433];
             otherwise
                error("unimplemented shape");
@@ -106,9 +95,6 @@ classdef DG
          obj.muR    = obj.ER/(2*(1+obj.vR));
          
          obj.el = el.elements;
-         
-         obj.c1 = zeros(ngpS, 1);
-
       end
       %% Epsilon
       function [eps, obj] = computeStrain(obj, gp, ~, ~)
@@ -143,30 +129,28 @@ classdef DG
             obj.bGP.mesh = struct('nodes', el.nodes, 'conn', el.conn(el.i+1,:));
             [tauR, ~] = obj.computeTau(obj.bGP, DmatR, obj.ndm-1, class(obj.bGP));
             
-            obj.sGPL.mesh = struct('nodes', el.nodes, 'conn', el.conn(el.i,:));
+            obj.eGPL.mesh = struct('nodes', el.nodes, 'conn', el.conn(el.i,:));   obj.eGPL.iel = 1;
+            obj.eGPR.mesh = struct('nodes', el.nodes, 'conn', el.conn(el.i+1,:)); obj.eGPR.iel = 1;
+            
             surfTan = el.nodes(el.conn(el.i,:),:)'*obj.dNdxi;
-            obj.sGPL.iel = 1;
-            [ebL, intedge, obj.c1, nvect] = obj.edgeInt(obj.oGPL, surfTan);
             
-            obj.sGPR.mesh = struct('nodes', el.nodes, 'conn', el.conn(el.i+1,:));
-            obj.sGPR.iel = 1;
-            [ebR, ~, ~, ~] = obj.edgeInt(obj.oGPR, surfTan);
+            [eb, intedge, obj.c1, nvect] = obj.edgeInt(obj.sGP, surfTan);
             
-            edgeK  = tauL*ebL^2 + tauR*ebR^2;
-            gamL   = ebL^2*(edgeK\tauL);
-            gamR   = ebR^2*(edgeK\tauR);
+            edgeK  = (tauL + tauR)*eb^2;
+            gamL   = eb^2*(edgeK\tauL);
+            gamR   = eb^2*(edgeK\tauR);
             obj.ep = obj.pencoeff*intedge*inv(edgeK);
             
             nen = size(el.conn,2);
-            obj.sGPL.i = gp.i;   obj.sGPR.i = gp.i;
-            NL = obj.sGPL.N;  NR = obj.sGPR.N;
+            obj.eGPL.i = gp.i;   obj.eGPR.i = gp.i;
+            NL = obj.eGPL.N;  NR = obj.eGPR.N;
             pad = zeros(ndm, nen);
             
             obj.NmatL = reshape([ NL; repmat([pad; NL],ndm-1,1) ], ndm, ndm*nen);
             obj.NmatR = reshape([ NR; repmat([pad; NR],ndm-1,1) ], ndm, ndm*nen);
             
-            BmatL = obj.sGPL.B;
-            BmatR = obj.sGPR.B;
+            BmatL = obj.eGPL.B;
+            BmatR = obj.eGPR.B;
             
             obj.bnAdN1 = gamL*nvect*DmatL*BmatL;
             obj.bnAdN2 = gamR*nvect*DmatR*BmatR;
