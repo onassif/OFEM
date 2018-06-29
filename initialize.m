@@ -54,9 +54,6 @@ num.FORCE = FORCE(end,end);
 run('identities.m');
 
 %%%%%%%%%%%%%%%%%%%%% Create objects:
-% Element-related
-el = Elements(elements, nodes, num, props, globl.U, hist);
-
 % Hardening-related
 if exist('hardType','var')   
    switch slipType
@@ -89,7 +86,7 @@ for i=1:length(material)
       case 7
          mat{i} = MTS(num, prps, hardProps, slip, time, ident.threeD.second);
       case 8
-         mat{i} = DG(num, prps, props, el); 
+         mat{i} = DG(num, prps, props); 
    end
 end
 
@@ -108,6 +105,9 @@ switch eltype
    case 'Q8Crys'
     gp = Q8Crys(hist, mat{1}.hardProps.angles, slip);  
 end
+
+% Element-related
+el = Elements(elements, nodes, num, props, globl.U, hist);
 
 % NR-related
 if exist('time','var') && exist('fctr','var')

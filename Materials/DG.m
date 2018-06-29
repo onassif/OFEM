@@ -40,7 +40,7 @@ classdef DG
    %%
    methods
       %% Construct
-      function obj = DG(num, props, propsList, el)
+      function obj = DG(num, props, propsList)
          obj.ndm   = num.ndm;
          obj.ndof  = num.ndof;
          obj.numeq = num.nen*num.ndm;
@@ -93,8 +93,6 @@ classdef DG
          obj.lamdaR = obj.vR*obj.ER/((1+obj.vR)*(1-2*obj.vR));
          obj.muL    = obj.EL/(2*(1+obj.vL));
          obj.muR    = obj.ER/(2*(1+obj.vR));
-         
-         obj.el = el.elements;
       end
       %% Epsilon
       function [eps, obj] = computeStrain(obj, gp, ~, ~)
@@ -136,10 +134,10 @@ classdef DG
             
             [eb, intedge, obj.c1, nvect] = obj.edgeInt(obj.sGP, surfTan);
             
-            edgeK  = (tauL + tauR)*eb^2;
-            gamL   = eb^2*(edgeK\tauL);
-            gamR   = eb^2*(edgeK\tauR);
-            obj.ep = obj.pencoeff*intedge*inv(edgeK);
+            edgeK  = (tauL + tauR);
+            gamL   = (edgeK\tauL);
+            gamR   = (edgeK\tauR);
+            obj.ep = obj.pencoeff*intedge*inv(edgeK)*eb^2;
             
             nen = size(el.conn,2);
             obj.eGPL.i = gp.i;   obj.eGPR.i = gp.i;
@@ -246,7 +244,6 @@ classdef DG
          bGP.iel=1; tau = zeros(ndm, ndm); intb = 0;
          for i = 1:ngp
             bGP.i = i;
-            
             [b,dbdX] = DG.edgeBubble(bGP.xi(i,1), bGP.xi(i,2), bGP.dXdxi, elType);
             B = [...
                dbdX(1) 0
@@ -258,16 +255,16 @@ classdef DG
          tau = inv(tau);
       end
       %% Integrate normal vectors
-      function [eb, intedge, c1, nvect] = edgeInt(oGP, surfTan)
-         oGP.iel = 1;
+      function [eb, intedge, c1, nvect] = edgeInt(sGP, surfTan)
+         sGP.iel = 1;
          J = norm(surfTan);
          n = cross([surfTan;0],[0;0;1] )/J;
          nvect = [...
             n(1) 0    n(2)
             0    n(2) n(1)];
-        c1 = J * oGP.weights;
-        eb = sum(J * oGP.weights .* oGP.Nmat(:,2));
-        intedge = sum(J * oGP.weights);         
+        c1 = J * sGP.weights;
+        eb = sum(J * sGP.weights .* sGP.Nmat(:,2));
+        intedge = sum(J * sGP.weights); % length of the edge        
       end
       %% Compute Edge Bubble shape function
       function [b, dbdX] = edgeBubble(r,s,dXdxi,elType)
