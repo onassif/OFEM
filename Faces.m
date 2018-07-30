@@ -55,7 +55,7 @@ classdef Faces
                      el(i, [1,4,2]); el(i, [2,5,3]); el(i, [3,6,1])];
                end
                obj.gp = L3(0);
-            case 'Q8'
+            case {'Q8','Q8Crys'}
                obj.numFaces = 6*numel;
                obj.numGP    = 4;
                obj.faceList = zeros(obj.numFaces, 4);

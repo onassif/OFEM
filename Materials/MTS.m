@@ -180,7 +180,7 @@ classdef MTS
          sigma_voigt = obj.voigtize(sigma,'col', obj.ndm);
       end
       %% Tangential stiffness
-      function [D, ctan, obj] = computeTangentStiffness(obj, gp, step)
+      function [D, ctan, obj] = computeTangentStiffness(obj, gp, el, step)
          dt   = obj.dt(step);
          % Identities
          I4_dev  = obj.I4_dev;
@@ -193,7 +193,7 @@ classdef MTS
          ms        = gp.ms;
          qs        = gp.qs;
          q_cr      = gp.q_cr;
-         obj.calc_grads(8,1,gp.Rn_list(:,:,:,gp.iel),
+%          obj.calc_grads(8,1,gp.Rn_list(:,:,:,gp.iel),
          %          tau_l     =
          % Values from previous step
          n.ep    = obj.ep   (:,:, gp.i, gp.iel, step);

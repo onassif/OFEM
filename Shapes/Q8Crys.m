@@ -1,50 +1,47 @@
 classdef Q8Crys
-   properties (SetAccess = public, GetAccess = public)
+   properties
       i
-      dXdxi;
-      dxdX;
-      dNdx;
-      dNdx_hf;
-      b;
-      eps;
-      sigma;
-      ctan;
-      D;
-      U;
-      U_n;
-      angles = [0, 0, 0];
-      Rpn_list
-      Rn_list;
-      dXdxi_list;
-   end
-   
-   properties (Hidden)
-      iel;
-      det_dXdxi_list;
-      dNdX_list;
-   end
-   
-   properties (Hidden, SetAccess = private)
-      dNdxi_3D;
-      numel;
+      iel
       
-      finiteDisp;
-      I;
-      bi;
-      ni;
-      nslip;
+      b
+      eps
+      sigma
+      ctan
+      D
+      U
+      U_n
+      mesh
    end
    
    properties (SetAccess = private)
-      Nmat;
-      Ninv;
-      dNdX;
-      B;
+      finiteDisp
+      Nmat
+      Ninv
+      dNdX_list
+      dNdX
+      dNdx
+      dNdxi_list
+      d2Ndxi2_list
+      dNdxi
+      d2Ndxi2
+      det_dXdxi_list
+      B
+      N
+      w
+      F
+      J % det(dX/dxi) = J
+      j % or det( dx/dX*dX/dxi ) = det(dx/dxi) = j
+      xi = 1/sqrt(3) .*[...
+         -1  1  1 -1 -1  1  1 -1
+         -1 -1  1  1 -1 -1  1  1
+         -1 -1 -1 -1  1  1  1  1]';
+      weights = [1 1 1 1 1 1 1 1]';
+      numel;
+   end
+   
+   properties (SetAccess = private)
       B_hf;
-      N;
-      w;
-      dNdxi;
-      F;
+
       R;
       q;
       F_hf;
@@ -52,49 +49,62 @@ classdef Q8Crys
       q_hf;
       sigma_un;
       D_un;
-      J; % det(dX/dxi) = J
-      j; % or det( dx/dX*dX/dxi ) = det(dx/dxi) = j
+      
       gRot;
       Rpn;
       
       ms;
       qs;
       q_cr;
-      xi = 1/sqrt(3) .*[...
-         -1  1  1 -1 -1  1  1 -1
-         -1 -1  1  1 -1 -1  1  1
-         -1 -1 -1 -1  1  1  1  1]';
-     weights = [1 1 1 1 1 1 1 1]; 
+      
+      bi;
+      ni;
+      nslip;
+
+      dXdxi;
+      dxdX;
+      dNdx_hf;
+      
+      angles = [0, 0, 0];
+      Rpn_list
+      Rn_list;
    end
    
    methods
       %% Construct
       function obj = Q8Crys(varargin)
-         num        = varargin{1};
-         finiteDisp = varargin{2};
-         if nargin == 3
-            obj.xi = varargin{3};
+         obj.finiteDisp = varargin{1};
+         angles     = varargin{2};
+         slip       = varargin{3};
+        
+         
+         if nargin >= 5
+            obj.xi = varargin{5};
          end
-         obj.dNdxi_3D         = obj.compute_dNdxi(obj);
-         [obj.Nmat, obj.Ninv] = obj.compute_Nmat(obj);
+         if nargin == 6
+            obj.weights = varargin{6};
+         end
+         [obj.Nmat, obj.Ninv] = obj.compute_Nmat(   obj);
+         obj.dNdxi_list       = obj.compute_dNdxi(  obj);
+         obj.d2Ndxi2_list     = obj.compute_d2Ndxi2(obj);
          
-         obj.det_dXdxi_list = zeros(8,num.el);
-         obj.dXdxi_list     = zeros(3,3,num.el);
-         obj.dNdX_list      = zeros(num.nen, num.ndm, num.gp, num.el);
+         if nargin >= 4 && isstruct(varargin{2})
+            obj.mesh = varargin{4};
+            numel = size(varargin{4}.conn, 1);
+            obj.Rpn_list = zeros(3,3,8,numel);
+            obj.Rpn_list(1,1,:,:) = 1;
+            obj.Rpn_list(2,2,:,:) = 1;
+         	obj.Rpn_list(3,3,:,:) = 1;
+         end
          
-         obj.Rpn_list = zeros(3,3,8,num.el);
-         obj.Rpn_list(1,1,:,:) = 1;
-         obj.Rpn_list(2,2,:,:) = 1;
-         obj.Rpn_list(3,3,:,:) = 1;
+
          
          obj.Rn_list = obj.Rpn_list;
          
          obj.bi = slip.b;
          obj.ni = slip.n;
          obj.nslip = slip.nslip;
-         
-         obj.I = eye(num.ndm);
-         
+                  
          if (strcmp(angles.conv, 'kocks') && strcmp(angles.type, 'degrees'))
             obj.angles = angles.val;
          else
@@ -102,46 +112,69 @@ classdef Q8Crys
          end
       end
       %% Get functions
-      function value = get.dNdxi(obj)
-         value = squeeze(obj.dNdxi_3D(:,:,obj.i));
-      end
-      
       function value = get.N(obj)
          value = obj.Nmat(obj.i,:);
+      end
+      
+      function value = get.dNdxi(obj)
+         value = squeeze(obj.dNdxi_list(:,:,obj.i));
+      end
+      
+      function value = get.d2Ndxi2(obj)
+         value = squeeze(obj.d2Ndxi2_list(:,:,obj.i));
       end
       
       function value = get.w(obj)
          value = obj.weights(obj.i);
       end
       
-      function value = get.det_dXdxi_list(obj)
-         value          = obj.det_dXdxi_list;
-         if value(obj.iel) == 0 % only compute it once
-            value(obj.iel) = det(obj.dXdxi);
-         end
-      end
-      
       function value = get.J(obj)
          value = obj.det_dXdxi_list(obj.iel);
-      end
-      
-      function value = get.dNdX_list(obj)
-         value = obj.dNdX_list;
-         value(:,:,obj.i,obj.iel) = obj.dNdxi' / obj.dXdxi;   
       end
       
       function value = get.dNdX(obj)
          value = obj.dNdX_list(:,:,obj.i,obj.iel);
       end
       
+      function value = get.F(obj)
+         I     = eye(size(obj.U,1));
+         value = obj.U*obj.dNdX + I;
+      end
+      
+      function value = get.j(obj)
+         value = det(obj.F) * obj.J;
+      end
+      
+      function value = get.dNdx(obj)
+         value = obj.dNdX / obj.F;
+      end
+      
+      function value = get.b(obj)
+         if obj.finiteDisp
+            value = obj.F*obj.F';
+         end
+      end
+      
+      function value = get.B(obj)
+            dx = obj.dNdx(:,1); dy = obj.dNdx(:,2); dz = obj.dNdx(:,3);
+            
+         value =[...
+            dx(1)  0      0      dx(2)  0      0      dx(3)  0      0      dx(4)  0      0      dx(5)  0      0      dx(6)  0      0      dx(7)  0      0      dx(8)  0      0     
+            0      dy(1)  0      0      dy(2)  0      0      dy(3)  0      0      dy(4)  0      0      dy(5)  0      0      dy(6)  0      0      dy(7)  0      0      dy(8)  0    
+            0      0      dz(1)  0      0      dz(2)  0      0      dz(3)  0      0      dz(4)  0      0      dz(5)  0      0      dz(6)  0      0      dz(7)  0      0      dz(8)
+            dy(1)  dx(1)  0      dy(2)  dx(2)  0      dy(3)  dx(3)  0      dy(4)  dx(4)  0      dy(5)  dx(5)  0      dy(6)  dx(6)  0      dy(7)  dx(7)  0      dy(8)  dx(8)  0     
+            0      dz(1)  dy(1)  0      dz(2)  dy(2)  0      dz(3)  dy(3)  0      dz(4)  dy(4)  0      dz(5)  dy(5)  0      dz(6)  dy(6)  0      dz(7)  dy(7)  0      dz(8)  dy(8)  
+            dz(1)  0      dx(1)  dz(2)  0      dx(2)  dz(3)  0      dx(3)  dz(4)  0      dx(4)  dz(5)  0      dx(5)  dz(6)  0      dx(6)  dz(7)  0      dx(7)  dz(8)  0      dx(8) 
+            dy(1) -dx(1)  0      dy(2) -dx(2)  0      dy(3) -dx(3)  0      dy(4) -dx(4)  0      dy(5) -dx(5)  0      dy(6) -dx(6)  0      dy(7) -dx(7)  0      dy(8) -dx(8)  0     
+            0      dz(1) -dx(1)  0      dz(2) -dx(2)  0      dz(3) -dx(3)  0      dz(4) -dx(4)  0      dz(5) -dx(5)  0      dz(6) -dx(6)  0      dz(7) -dx(7)  0      dz(8) -dx(8)  
+           -dz(1)  0      dx(1) -dz(2)  0      dx(2) -dz(3)  0      dx(3) -dz(4)  0      dx(4) -dz(5)  0      dx(5) -dz(6)  0      dx(6) -dz(7)  0      dx(7) -dz(8)  0      dx(8) 
+           ];
+      end
+            
       function value = get.Rpn(obj)
          value = obj.Rpn_list(:,:,obj.i,obj.iel);
       end
-      
-      function value = get.F(obj)
-        value = obj.U*obj.dNdX + obj.I;
-      end
-      
+
       function value = get.R(obj)
            [P, ~, Q] = svd(obj.F);
            value =  P*Q';
@@ -149,10 +182,6 @@ classdef Q8Crys
       
       function value = get.Rn_list(obj)
            value(:,:,obj.i,obj.iel) = obj.R;
-      end
-      
-      function value = get.dXdxi_list(obj)
-           value(:,:,obj.iel) = obj.dXdxi;
       end
       
       function value = get.q(obj)
@@ -199,25 +228,11 @@ classdef Q8Crys
             0
             0];
       end
-      
-      function value = get.j(obj)     
-         value = det(obj.F) * obj.J;
-      end
-      
-      function value = get.dNdx(obj)
-         value = obj.dNdX / obj.F;
-      end
 
       function value = get.dNdx_hf(obj)
          value = obj.dNdX / obj.F_hf;
       end
-      
-      function value = get.b(obj)
-         if obj.finiteDisp
-            value = obj.F*obj.F';
-         end
-      end
-      
+
       function value = get.gRot(obj)
             r = obj.angles(1);
             s = obj.angles(2);
@@ -254,25 +269,9 @@ classdef Q8Crys
       function value = get.q_cr(obj)
          value = obj.R * obj.qs * obj.R';
       end
-      
-      function value = get.B(obj)
-            dx = obj.dNdx(:,1); dy = obj.dNdx(:,2); dz = obj.dNdx(:,3);
-            
-         value =[...
-            dx(1)  0      0      dx(2)  0      0      dx(3)  0      0      dx(4)  0      0      dx(5)  0      0      dx(6)  0      0      dx(7)  0      0      dx(8)  0      0     
-            0      dy(1)  0      0      dy(2)  0      0      dy(3)  0      0      dy(4)  0      0      dy(5)  0      0      dy(6)  0      0      dy(7)  0      0      dy(8)  0    
-            0      0      dz(1)  0      0      dz(2)  0      0      dz(3)  0      0      dz(4)  0      0      dz(5)  0      0      dz(6)  0      0      dz(7)  0      0      dz(8)
-            dy(1)  dx(1)  0      dy(2)  dx(2)  0      dy(3)  dx(3)  0      dy(4)  dx(4)  0      dy(5)  dx(5)  0      dy(6)  dx(6)  0      dy(7)  dx(7)  0      dy(8)  dx(8)  0     
-            0      dz(1)  dy(1)  0      dz(2)  dy(2)  0      dz(3)  dy(3)  0      dz(4)  dy(4)  0      dz(5)  dy(5)  0      dz(6)  dy(6)  0      dz(7)  dy(7)  0      dz(8)  dy(8)  
-            dz(1)  0      dx(1)  dz(2)  0      dx(2)  dz(3)  0      dx(3)  dz(4)  0      dx(4)  dz(5)  0      dx(5)  dz(6)  0      dx(6)  dz(7)  0      dx(7)  dz(8)  0      dx(8) 
-            dy(1) -dx(1)  0      dy(2) -dx(2)  0      dy(3) -dx(3)  0      dy(4) -dx(4)  0      dy(5) -dx(5)  0      dy(6) -dx(6)  0      dy(7) -dx(7)  0      dy(8) -dx(8)  0     
-            0      dz(1) -dx(1)  0      dz(2) -dx(2)  0      dz(3) -dx(3)  0      dz(4) -dx(4)  0      dz(5) -dx(5)  0      dz(6) -dx(6)  0      dz(7) -dx(7)  0      dz(8) -dx(8)  
-           -dz(1)  0      dx(1) -dz(2)  0      dx(2) -dz(3)  0      dx(3) -dz(4)  0      dx(4) -dz(5)  0      dx(5) -dz(6)  0      dx(6) -dz(7)  0      dx(7) -dz(8)  0      dx(8) 
-           ];
-      end
-      
+
       function value = get.B_hf(obj)
-            dx = obj.dNdx_hf(:,1); dy = obj.dNdx_hf(:,2); dz = obj.dNdx_hf(:,3);
+         dx = obj.dNdx_hf(:,1); dy = obj.dNdx_hf(:,2); dz = obj.dNdx_hf(:,3);
             
          value =[...
             dx(1)  0      0      dx(2)  0      0      dx(3)  0      0      dx(4)  0      0      dx(5)  0      0      dx(6)  0      0      dx(7)  0      0      dx(8)  0      0     
@@ -287,38 +286,66 @@ classdef Q8Crys
            ];
       end
       %% Set functions
-      function obj = set.U(obj, value)
-         if size(value,3)==1 % Normal
-            obj.U = value';
-         elseif size(value,3) == 2 % DG
-            obj.U = permute(value,[2 1 3]);
+      function obj = set.U(obj, val)
+         if size(val,3)==1 % Normal
+            obj.U = val';
+         elseif size(val,3) == 2 % DG
+            obj.U = permute(val,[2 1 3]);
          end
       end
       
-      function obj = set.U_n(obj, value)
-         if size(value,3)==1 % Normal
-            obj.U_n = value';
-         elseif size(value,3) == 2 % DG
-            obj.U_n = permute(value,[2 1 3]);
+      function obj = set.U_n(obj, val)
+         if size(val,3)==1 % Normal
+            obj.U_n = val';
+         elseif size(val,3) == 2 % DG
+            obj.U_n = permute(val,[2 1 3]);
          end
+      end
+      
+      function obj = set.mesh(obj, val)
+         [obj.det_dXdxi_list, obj.dNdX_list] =...
+            obj.computeJ_and_dNdX(val.nodes, val.conn, obj.dNdxi_list);
       end
    end
    
    methods (Static)
-      function dNdxi_3D = compute_dNdxi(obj)
+      function dNdxi_list = compute_dNdxi(obj)
          xi = obj.xi;
-         dNdxi_3D = zeros(3,8,8);
-         for i=1:8
-            dNdxi_3D(:,:,i) =1/8*...
-               [ -(xi(i,2)- 1)*(xi(i,3)- 1), -(xi(i,1)- 1)*(xi(i,3)- 1), -(xi(i,1)- 1)*(xi(i,2)- 1)
-                  (xi(i,2)- 1)*(xi(i,3)- 1),  (xi(i,1)+ 1)*(xi(i,3)- 1),  (xi(i,1)+ 1)*(xi(i,2)- 1)
-                 -(xi(i,2)+ 1)*(xi(i,3)- 1), -(xi(i,1)+ 1)*(xi(i,3)- 1), -(xi(i,1)+ 1)*(xi(i,2)+ 1)
-                  (xi(i,2)+ 1)*(xi(i,3)- 1),  (xi(i,1)- 1)*(xi(i,3)- 1),  (xi(i,1)- 1)*(xi(i,2)+ 1)
-                  (xi(i,2)- 1)*(xi(i,3)+ 1),  (xi(i,1)- 1)*(xi(i,3)+ 1),  (xi(i,1)- 1)*(xi(i,2)- 1)
-                 -(xi(i,2)- 1)*(xi(i,3)+ 1), -(xi(i,1)+ 1)*(xi(i,3)+ 1), -(xi(i,1)+ 1)*(xi(i,2)- 1)
-                  (xi(i,2)+ 1)*(xi(i,3)+ 1),  (xi(i,1)+ 1)*(xi(i,3)+ 1),  (xi(i,1)+ 1)*(xi(i,2)+ 1)
-                 -(xi(i,2)+ 1)*(xi(i,3)+ 1), -(xi(i,1)- 1)*(xi(i,3)+ 1), -(xi(i,1)- 1)*(xi(i,2)+ 1)]';
+         ngp = size(xi,1);
+         ndm = size(xi,2);
+         nen = 8;
+         dNdxi_list = zeros(ndm, nen, ngp);
+         for i=1:size(xi,1)
+            dNdxi_list(:,:,i) =1/8*[... 
+               -(xi(i,2)- 1)*(xi(i,3)- 1), -(xi(i,1)- 1)*(xi(i,3)- 1), -(xi(i,1)- 1)*(xi(i,2)- 1)
+               +(xi(i,2)- 1)*(xi(i,3)- 1),  (xi(i,1)+ 1)*(xi(i,3)- 1),  (xi(i,1)+ 1)*(xi(i,2)- 1)
+               -(xi(i,2)+ 1)*(xi(i,3)- 1), -(xi(i,1)+ 1)*(xi(i,3)- 1), -(xi(i,1)+ 1)*(xi(i,2)+ 1)
+               +(xi(i,2)+ 1)*(xi(i,3)- 1),  (xi(i,1)- 1)*(xi(i,3)- 1),  (xi(i,1)- 1)*(xi(i,2)+ 1)
+               +(xi(i,2)- 1)*(xi(i,3)+ 1),  (xi(i,1)- 1)*(xi(i,3)+ 1),  (xi(i,1)- 1)*(xi(i,2)- 1)
+               -(xi(i,2)- 1)*(xi(i,3)+ 1), -(xi(i,1)+ 1)*(xi(i,3)+ 1), -(xi(i,1)+ 1)*(xi(i,2)- 1)
+               +(xi(i,2)+ 1)*(xi(i,3)+ 1),  (xi(i,1)+ 1)*(xi(i,3)+ 1),  (xi(i,1)+ 1)*(xi(i,2)+ 1)
+               -(xi(i,2)+ 1)*(xi(i,3)+ 1), -(xi(i,1)- 1)*(xi(i,3)+ 1), -(xi(i,1)- 1)*(xi(i,2)+ 1)]';
          end
+         dNdxi_list = permute(dNdxi_list, [2 1 3]);
+      end
+      
+      function d2Ndxi2_list = compute_d2Ndxi2(obj)
+         xi  = obj.xi;
+         ngp = size(xi,1);
+         nen = 8;
+         d2Ndxi2_list = zeros(6, nen, ngp);
+         for i=1:size(xi,1)
+            d2Ndxi2_list(:,:,i) =1/8*[...
+               0, 0, 0, -xi(i,3)+1, -xi(i,1)+1, -xi(i,2)+1
+               0, 0, 0,  xi(i,3)-1,  xi(i,1)+1,  xi(i,2)-1
+               0, 0, 0, -xi(i,3)+1, -xi(i,1)-1, -xi(i,2)-1
+               0, 0, 0,  xi(i,3)-1,  xi(i,1)-1,  xi(i,2)+1
+               0, 0, 0,  xi(i,3)+1,  xi(i,1)-1,  xi(i,2)-1
+               0, 0, 0, -xi(i,3)-1, -xi(i,1)-1, -xi(i,2)+1
+               0, 0, 0,  xi(i,3)+1,  xi(i,1)+1,  xi(i,2)+1
+               0, 0, 0, -xi(i,3)-1, -xi(i,1)+1, -xi(i,2)-1]';
+         end
+         d2Ndxi2_list = permute(d2Ndxi2_list, [2 1 3]);
       end
       
       function [Nmat, Ninv] = compute_Nmat(obj)
@@ -334,6 +361,27 @@ classdef Q8Crys
             (1-xi(:,1)).*(1+xi(:,2)).*(1+xi(:,3))];
          Ninv = inv(Nmat);
       end
+      
+      function [det_dXdxi_list, dNdX_list] = computeJ_and_dNdX(nodes, conn, dNdxi_list)
+         numel = size(conn    , 1);
+         nen   = size(conn    , 2);
+         ndm   = size(dNdxi_list, 2);
+         ngp   = size(dNdxi_list, 3);
+         
+         det_dXdxi_list = zeros(numel,1);
+         dNdX_list      = zeros(nen, ndm, ngp, numel);
+         for i = 1:numel
+            coor  = nodes(conn(i,:),:)';
+            dXdxi = coor*dNdxi_list(:,:,1);
+            det_dXdxi_list(i) = det(dXdxi);
+            
+            for j = 1:ngp
+               dXdxi = coor*dNdxi_list(:,:,j);
+               dNdX_list(:,:,j,i) = dNdxi_list(:,:,j) / dXdxi;
+            end
+         end
+      end
+      
    end
 end
 
