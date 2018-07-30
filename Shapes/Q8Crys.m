@@ -234,9 +234,9 @@ classdef Q8Crys
       end
 
       function value = get.gRot(obj)
-            r = obj.angles(1);
-            s = obj.angles(2);
-            t = obj.angles(3);
+            r = obj.angles(1)*pi()/180;
+            s = obj.angles(2)*pi()/180;
+            t = obj.angles(3)*pi()/180;
          
             value = [...
                -sin(r)*sin(t)-cos(r)*cos(t)*cos(s), cos(r)*sin(t)-sin(r)*cos(t)*cos(s), cos(t)*sin(s)
