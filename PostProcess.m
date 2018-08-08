@@ -121,6 +121,7 @@ function plotDeformation(hist,num)
 
 coor = hist.coor;
 title('Undeformed vs Deformed')
+hold on
 if (num.ndm == 2)
     if (num.gp == 4 || num.gp == 1)
         V0 = coor(:,:,1);
@@ -136,6 +137,7 @@ if (num.ndm == 2)
     else
         error("unsupported shape function plot");
     end
+    scatter(coor(:,1,1), coor(:,2,1), 'Marker', 'o', 'MarkerFaceColor', 'g', 'SizeData', 24);
 elseif (num.ndm == 3)
     i = [1 2 6 5 2 3 7 6 3 4 8 7 4 1 5 8 1 2 3 4 5 6 7 8];
     fac = reshape(1:num.nen*num.el,num.nen,num.el);
@@ -144,16 +146,13 @@ elseif (num.ndm == 3)
     
     set(gca,'DataAspectRatio',[1 1 1],'PlotBoxAspectRatio',[570.5 570.5 570.5])
     view (gca,[-0.8 -0.4 0.1])
+    scatter3(coor(:,1,1),coor(:,2,1),coor(:,3,1), 'Marker','o', 'MarkerFaceColor','g', 'SizeData',24);
 end
 h = patch('Vertices',V0, 'Faces',F0, 'FaceColor','none', 'EdgeColor','g');
 axis equal
 axisH = gca; %
 axisH.XLim = [min(min(hist.coor(:,1,:))) max(max(hist.coor(:,1,:)))];
 axisH.YLim = [min(min(hist.coor(:,2,:))) max(max(hist.coor(:,2,:)))];
-
-hold on
-scatter(coor(:,1,1), coor(:,2,1), 'Marker', 'o', 'MarkerFaceColor', 'g',...
-    'SizeData', 24);
 
 if (num.ndm == 2)
     if (num.gp == 4 || num.gp == 1) 
@@ -170,15 +169,16 @@ if (num.ndm == 2)
     else
         error("unsupported shape function plot");
     end
+    scatter(coor(:,1,end), coor(:,2,end), 'Marker', 'o','MarkerFaceColor', 'r', 'SizeData', 24);
 elseif (num.ndm == 3)
     i = [1 2 6 5 2 3 7 6 3 4 8 7 4 1 5 8 1 2 3 4 5 6 7 8];
     fac = reshape(1:num.nen*num.el,num.nen,num.el);
     Ff  = reshape(fac(i,:),num.nen/2,6*num.el)';
     Vf  = hist.coor(reshape(hist.conn',num.el*num.nen,1),:,end);
+    scatter3(coor(:,1,end),coor(:,2,end),coor(:,3,end),...
+       'Marker','o', 'MarkerFaceColor','r', 'SizeData',24);
 end
 patch('Vertices',Vf,'Faces',Ff,'FaceColor', 'none', 'EdgeColor','r');
-scatter(coor(:,1,end), coor(:,2,end), 'Marker', 'o',...
-    'MarkerFaceColor', 'r', 'SizeData', 24);
 end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function plotcont(hist, num, contH,subH)
