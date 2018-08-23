@@ -44,8 +44,9 @@ for i = 1:size(BC,1)
    Fint(k_index) = BC(i,3)*mult(BC(i,4),1) - U(k_index);
    G(k_index)    = BC(i,3)*mult(BC(i,4),1) - U(k_index);
 end
-
-K = K(indc,indc);
 rmG = G(indc);
 adG = G(~indc); 
+rmG = G(indc) - K(indc,~indc)*G(~indc);
+K = K(indc,indc);
+
 end
