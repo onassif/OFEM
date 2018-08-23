@@ -2,7 +2,7 @@ classdef MTS
    %Elastic 3D elastic class
    %   Detailed explanation goes here
    
-   properties (Hidden, SetAccess = private)
+   properties (SetAccess = private)
       ndm;
       ndof;
       nen;
@@ -19,6 +19,12 @@ classdef MTS
       hard
       
       name = 'MTS';
+      
+      schmidt
+      nslip
+      ms
+      qs
+      q_cr
    end
    
    properties (SetAccess = private)
@@ -28,13 +34,21 @@ classdef MTS
          'tau_ht_v' ,[], 'g0_v'   ,[], 'q_v'        ,[], 'p_v'        ,[], 'eps0_dt_v',[],...
          'tau_a'    ,[], 'k0'     ,[], 'boltz'      ,[], 'b'          ,[], 'theta0'   ,[],...
          'mu0'      ,[], 'D0'     ,[], 't0'         ,[], 'hardenExp'  ,[], 'E'        ,[],...
-         'nu'       ,[], 'voche_m',[], 'elasticType',[], 'numCrystals',[],...
+         'nu'       ,[], 'voche_m',[], 'elasticType',[], 'numCrystals',[], 'C0'       ,[],...
          'angles'   ,struct('conv',[], 'type'       ,[], 'val'        ,[]));
       
       e
       ep
+      S
+      strss
       eEff
       sEquiv
+      tauTilde
+      gradFeinv
+      Rp
+      RpList
+      R
+      RList
       
       plastic = false;
       dir;
@@ -46,29 +60,51 @@ classdef MTS
       
       mu_harden;
    end
+   properties
+      atol1 = 1.0e-6;
+      rtol1 = 1.0e-12;
+      atol2 = 1e-7;
+      rtol2 = 1.0e-12;
+      atol  = 1e-9;
+      miter = 50;
+      mmin  = 1;
+      c     = 1.0e-4;
+      red   = 0.5;
+      mls   = 4;
+      Jtol1 = 1e-4;
+      Jtol2 = 1e-4;
+      mcuts = 8;
+   end
    %%
    methods
       %% Construct
-      function obj = MTS(num, props, hardProps, slip, time, identity)
-         obj.ndm  = num.ndm;
-         obj.ndof = num.ndof;
-         obj.nen  = num.nen;
-         obj.ngp  = num.gp;
-         obj.eEff = zeros(                 num.gp, num.el, num.steps+1);
-         obj.ep   = zeros(obj.ndm,obj.ndm, num.gp, num.el, num.steps+1);
+      function ob = MTS(num, props, hardProps, slip, time, identity)
+         ob.ndm  = num.ndm;
+         ob.ndof = num.ndof;
+         ob.nen  = num.nen;
+         ob.ngp  = num.gp;
+         ob.eEff = zeros(                 num.gp, num.el, num.steps+1);
+         ob.ep   = zeros(ob.ndm,ob.ndm, num.gp, num.el, num.steps+1);
+         ob.strss= zeros(num.str, num.gp, num.el, num.steps+1);
+         ob.tauTilde  = zeros(num.gp, num.el, num.steps+1);
+         ob.gradFeinv = zeros(3, 9, num.gp, num.el, num.steps+1);
+         ob.RpList    = zeros(3, 3, num.gp, num.el, num.steps+1);
+         ob.RList     = zeros(3, 3, num.gp, num.el, num.steps+1);
+         ob.RpList(1,1,:,:,1) = 1;     ob.RpList(2,2,:,:,1) = 1;     ob.RpList(3,3,:,:,1) = 1;
+         ob.RList(1,1,:,:,1)  = 1;     ob.RList(2,2,:,:,1)  = 1;     ob.RList(3,3,:,:,1)  = 1;
          
          for i=1:length(props)
             switch props{i,1}
                case 'E'
-                  obj.props.E     = props{i,2};
+                  ob.props.E     = props{i,2};
                case 'nu'
-                  obj.props.nu    = props{i,2};
+                  ob.props.nu    = props{i,2};
                case 'beta'
-                  obj.props.beta  = props{i,2};
+                  ob.props.beta  = props{i,2};
                case 'Hp'
-                  obj.props.Hp    = props{i,2};
+                  ob.props.Hp    = props{i,2};
                case 'Y'
-                  obj.props.Y     = props{i,2};
+                  ob.props.Y     = props{i,2};
                otherwise
                   error( ['You''ve chosen mm10 material but specified incompatible ',...
                      'material properties, I''m disapponted']);
@@ -77,190 +113,417 @@ classdef MTS
          for i=1:length(hardProps)
             switch hardProps{i,1}
                case 'tau_ht_y'
-                  obj.hardProps.tau_ht_y    = hardProps{i,2};
+                  ob.hardProps.tau_ht_y    = hardProps{i,2};
                case 'g0_y'
-                  obj.hardProps.g0_y        = hardProps{i,2};
+                  ob.hardProps.g0_y        = hardProps{i,2};
                case 'q_y'
-                  obj.hardProps.q_y         = hardProps{i,2};
+                  ob.hardProps.q_y         = hardProps{i,2};
                case 'p_y'
-                  obj.hardProps.p_y         = hardProps{i,2};
+                  ob.hardProps.p_y         = hardProps{i,2};
                case 'eps0_dt_y'
-                  obj.hardProps.eps0_dt_y   = hardProps{i,2};
+                  ob.hardProps.eps0_dt_y   = hardProps{i,2};
                case 'tau_ht_v'
-                  obj.hardProps.tau_ht_v    = hardProps{i,2};
+                  ob.hardProps.tau_ht_v    = hardProps{i,2};
                case 'g0_v'
-                  obj.hardProps.g0_v        = hardProps{i,2};
+                  ob.hardProps.g0_v        = hardProps{i,2};
                case 'q_v'
-                  obj.hardProps.q_v         = hardProps{i,2};
+                  ob.hardProps.q_v         = hardProps{i,2};
                case 'p_v'
-                  obj.hardProps.p_v         = hardProps{i,2};
+                  ob.hardProps.p_v         = hardProps{i,2};
                case 'eps0_dt_v'
-                  obj.hardProps.eps0_dt_v   = hardProps{i,2};
+                  ob.hardProps.eps0_dt_v   = hardProps{i,2};
                case 'tau_a'
-                  obj.hardProps.tau_a       = hardProps{i,2};
+                  ob.hardProps.tau_a       = hardProps{i,2};
                case 'k0'
-                  obj.hardProps.k0          = hardProps{i,2};
+                  ob.hardProps.k0          = hardProps{i,2};
                case 'boltz'
-                  obj.hardProps.boltz       = hardProps{i,2};
+                  ob.hardProps.boltz       = hardProps{i,2};
                case 'b'
-                  obj.hardProps.b           = hardProps{i,2};
+                  ob.hardProps.b           = hardProps{i,2};
                case 'theta0'
-                  obj.hardProps.theta0      = hardProps{i,2};
+                  ob.hardProps.theta0      = hardProps{i,2};
                case 'mu0'
-                  obj.hardProps.mu0         = hardProps{i,2};
+                  ob.hardProps.mu0         = hardProps{i,2};
                case 'D0'
-                  obj.hardProps.D0          = hardProps{i,2};
+                  ob.hardProps.D0          = hardProps{i,2};
                case 't0'
-                  obj.hardProps.t0          = hardProps{i,2};
+                  ob.hardProps.t0          = hardProps{i,2};
                case 'hardenExp'
-                  obj.hardProps.hardenExp   = hardProps{i,2};
+                  ob.hardProps.hardenExp   = hardProps{i,2};
                case 'E'
-                  obj.hardProps.E           = hardProps{i,2};
+                  ob.hardProps.E           = hardProps{i,2};
                case 'nu'
-                  obj.hardProps.nu          = hardProps{i,2};
+                  ob.hardProps.nu          = hardProps{i,2};
                case 'voche_m'
-                  obj.hardProps.voche_m     = hardProps{i,2};
+                  ob.hardProps.voche_m     = hardProps{i,2};
                case 'elasticType'
-                  obj.hardProps.elasticType = hardProps{i,2};
+                  ob.hardProps.elasticType = hardProps{i,2};
                case 'numCrystals'
-                  obj.hardProps.numCrystals = hardProps{i,2};
+                  ob.hardProps.numCrystals = hardProps{i,2};
                case 'angleConv'
-                  obj.hardProps.angles.conv = hardProps{i,2};
+                  ob.hardProps.angles.conv = hardProps{i,2};
                case 'angleType'
-                  obj.hardProps.angles.type = hardProps{i,2};
+                  ob.hardProps.angles.type = hardProps{i,2};
                case 'angles'
-                  obj.hardProps.angles.val  = hardProps{i,2};
+                  ob.hardProps.angles.val  = hardProps{i,2};
                otherwise
                   error("Unknown MTS hardening parameter");
             end
          end
-         obj.slip = slip;
-         obj.props.G    =   0.5*obj.props.E/(1+  obj.props.nu);
-         obj.props.Bulk = (1/3)*obj.props.E/(1-2*obj.props.nu);
          
-         obj.I       = eye(num.ndm);
-         obj.I4_dev  = identity.I4_dev;
-         obj.I4_bulk = identity.I4_bulk;
+         ob.nslip = slip.nslip;
+         ob.slip.n  = slip.n;
+         [ob.gRot, ob.schmidt]= ob.compute_gRot_schmidt(ob.hardProps.angles.val, slip.b, slip.n, slip.nslip);
+         ob.props.G    =   0.5*ob.hardProps.E/(1+  ob.hardProps.nu);
+         ob.props.Bulk = (1/3)*ob.hardProps.E/(1-2*ob.hardProps.nu);
          
-         obj.dt = zeros(sum(time(:,2),1), 1);
+         ob.I       = eye(num.ndm);
+         ob.I4_dev  = identity.I4_dev;
+         ob.I4_bulk = identity.I4_bulk;
+         
+         ob.hardProps.C0 = ob.props.Bulk*ob.I4_bulk + 2*ob.props.G*ob.I4_dev;
+         
+         ob.dt = zeros(sum(time(:,2),1), 1);
          for i=1:size(time,1)
             for j = 1:time(i,2)
                if i == 1
-                  obj.dt(j) = time(i,1)/time(i,2);
+                  ob.dt(j) = time(i,1)/time(i,2);
                else
-                  obj.dt(  j+sum( time(1:i-1,2) )  ) = (time(i,1)-time(i-1,1))/time(i,2);
+                  ob.dt(  j+sum( time(1:i-1,2) )  ) = (time(i,1)-time(i-1,1))/time(i,2);
                end
             end
          end
          
       end
       %% Epsilon
-      function [eps, obj] = computeStrain(obj, gp, el, ~)
-         I = obj.I;
+      function [eps, ob] = computeStrain(ob, gp, el, ~)
          
-         eps= gp.q * gp.B(1:6,:) * el.Uvc;
+         eps= gp.q_hf' * gp.B_hf(1:6,:) * el.Uvc;
          
          e=[1.0*eps(1) 0.5*eps(4) 0.5*eps(6)
             0.5*eps(4) 1.0*eps(2) 0.5*eps(5)
             0.5*eps(6) 0.5*eps(5) 1.0*eps(3)];
-         e = e - (1/3)*trace(e)*I;
-         obj.e = e;
-         obj.eEff = sqrt( (2/3)*sum( dot(e,e) ));
+         ob.e = e;
+%          ob.eEff = sqrt( (2/3)*sum( dot(e,e) ));
       end
       %% Sigma
-      function [sigma_voigt, obj] = computeCauchy(obj, gp, step)
-         I = obj.I;
-         G = obj.G;
-         K = obj.Bulk;
-         
-         np1.e  = obj.e;
-         np1.ep = obj.ep(:,:, gp.i, gp.iel, step+1);
-         
-         sigma       = 2*G* (np1.e - np1.ep) + K*sum(gp.eps(1:obj.ndm))*I;
-         sigma_voigt = obj.voigtize(sigma,'col', obj.ndm);
+      function [sigma_voigt, ob] = computeCauchy(ob, gp, step)
+         sigma_voigt = ob.S;
       end
       %% Tangential stiffness
-      function [D, ctan, obj] = computeTangentStiffness(obj, gp, el, step)
-         dt   = obj.dt(step);
+      function [D, ctan, ob] = computeTangentStiffness(ob, gp, el, step)
+         dt   = ob.dt(step);
          % Identities
-         I4_dev  = obj.I4_dev;
-         I4_bulk = obj.I4_bulk;
+         I4_dev  = ob.I4_dev;
+         I4_bulk = ob.I4_bulk;
+         permut = [...
+            0  0  0  0  0  1  0 -1  0
+            0  0 -1  0  0  0  1  0  0
+            0  1  0 -1  0  0  0  0  0]';
+         ob.Rp = ob.RpList(:, :, gp.i, el.i, step);
+         ob.R  = gp.R;
          % Material properties
-         mu_harden = obj.hardProps.mu0;
-         tau_v     = obj.hardProps.tau_ht_v;
-         tau_y     = obj.hardProps.tau_ht_y;
+         mu_harden = ob.hardProps.mu0;
+         tau_v     = ob.hardProps.tau_ht_v;
+         tau_y     = ob.hardProps.tau_ht_y;
+         tau_a     = ob.hardProps.tau_a;
+         k0        = ob.hardProps.k0;
+         theta0    = ob.hardProps.theta0;
+         b         = ob.hardProps.b;
+         n_cr      = gp.Rn*ob.Rp'*ob.gRot'*ob.slip.n';
+         nExp      = ob.hardProps.hardenExp;
+         C0        = ob.hardProps.C0;
+         voche_m   = ob.hardProps.voche_m;
          % Gauss-Point properties
-         ms        = gp.ms;
-         qs        = gp.qs;
-         q_cr      = gp.q_cr;
-%          obj.calc_grads(8,1,gp.Rn_list(:,:,:,gp.iel),
+         ms        = ob.ms;
+         qs        = ob.qs;
+         q_cr      = ob.q_cr;
+         %          ob.calc_grads(8,1,gp.Rn_list(:,:,:,gp.iel),
          %          tau_l     =
          % Values from previous step
-         n.ep    = obj.ep   (:,:, gp.i, gp.iel, step);
-         n.eEff  = obj.eEff (     gp.i, gp.iel, step);
+         np1.e = ob.e;
+%          np1.e   = [...
+%             +4.07622185245106e-03 -5.72399817383780e-05 -1.412448659722675e-20
+%             -5.72399817383780e-05 -2.07079831910602e-03 +4.904992051057355e-20
+%             -1.41244865972268e-20 +4.90499205105736e-20 -6.318564071549100e-39];
+         np1.deEff = sqrt( (2/3)*sum( dot(np1.e, np1.e) ));
+         n.tauTilde  = ob.tauTilde(gp.i, gp.iel, step);
+         n.tauTilde  = (n.tauTilde>0)*n.tauTilde +(n.tauTilde<=0)*(np1.deEff~=0)*(tau_a+tau_y+0.1);
+         gradFeinv   = ob.calcGradFeInv(ob.RList(:,:,:,el.i,step),ob.RpList(:,:,:,el.i,step),gp.dXdxi_list(:,:,el.i));
+         gradFeinv = reshape(gradFeinv(:,gp.i),3,9);
+         n.S         = ob.strss(:,gp.i, gp.iel, step);
+         n.sol       = [n.S;n.tauTilde];
          
-         % Trial equivalent stress
-         np1.e      = obj.e;
-         np1.S      = 2*G* (np1.e - n.ep); % Assuming no plasticity
-         np1.sEquiv = sqrt( (3/2)*sum( dot(np1.S, np1.S) ));% Assuming no plasticity
+         tm = gradFeinv*permut*n_cr;
+         tau_l = k0*b*mu_harden^2*sqrt(diag(tm'*tm))/(18*theta0); %% Change
          
-         % Effective plastic strain increment
-         np1.deEff =...
-            obj.getEffPlasStrnInc(G, Y, n.eEff, np1.sEquiv, e0, nExp, dt, edot0, m);
-         np1.eEff  = n.eEff + np1.deEff;
          
-         % Decide whether solving plastic or elastic tangential
-         if (np1.sEquiv*np1.deEff>0)
-            np1.dep = (3/2)*np1.deEff* (np1.S/np1.sEquiv);
-            
-            c1 = 1 - 3*G*np1.deEff/np1.sEquiv;
-            c2 =...
-               3*G/np1.sEquiv + c1*( 1/(nExp*(e0+n.eEff+np1.deEff)) + 1/(m*np1.deEff) );
-            c3 = 4.5*G* (np1.deEff - 1/c2)/(c1*(np1.sEquiv)^3);
+         frac = 0;
+         stp = 1;
+         S = n.S;
+         tauT = n.tauTilde;
+         ostress = S;
+         ott = tauT;
+         cuts = 0;
+         fail = 0;
+         while (frac<1)
+            iter = 0;
+            R  = reshape(gp.R, 9,1);
+            de = [np1.e(1,1) np1.e(2,2) np1.e(3,3) 2*np1.e(1,2) 2*np1.e(2,3) 2*np1.e(1,3)]'*(stp+frac);
+            deEff = np1.deEff*(stp+frac);
+            dt = 1; %%%%%%%%%%% fix later
+            rss   = ms*S;
+            if tauT ==0
+               gamm = zeros(size(rss));
+            else
+               gamm  = deEff * (rss./tauT).^nExp .* sign(rss);
+            end
+            dbarp = ms'*gamm;
+            Wp    = q_cr'*gamm;
+            np1.R1 = S - n.S - C0*(de - dbarp) + ob.twoSymm(S,Wp);
+            ct = (tauT-tau_a) - tau_y;
+            xi = 1 - ct/tau_v + tau_l/ct;
+            h = n.tauTilde + theta0*sum(abs(xi.^voche_m .* gamm));
+            np1.R2 = tauT - h;
+            np1.R = [np1.R1;np1.R2];
+            nrm.R1 = norm(np1.R1); nrm.iR1 = norm(np1.R1);
+            nrm.R2 = norm(np1.R2); nrm.iR2 = norm(np1.R2);
+            while (nrm.R1>ob.atol1) && (nrm.R1/nrm.iR1>ob.rtol1) ||...
+                  (nrm.R2>ob.atol2) && (nrm.R2/nrm.iR2>ob.rtol2)
+               dgammdrss  = (nExp*deEff)*abs(rss).^(nExp-1)/(tauT^nExp);
+               dgammdtauT = (-nExp/tauT)*gamm;
+               
+               corr = ob.twoSymm(S,q_cr');
+               J11 = (C0*ms'+corr)*(dgammdrss.*ms)+ob.IW(Wp)+eye(6);
+               J12 = (C0*ms'+corr)*dgammdtauT;
+               J21 = -theta0*(xi.^voche_m .* sign(rss))'*(dgammdrss.*ms);
+               J22 = 1+theta0*sum(abs((voche_m./xi.*(1/tau_v+tau_l/ct^2)+nExp/tauT).*xi.^(voche_m).*gamm));
+               if (imag(J22)~=0)
+                  J22 = NaN;
+               end
+               J = [J11 J12;J21 J22];
+               dx = J\np1.R;
+               
+               alpha = 1;
+               ls  = 0;
+               x = [S;tauT];
+               while ls < ob.mls
+                  ls = ls + 1;
+                  nlsx = (0.5 - ob.c*alpha) *norm(np1.R)^2;
+                  xnew = x - alpha*dx;
+                  S    = xnew(1:6);
+                  tauT = xnew(7:end);
+                  
+                  rss   = ms*S;
+                  gamm  = deEff * (rss./tauT).^nExp .* sign(rss);
+                  dbarp = ms'*gamm;
+                  Wp    = q_cr'*gamm;
+                  np1.R1 = S - n.S - C0*(de - dbarp) + ob.twoSymm(S,Wp);
+                  ct = (tauT-tau_a) - tau_y;
+                  xi = 1 - ct/tau_v + tau_l/ct;
+                  h = n.tauTilde + theta0*sum(abs(xi.^voche_m .* gamm));
+                  np1.R2 = tauT - h;
+                  np1.R = [np1.R1;np1.R2];
+                  nrm.R1 = norm(np1.R1);
+                  nrm.R2 = norm(np1.R2);
+                  nRs = 0.5*norm(np1.R)^2;
+                  if ((nRs <= nlsx) || (ls >= ob.mls)) % || (cuts > 6 && iter <= 3)
+                     break
+                  else
+                     alpha = ob.red*alpha;
+                  end
+               end
+               
+               iter = iter + 1;
+               % c           Increment and check for failure
+               if ((iter > ob.miter) || any(isnan(x)) || any(imag(x)))
+                  if  (cuts > 5 && nR1 < 5 && nR2 < 5e4)
+                     S    = n.S;
+                     tauT = n.tauTilde;
+                     break
+                  else
+                     fail = 1;
+                     break;
+                  end
+               end
+            end
+            if (fail)
+               ob.S = ostress;
+               tauT = ott;
+               stp = stp * 0.5;
+               cuts = cuts + 1;
+               if (cuts > ob.mcuts), break
+               end
+               fail = 0;
+            else
+               ostress = S;
+               ott = tauT;
+               frac = frac + stp;
+            end
+            ob.S = S;
+         end
+         
+         de_mod  = [de(1:3); 0.5*de(4:6)];
+         if deEff == 0
+            dgammde = zeros(size(gamm,1),size(de_mod,1));
+            J11 = eye(size(de_mod,1));
+            J12 = zeros(size(de_mod,1),1);
+            J21 = zeros(1,size(de_mod,1));
+            J22 = eye(size(tauT,1));
          else
-            np1.dep = (3/2)*np1.deEff* (np1.S/1);
-            
-            c1 = 1;
-            c3 = 0;
+            dgammde = (2/3)*(1/deEff^2)*gamm*de_mod';
          end
-         np1.ep = n.ep + np1.dep;
+         dSde    = theta0*(abs(dgammde')*xi).*sign(de_mod);
+         corr = ob.twoSymm(S,q_cr');
          
-         % Save states as they'll be sent to stress function
-         obj.eEff(     gp.i, gp.iel, step+1)= np1.eEff;
-         obj.ep  (:,:, gp.i, gp.iel, step+1)= np1.ep;
+         JA = (C0*ms'+corr)*dgammde;
+         JB = J12/J22*dSde';
          
-         if     obj.ndm == 2
-            S  = [np1.S(1,1) np1.S(2,2) 0          np1.S(1,2) 0          0         ];
-         elseif obj.ndm == 3
-            S  = [np1.S(1,1) np1.S(2,2) np1.S(3,3) np1.S(1,2) np1.S(2,3) np1.S(1,3)];
-         end
-         % Compute D
-         D =K*I4_bulk          +... % Elastic bulk
-            c1*   (2*G)*I4_dev +... % Elastic deviatoric
-            c1*c3*(2*G)*(S'*S);     % Plastic
+         JJ = J11 - J12/J22*J21;
+         JR = C0 - JA - JB;
          
+         D = JJ\JR;
+         D = 0.5*(D+D');
          ctan = reshape(D([1,4,6,4,2,5,6,5,3],[1,4,6,4,2,5,6,5,3]),3,3,3,3);
-         if obj.ndm == 2
+         if ob.ndm == 2
             D =D([1,2,4],[1,2,4]);
          end
+         
+         wp = qs'*gamm;
+         wbarp = [...
+            0      wp(3) wp(2)
+            -wp(3)  0     wp(1)
+            -wp(2) -wp(1) 0];
+         ob.RpList(:,:,gp.i,el.i, step+1)  = expm(wbarp)*ob.RpList(:,:,gp.i,el.i, step);
+         ob.RList(:,:,gp.i,el.i, step+1)   = gp.Rn_list(:,:,gp.i,el.i);
+         ob.tauTilde(gp.i, gp.iel, step+1) = tauT;
+         ob.strss(:,gp.i, gp.iel, step+1)  = ob.S;
       end
       %% Element K
       function Kel = computeK_el(~, Kel, gp, ~)
          % Definitions
+         S = gp.sigma_un;
          B=gp.B;
+         D = [gp.q*gp.D*gp.q' zeros(6,3); zeros(3,9)] - [...
+            +S(1)      0         0         0.5*S(4)          0                 0.50*S(6)        -0.5*S(4)          0                 0.50*S(6)
+            +0         S(2)      0         0.5*S(4)          0.50*S(5)         0                 0.5*S(4)         -0.5*S(5)          0
+            +0         0         S(3)      0                 0.50*S(5)         0.50*S(6)         0                 0.5*S(5)         -0.50*S(6)
+            +0.5*S(4)  0.5*S(4)  0         0.25*(S(2)+S(1))  0.25*S(6)         0.25*S(5)        -0.25*(S(2)-S(1)) -0.25*S(6)         0.25*S(5)
+            +0         0.5*S(5)  0.5*S(5)  0.25*S(6)         0.25*(S(3)+S(2))  0.25*S(4)         0.25*S(6)        -0.25*(S(3)-S(2)) -0.25*S(4)
+            +0.5*S(6)  0         0.5*S(6)  0.25*S(5)         0.25*S(4)         0.25*(S(1)+S(3)) -0.25*S(5)         0.25*S(4)        -0.25*(S(1)-S(3))
+            -0.5*S(4)  0.5*S(4)  0        -0.25*(S(2)-S(1))  0.25*S(6),       -0.25*S(5)        -0.25*(S(1)+S(2))  0.25*S(6)         0.25*S(5)
+            +0        -0.5*S(5)  0.5*S(5) -0.25*S(6)        -0.25*(S(3)-S(2))  0.25*S(4)         0.25*S(6)        -0.25*(S(2)+S(3))  0.25*S(4)
+            +0.5*S(6)  0        -0.5*S(6)  0.25*S(5),       -0.25*S(4)        -0.25*(S(1)-S(3))  0.25*S(5)         0.25*S(4)        -0.25*(S(1)+S(3))];
          %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-         
-         Kel = Kel + (B'*gp.D*B) *gp.J *gp.w;
+         if gp.i == 1
+            Kel = (B'*D*B)*gp.j*gp.w;
+         else
+            Kel = Kel + (B'*D*B)*gp.j*gp.w;
+         end
       end
       %% Element Fint
       function Fint = computeFint(~, gp, el)
-         Fint = el.Fint + (gp.B'*gp.sigma) *gp.J *gp.w;
+         sigma = [gp.sigma_un;0;0;0];
+         if gp.i == 1
+            Fint = (gp.B'*sigma) *gp.j *gp.w;
+         else
+            Fint = el.Fint + (gp.B'*sigma) *gp.j *gp.w;
+         end
+      end
+      %% m(slip)
+      function value = get.ms(ob)
+         value = zeros(ob.nslip,6);
+         
+         for s = 1:ob.nslip
+            A = ob.schmidt(:,:,s);
+            sh = ob.Rp'*(1/2)*(A+A')*ob.Rp;
+            value(s,:) = [sh(1,1) sh(2,2) sh(3,3) 2*sh(1,2) 2*sh(2,3) 2*sh(1,3)];
+         end
+      end
+      %% q(slip)
+      function value = get.qs(ob)
+         value = zeros(ob.nslip,3);
+         
+         for s = 1:ob.nslip
+            A = ob.schmidt(:,:,s);
+            sh = ob.Rp'*(1/2)*(A-A')*ob.Rp;
+            value(s,:) = [sh(2,3) sh(1,3) sh(1,2)];
+         end
+      end
+      %% q(slip) in current coordinates
+      function value = get.q_cr(ob)
+         value = zeros(ob.nslip,3);
+         R = ob.R; %#ok<PROP>
+         %#ok<*PROP>
+         for s = 1:ob.nslip
+            q = ob.qs(s,:);
+            value(s,:) = [...
+               R(3,2)*(R(2,1)*q(3)-R(2,3)*q(1)) - R(3,1)*(R(2,2)*q(3)+R(2,3)*q(2)) + R(3,3)*(R(2,1)*q(2)+R(2,2)*q(1))
+               R(3,2)*(R(1,1)*q(3)-R(1,3)*q(1)) - R(3,1)*(R(1,2)*q(3)+R(1,3)*q(2)) + R(3,3)*(R(1,1)*q(2)+R(1,2)*q(1))
+               R(2,2)*(R(1,1)*q(3)-R(1,3)*q(1)) - R(2,1)*(R(1,2)*q(3)+R(1,3)*q(2)) + R(2,3)*(R(1,1)*q(2)+R(1,2)*q(1))
+               ]';
+         end
       end
       
-      
    end
-   
    methods (Static)
+      function [gRot, schmidt] = compute_gRot_schmidt(angles, bi, ni, nslip)
+         r = angles(1)*pi()/180;
+         s = angles(2)*pi()/180;
+         t = angles(3)*pi()/180;
+         
+         gRot = [...
+            -sin(r)*sin(t)-cos(r)*cos(t)*cos(s), cos(r)*sin(t)-sin(r)*cos(t)*cos(s), cos(t)*sin(s)
+            +sin(r)*cos(t)-cos(r)*sin(t)*cos(s),-cos(r)*cos(t)-sin(r)*sin(t)*cos(s), sin(t)*sin(s)
+            +cos(r)*sin(s)                     , sin(r)*sin(s)                     , cos(s)       ];
+         
+         bs = bi * gRot;
+         ns = ni * gRot;
+         schmidt = zeros(3,3,nslip);
+         for s = 1:nslip
+            schmidt(:,:,s) = bs(s,:)'*ns(s,:);
+         end
+      end
+      function gradFeInv = calcGradFeInv(R, Rp, dXdxi) 
+         ngp = size(R,3);
+         Rt  = zeros(ngp,3,3);
+         
+         % Get R components and stick in the right place
+            jacinv = inv(dXdxi);
+            for i = 1:ngp
+               Rt(i,:,:) = jacinv*Rp(:,:,i)*R(:,:,i)';
+            end
+         
+         intermat = 1/sqrt(3)*[...
+            -1 +1 -1 +1 -1 +1 -1 +1
+            -1 -1 +1 +1 -1 -1 +1 +1
+            -1 -1 -1 -1 +1 +1 +1 +1];
+         %       Vector:
+         LHS = reshape(Rt,ngp,9)';
+         RHS = LHS/intermat;
+         
+         grads = reshape(RHS,3,3,3);
+         
+         gradFeInv = repmat(reshape(grads(1:3,1:3,1:3), 27, 1),1,ngp);
+      end
+      function res = twoSymm(S,Wp)
+         res = [...
+            2*S(4)*Wp(3,:) - 2*S(6)*Wp(2,:)
+            2*S(4)*Wp(3,:) - 2*S(5)*Wp(1,:)
+            2*S(6)*Wp(2,:) + 2*S(5)*Wp(1,:)
+            Wp(3,:)*(S(1)-S(2)) + Wp(1,:)*S(6) - Wp(2,:)*S(5)
+            Wp(1,:)*(S(2)-S(3)) + Wp(2,:)*S(4) + Wp(3,:)*S(6)
+            Wp(2,:)*(S(1)-S(3)) + Wp(1,:)*S(4) - Wp(3,:)*S(5)];
+      end
+      function res = IW(W)
+         res = [...
+            0     0     0     2*W(3)   0       -2*W(2)
+            0     0     0     2*W(3)   -2*W(1)  0
+            0     0     0     0         2*W(1)  2*W(2)
+            W(3)  -W(3) 0     0        -1*W(2)  1*W(1)
+            0     W(1)  -W(1) 1*W(2)     0      1*W(3)
+            W(2)  0     -W(2) 1*W(1)   -1*W(3)  0.0000];
+      end
       
       function deEff = getEffPlasStrnInc(G, Y, eEff, sEquiv, e0, nExp, dt, edot0, m)
          deEff = 10^(-15);
@@ -277,7 +540,7 @@ classdef MTS
                enew = deEff - f/dfde;
                if (enew<0)
                   %        e must be >0, so if new approx to e <0 the solution
-                  %        must lie between current approx to e and zero.
+                  %        must lie between current approx to e and zerob.
                   deEff = deEff/10;
                else
                   deEff = enew;
@@ -305,31 +568,5 @@ classdef MTS
                error('Unknown input');
          end
       end
-      
-      function gradFes = mm10_calc_grads(ngp, geonl, rot_blk, jac, Rps, ~)         
-         Rt = zeros(ngp,3,3);
-         
-         % Get R components and stick in the right place
-         if (geonl)
-            jacinv = inv(jac);
-            for i = 1:ngp
-               Rt(i,1:3,1:3) = jacinv*reshape(Rps(1:9,i),3,3)*reshape(rot_blk(1:9,i),3,3)';
-            end
-         else
-            Rt = reshape(Rps',ngp, 3,3);
-         end
-         
-         intermat = 1/sqrt(3)*[...
-            -1 +1 -1 +1 -1 +1 -1 +1
-            -1 -1 +1 +1 -1 -1 +1 +1
-            -1 -1 -1 -1 +1 +1 +1 +1];
-         %       Vector:
-         LHS = reshape(Rt,ngp,9)';
-         RHS = LHS/intermat;
-         
-         grads = reshape(RHS,3,3,3);
-         
-         gradFes = repmat(reshape(grads(1:3,1:3,1:3), 27, 1),1,ngp); 
-      end
    end
-end  
+end
