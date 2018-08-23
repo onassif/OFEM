@@ -75,7 +75,7 @@ for step=1:num.steps % Steps loop
       NR.residual   = norm(G)/(num.np*num.ndof);
       
       % Print iteration information:
-      NR.iter = NR.iter + 1;
+      NR.iter = NR.iter + 1; el.iter = NR.iter;
       fprintf('step: %4.0d\t iteration:%2.0d\t correction: %.10f\t residual: %.10f\n',...
          step, NR.iter, NR.correction, NR.residual);
       
