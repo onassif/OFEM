@@ -11,6 +11,7 @@ classdef Q8Crys
       U
       U_n
       mesh
+      Rpn_list
    end
    
    properties (SetAccess = private)
@@ -25,6 +26,7 @@ classdef Q8Crys
       dNdxi
       d2Ndxi2
       det_dXdxi_list
+      dXdxi_list;
       B
       N
       w
@@ -52,6 +54,7 @@ classdef Q8Crys
       
       gRot;
       Rpn;
+      Rn;
       
       ms;
       qs;
@@ -66,7 +69,7 @@ classdef Q8Crys
       dNdx_hf;
       
       angles = [0, 0, 0];
-      Rpn_list
+      
       Rn_list;
    end
    
@@ -166,7 +169,7 @@ classdef Q8Crys
             0      dz(1)  dy(1)  0      dz(2)  dy(2)  0      dz(3)  dy(3)  0      dz(4)  dy(4)  0      dz(5)  dy(5)  0      dz(6)  dy(6)  0      dz(7)  dy(7)  0      dz(8)  dy(8)  
             dz(1)  0      dx(1)  dz(2)  0      dx(2)  dz(3)  0      dx(3)  dz(4)  0      dx(4)  dz(5)  0      dx(5)  dz(6)  0      dx(6)  dz(7)  0      dx(7)  dz(8)  0      dx(8) 
             dy(1) -dx(1)  0      dy(2) -dx(2)  0      dy(3) -dx(3)  0      dy(4) -dx(4)  0      dy(5) -dx(5)  0      dy(6) -dx(6)  0      dy(7) -dx(7)  0      dy(8) -dx(8)  0     
-            0      dz(1) -dx(1)  0      dz(2) -dx(2)  0      dz(3) -dx(3)  0      dz(4) -dx(4)  0      dz(5) -dx(5)  0      dz(6) -dx(6)  0      dz(7) -dx(7)  0      dz(8) -dx(8)  
+            0      dz(1) -dy(1)  0      dz(2) -dy(2)  0      dz(3) -dy(3)  0      dz(4) -dy(4)  0      dz(5) -dy(5)  0      dz(6) -dy(6)  0      dz(7) -dy(7)  0      dz(8) -dy(8)  
            -dz(1)  0      dx(1) -dz(2)  0      dx(2) -dz(3)  0      dx(3) -dz(4)  0      dx(4) -dz(5)  0      dx(5) -dz(6)  0      dx(6) -dz(7)  0      dx(7) -dz(8)  0      dx(8) 
            ];
       end
@@ -175,14 +178,21 @@ classdef Q8Crys
          value = obj.Rpn_list(:,:,obj.i,obj.iel);
       end
 
+      function value = get.Rn(obj)
+         value = obj.Rn_list(:,:,obj.i,obj.iel);
+      end
+      
       function value = get.R(obj)
            [P, ~, Q] = svd(obj.F);
            value =  P*Q';
       end
       
-      function value = get.Rn_list(obj)
-           value(:,:,obj.i,obj.iel) = obj.R;
+      function obj = set.R(obj, value)
+         obj.Rn_list(:,:,obj.i,obj.iel) = value;
       end
+%       function value = get.Rn_list(obj)
+%            value(:,:,obj.i,obj.iel) = obj.R;
+%       end
       
       function value = get.q(obj)
          R11 = obj.R(1,1); R12 = obj.R(1,2); R13 = obj.R(1,3);
@@ -199,7 +209,8 @@ classdef Q8Crys
       end
 
       function value = get.F_hf(obj)
-        value = (1/2)*(obj.U + obj.U_n)*obj.dNdX + obj.I;
+         I     = eye(size(obj.U,1));
+        value = (1/2)*(obj.U + obj.U_n)*obj.dNdX + I;
       end
       
       function value = get.R_hf(obj)
@@ -222,11 +233,7 @@ classdef Q8Crys
       end
       
       function value = get.sigma_un(obj)
-         value = [...
-            obj.q*obj.sigma
-            0
-            0
-            0];
+         value = obj.q*obj.sigma;
       end
 
       function value = get.dNdx_hf(obj)
@@ -245,29 +252,41 @@ classdef Q8Crys
       end
       
       function value = get.ms(obj)       
-         value = zeros(3,3,obj.nslip);
+         value = zeros(obj.nslip,6);
          bs = obj.bi * obj.gRot;
          ns = obj.ni * obj.gRot;
          
          for s = 1:obj.nslip
             A = bs(s,:)'*ns(s,:);
-            value(:,:,s) = obj.Rpn'*(1/2)*(A+A')*obj.Rpn;
+            sh = obj.Rpn'*(1/2)*(A+A')*obj.Rpn;
+            value(s,:) = [sh(1,1) sh(2,2) sh(3,3) 2*sh(1,2) 2*sh(2,3) 2*sh(1,3)];
          end
       end
 
       function value = get.qs(obj)
-         value = zeros(3,3,obj.nslip);
+         value = zeros(obj.nslip,3);
          bs = obj.bi * obj.gRot;
          ns = obj.ni * obj.gRot;
          
          for s = 1:obj.nslip
             A = bs(s,:)'*ns(s,:);
-            value(:,:,s) = obj.Rpn'*(1/2)*(A-A')*obj.Rpn;
+            sh = obj.Rpn'*(1/2)*(A-A')*obj.Rpn;
+            value(s,:) = [sh(2,3) sh(1,3) sh(1,2)];
          end
       end
 
       function value = get.q_cr(obj)
-         value = obj.R * obj.qs * obj.R';
+         value = zeros(obj.nslip,3);
+         R = obj.R; %#ok<PROP>
+          %#ok<*PROP>
+         for s = 1:obj.nslip
+            q = obj.qs(s,:);
+            value(s,:) = [...
+            R(3,2)*(R(2,1)*q(3)-R(2,3)*q(1)) - R(3,1)*(R(2,2)*q(3)+R(2,3)*q(2)) + R(3,3)*(R(2,1)*q(2)+R(2,2)*q(1))
+            R(3,2)*(R(1,1)*q(3)-R(1,3)*q(1)) - R(3,1)*(R(1,2)*q(3)+R(1,3)*q(2)) + R(3,3)*(R(1,1)*q(2)+R(1,2)*q(1))
+            R(2,2)*(R(1,1)*q(3)-R(1,3)*q(1)) - R(2,1)*(R(1,2)*q(3)+R(1,3)*q(2)) + R(2,3)*(R(1,1)*q(2)+R(1,2)*q(1))
+            ]';
+         end
       end
 
       function value = get.B_hf(obj)
@@ -281,7 +300,7 @@ classdef Q8Crys
             0      dz(1)  dy(1)  0      dz(2)  dy(2)  0      dz(3)  dy(3)  0      dz(4)  dy(4)  0      dz(5)  dy(5)  0      dz(6)  dy(6)  0      dz(7)  dy(7)  0      dz(8)  dy(8)  
             dz(1)  0      dx(1)  dz(2)  0      dx(2)  dz(3)  0      dx(3)  dz(4)  0      dx(4)  dz(5)  0      dx(5)  dz(6)  0      dx(6)  dz(7)  0      dx(7)  dz(8)  0      dx(8) 
             dy(1) -dx(1)  0      dy(2) -dx(2)  0      dy(3) -dx(3)  0      dy(4) -dx(4)  0      dy(5) -dx(5)  0      dy(6) -dx(6)  0      dy(7) -dx(7)  0      dy(8) -dx(8)  0     
-            0      dz(1) -dx(1)  0      dz(2) -dx(2)  0      dz(3) -dx(3)  0      dz(4) -dx(4)  0      dz(5) -dx(5)  0      dz(6) -dx(6)  0      dz(7) -dx(7)  0      dz(8) -dx(8)  
+            0      dz(1) -dy(1)  0      dz(2) -dy(2)  0      dz(3) -dy(3)  0      dz(4) -dy(4)  0      dz(5) -dy(5)  0      dz(6) -dy(6)  0      dz(7) -dy(7)  0      dz(8) -dy(8)  
            -dz(1)  0      dx(1) -dz(2)  0      dx(2) -dz(3)  0      dx(3) -dz(4)  0      dx(4) -dz(5)  0      dx(5) -dz(6)  0      dx(6) -dz(7)  0      dx(7) -dz(8)  0      dx(8) 
            ];
       end
@@ -303,7 +322,7 @@ classdef Q8Crys
       end
       
       function obj = set.mesh(obj, val)
-         [obj.det_dXdxi_list, obj.dNdX_list] =...
+         [obj.det_dXdxi_list, obj.dNdX_list, obj.dXdxi_list] =...
             obj.computeJ_and_dNdX(val.nodes, val.conn, obj.dNdxi_list);
       end
    end
@@ -362,7 +381,7 @@ classdef Q8Crys
          Ninv = inv(Nmat);
       end
       
-      function [det_dXdxi_list, dNdX_list] = computeJ_and_dNdX(nodes, conn, dNdxi_list)
+      function [det_dXdxi_list, dNdX_list, dXdxi_list] = computeJ_and_dNdX(nodes, conn, dNdxi_list)
          numel = size(conn    , 1);
          nen   = size(conn    , 2);
          ndm   = size(dNdxi_list, 2);
@@ -370,11 +389,12 @@ classdef Q8Crys
          
          det_dXdxi_list = zeros(numel,1);
          dNdX_list      = zeros(nen, ndm, ngp, numel);
+         dXdxi_list     = zeros(ndm, ndm, numel);
          for i = 1:numel
             coor  = nodes(conn(i,:),:)';
             dXdxi = coor*dNdxi_list(:,:,1);
             det_dXdxi_list(i) = det(dXdxi);
-            
+            dXdxi_list(:,:,i) = dXdxi;
             for j = 1:ngp
                dXdxi = coor*dNdxi_list(:,:,j);
                dNdX_list(:,:,j,i) = dNdxi_list(:,:,j) / dXdxi;
