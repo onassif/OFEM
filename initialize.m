@@ -108,6 +108,7 @@ end
 
 % Element-related
 el = Elements(elements, nodes, num, props, globl.U, hist);
+el.w_global = globl.w;
 
 % NR-related
 if exist('time','var') && exist('fctr','var')

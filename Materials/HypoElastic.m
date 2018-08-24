@@ -76,7 +76,7 @@ classdef HypoElastic
          obj.e = e;
       end
       %% Sigma
-      function [sigma_voigt, obj] = computeCauchy(obj, gp, ~)
+      function [sigma_voigt, obj] = computeCauchy(obj, gp, ~, ~)
          K    = obj.K;
          I    = obj.I;
          

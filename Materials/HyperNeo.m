@@ -38,7 +38,7 @@ classdef HyperNeo
          eps = gp.B * el.Uvc;
       end
       %% Sigma
-      function [sigma_voigt, obj] = computeCauchy(obj, gp, ~)
+      function [sigma_voigt, obj] = computeCauchy(obj, gp, ~, ~)
          mu     = obj.shear;
          lambda = obj.lame1;
          

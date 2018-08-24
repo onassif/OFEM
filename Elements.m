@@ -5,11 +5,13 @@ classdef Elements
       Fint
       iter = 0;
       U_global
+      w_global
       U_glb_n
       ulres
    end
    properties (SetAccess = private, GetAccess = public)
       Umt
+      w
       Umt_n
       Uvc
       coor
@@ -74,6 +76,15 @@ classdef Elements
          else % DG
                value(:,:,1) = reshaped_U(:, obj.elements(obj.i  ,:))';
                value(:,:,2) = reshaped_U(:, obj.elements(obj.i+1,:))';
+         end
+      end
+      function value = get.w(obj)
+         reshaped_w = reshape(obj.w_global(1:obj.ndm*obj.numnp), obj.ndm, obj.numnp);
+         if (obj.i <= obj.numel) || ~rem(obj.i - obj.numel,2)
+            value = reshaped_w(:, obj.elements(obj.i,:))';
+         else % DG
+            value(:,:,1) = reshaped_w(:, obj.elements(obj.i  ,:))';
+            value(:,:,2) = reshaped_w(:, obj.elements(obj.i+1,:))';
          end
       end
       function value = get.Umt_n(obj)

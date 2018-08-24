@@ -27,7 +27,7 @@ for step=1:num.steps % Steps loop
          % Get information related to current element:
          el.i   = iel;        gp.iel = iel;        % element number
          coor   = el.coor;                         % element coordinates
-         gp.U   = el.Umt;     gp.U_n = el.Umt_n;   % element unknowns (array form, n and n+1)
+         gp.U   = el.Umt;     gp.U_n = el.Umt_n;   gp.dU = el.w';% element unknowns (array form, n and n+1)
          props  = el.props;                        % element material properties
          if isa(mat{el.im},'DG') && firstInstance
             firstInstance = false;
@@ -42,7 +42,7 @@ for step=1:num.steps % Steps loop
             [gp.D, gp.ctan, mat{el.im}] = mat{el.im}.computeTangentStiffness(gp, el, step);
             
             %%%   4gp. Stress
-            [gp.sigma, mat{el.im}]      = mat{el.im}.computeCauchy(gp, step);
+            [gp.sigma, mat{el.im}]      = mat{el.im}.computeCauchy(gp, el, step);
             
             %%%   5gp. K
             el.K    = mat{el.im}.computeK_el(el.K, gp, num.gp);
@@ -63,7 +63,7 @@ for step=1:num.steps % Steps loop
       %% Finished gauss points loop, back to NR loop
       %%%   7i. Fext and apply constrains
       [globl.K, Fext, globl.Fint, G, knwndU, rmIndc]  =  ApplyConstraints_and_Loads(...
-         NR.mult, globl.K, Fext, globl.Fint, globl.U, tempK, inpt, num.ndm);
+         NR.mult, globl.K, Fext, globl.Fint, globl.U, tempK, inpt, num.ndm, step, NR.iter);
       
       %%%   8i. dU and update Ui
      
@@ -73,6 +73,7 @@ for step=1:num.steps % Steps loop
       globl.U = globl.U + dU;
       NR.correction = norm(dU)/norm(globl.w);
       NR.residual   = norm(G)/(num.np*num.ndof);
+      el.w_global = globl.w;
       
       % Print iteration information:
       NR.iter = NR.iter + 1; el.iter = NR.iter;

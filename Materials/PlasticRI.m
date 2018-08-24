@@ -85,7 +85,7 @@ classdef PlasticRI
          obj.e = e;
       end
       %% Sigma
-      function [sigma_voigt, obj] = computeCauchy(obj, gp, step)
+      function [sigma_voigt, obj] = computeCauchy(obj, gp, ~, step)
          I = obj.I;
          G = obj.G;
          K = obj.Bulk;

@@ -38,7 +38,7 @@ classdef Elastic
          eps = gp.B * el.Uvc;
       end
       %% Sigma
-      function [sigma_voigt, obj] = computeCauchy(obj, gp, ~)
+      function [sigma_voigt, obj] = computeCauchy(obj, gp, ~, ~)
          sigma_voigt = gp.D*gp.eps;
       end
       %% Tangential stiffness
