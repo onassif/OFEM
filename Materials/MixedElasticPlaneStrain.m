@@ -87,7 +87,7 @@ classdef MixedElasticPlaneStrain
          
       end
       %% Element K
-      function kel = computeK_el(obj, gp, ~, ~)
+      function kel = computeK_el(obj, gp, el, ~)
          dN      = reshape(gp.dNdx',obj.nen*obj.ndm,1);
          obj.M.i = gp.i;
          K = obj.Bulk;

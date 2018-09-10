@@ -10,6 +10,7 @@ classdef L3
       D
       U
       U_n
+      dU
       mesh
    end
    

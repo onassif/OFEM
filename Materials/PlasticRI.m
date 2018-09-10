@@ -161,7 +161,7 @@ classdef PlasticRI
          end
       end
       %% Element K
-      function Kel = computeK_el(~, gp, ~, ~)
+      function Kel = computeK_el(~, gp, el, ~)
          if gp.i == 1
             Kel = (gp.B'*gp.D*gp.B) *gp.J *gp.w;
          else
@@ -169,7 +169,7 @@ classdef PlasticRI
          end
       end
       %% Element Fint
-      function Fint = computeFint(~, gp, el, step)
+      function Fint = computeFint(~, gp, el, ~)
          if gp.i == 1
             Fint = (gp.B'*gp.sigma) *gp.J *gp.w;
          else

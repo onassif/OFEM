@@ -1,10 +1,12 @@
 function [K, Fext, Fint, rmG, adG, indc]=ApplyConstraints_and_Loads(mult, K, Fext, Fint, U, tK,...
-   inpt, ndof, step, iter)
+   inpt, ndof, step, iter, finiteDisp)
+
 BC    = inpt.BC;
 FORCE = inpt.FORCE;
 tBC = zeros(size(Fext));
 indc = true(size(K,1),1);
-%   Loads
+
+%%   Loads
 for i = 1:size(FORCE,1)
    index=FORCE(i,1);
    direction=FORCE(i,2);
@@ -20,10 +22,11 @@ for i = 1:size(FORCE,1)
 end
 G = Fext - Fint;
 
-% For DG
+%% For DG
 if ~isempty(tK)
    for i = 1:size(BC,1)
-      index = BC(i,1);     direction = BC(i,2);
+      index = BC(i,1);     
+      direction = BC(i,2);
 
       k_index = ndof*(index-1) + direction;
       tBC(k_index)  = BC(i,3)*mult(BC(i,4),1);
@@ -32,7 +35,7 @@ if ~isempty(tK)
    G =  tF - G;
 end
 
-% BC
+%% BC
 for i = 1:size(BC,1)
    index = BC(i,1);
    direction = BC(i,2);
@@ -45,10 +48,12 @@ for i = 1:size(BC,1)
    Fint(k_index) = BC(i,3)*mult(BC(i,4),1) - U(k_index);
    G(k_index)    = BC(i,3)*mult(BC(i,4),1) - U(k_index);
 end
+
+%% Reduce K and G to only unknown indices
 rmG = G(indc);
 adG = G(~indc); 
-if step == 1 && iter == 0
-   rmG = G(indc) - K(indc,~indc)*G(~indc);
+if step == 1 && iter == 0 && finiteDisp
+   rmG = rmG - K(indc,~indc)*G(~indc);
 end
 K = K(indc,indc);
 

@@ -64,6 +64,7 @@ end
 
 % Material-related
 mat = cell(length(material),1);
+finiteDisp = 0;
 for i=1:length(material)
    if length(material) == 1
       prps = props;
@@ -87,6 +88,9 @@ for i=1:length(material)
          mat{i} = MTS(num, prps, hardProps, slip, time, ident.threeD.second);
       case 8
          mat{i} = DG(num, prps, props); 
+   end
+   if mat{i}.finiteDisp
+      finiteDisp = 1;
    end
 end
 
@@ -131,4 +135,9 @@ hist.start= sprintf('%s%shist%shist_%d-%d-%s_%d.%d.%d',...
    pwd,filesep,filesep, current([1,3]), mon_str{current(2)}, current(4:6));
 mkdir(hist.start);
 firstInstance = true;
-clearvars -except dU el elements Fext globl gp hist inpt mat nodes NR num hard slip tempK firstInstance
+
+if ~exist('extrapolate','var')
+   extrapolate = 0;
+end
+clearvars -except dU el elements Fext globl gp hist inpt mat nodes NR num hard slip tempK ...
+   firstInstance finiteDisp extrapolate

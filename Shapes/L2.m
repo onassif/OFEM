@@ -10,6 +10,7 @@ classdef L2
       D
       U
       U_n
+      dU
       mesh
    end
    

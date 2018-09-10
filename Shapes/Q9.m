@@ -10,6 +10,7 @@ classdef Q9
       D
       U
       U_n
+      dU
       mesh
    end
    

@@ -10,6 +10,7 @@ classdef Q4
       D
       U
       U_n
+      dU
       mesh
    end
    

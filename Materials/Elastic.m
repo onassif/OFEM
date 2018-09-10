@@ -63,7 +63,7 @@ classdef Elastic
          end
       end
       %% Element K
-      function Kel = computeK_el(~, gp, ~, ~)
+      function Kel = computeK_el(~, gp, el, ~)
          if gp.i == 1
             Kel = (gp.B'*gp.D*gp.B) *gp.J *gp.w;
          else

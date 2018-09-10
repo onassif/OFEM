@@ -173,7 +173,7 @@ classdef DG
          end
       end
       %% Element K
-      function Kel = computeK_el(obj, gp, ~, ~)
+      function Kel = computeK_el(obj, gp, el, ~)
          i = gp.i;
          
          if obj.toggle

@@ -10,6 +10,7 @@ classdef Q8
       D
       U
       U_n
+      dU
       mesh
    end
    

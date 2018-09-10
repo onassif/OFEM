@@ -25,6 +25,11 @@ classdef MTS
       ms
       qs
       q_cr
+      
+      permut = [...
+         0  0  0  0  0  1  0 -1  0
+         0  0 -1  0  0  0  1  0  0
+         0  1  0 -1  0  0  0  0  0]';
    end
    
    properties (SetAccess = private)
@@ -236,10 +241,6 @@ classdef MTS
          else
             dt   = ob.dt(step);
             % Identities
-            permut = [...
-               0  0  0  0  0  1  0 -1  0
-               0  0 -1  0  0  0  1  0  0
-               0  1  0 -1  0  0  0  0  0]';
             ob.Rp = ob.RpList(:, :, gp.i, el.i, step);
             ob.R  = gp.R;
             % Material properties
@@ -270,7 +271,7 @@ classdef MTS
             gradFeinv   = ob.gradFeinv(:,:,gp.i, gp.iel, step);
             n_cr        = R_n*ob.Rp'*ob.gRot'*ob.slip.n';
             
-            tm = gradFeinv*permut*n_cr;
+            tm = gradFeinv*ob.permut*n_cr;
             tau_l = k0*b*mu_harden^2*sqrt(diag(tm'*tm))/(18*theta0); %% Change
             
             

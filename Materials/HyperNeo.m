@@ -77,7 +77,7 @@ classdef HyperNeo
          ctan = c;
       end
       %% Element K
-      function Kel = computeK_el(obj, gp, ~, ~)
+      function Kel = computeK_el(obj, gp, el, ~)
          % Definitions
          ngp = size(gp.xi,1);
          B=gp.B;

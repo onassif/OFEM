@@ -10,6 +10,7 @@ classdef T6
       D
       U
       U_n
+      dU
       mesh
    end
    

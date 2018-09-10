@@ -12,7 +12,6 @@ for step=1:num.steps % Steps loop
    NR.iter = 0; fprintf('\n');
    NR.correction = inf;
    el.iter = 0; % To save U_n when overwriting with U_n+1
-   globl.w = zeros(num.eq,1);
    
    while (NR.correction > NR.tol)
       %% Start NR loop
@@ -63,28 +62,23 @@ for step=1:num.steps % Steps loop
       %% Finished gauss points loop, back to NR loop
       %%%   7i. Fext and apply constrains
       [globl.K, Fext, globl.Fint, G, knwndU, rmIndc]  =  ApplyConstraints_and_Loads(...
-         NR.mult, globl.K, Fext, globl.Fint, globl.U, tempK, inpt, num.ndm, step, NR.iter);
+         NR.mult, globl.K, Fext, globl.Fint, globl.U, tempK, inpt, num.ndm, step, NR.iter, finiteDisp);
       
       %%%   8i. dU and update Ui
-      if el.iter == 0 && step > 1
-         dU( rmIndc) = (globl.K\G+el.w_global(rmIndc)) .* ~(mat{el.im}.linear==1 && NR.iter>0);
+      if el.iter == 0 && step > 1 && extrapolate
+         dU( rmIndc) = (globl.K\G+globl.w(rmIndc)) .* ~(mat{el.im}.linear==1 && NR.iter>0);
       else
          dU( rmIndc) = globl.K\G .* ~(mat{el.im}.linear==1 && NR.iter>0);
       end
-%       dU( rmIndc) = globl.K\G .* ~(mat{el.im}.linear==1 && NR.iter>0);
       dU(~rmIndc) = knwndU .* ~(mat{el.im}.linear==1 && NR.iter>0);
                         
-                        del_ModelDx = globl.K\G;
-      globl.w = globl.w + dU;
+      globl.w = globl.w*(NR.iter>0) + dU;
       globl.U = globl.U + dU;
-      
-      ModelDx     = globl.U(rmIndc)
       
       NR.correction = norm(dU)/norm(globl.w);
       NR.residual   = norm(G)/(num.np*num.ndof);
       el.w_global = globl.w;
                         
-      
       % Print iteration information:
       NR.iter = NR.iter + 1; 
       el.iter = NR.iter;
