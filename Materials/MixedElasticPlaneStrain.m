@@ -87,7 +87,7 @@ classdef MixedElasticPlaneStrain
          
       end
       %% Element K
-      function kel = computeK_el(obj, kel, gp, ~)
+      function kel = computeK_el(obj, gp, ~, ~)
          dN      = reshape(gp.dNdx',obj.nen*obj.ndm,1);
          obj.M.i = gp.i;
          K = obj.Bulk;
@@ -96,13 +96,13 @@ classdef MixedElasticPlaneStrain
             (gp.B'*gp.D*gp.B) - (K*(dN*dN'))    dN*obj.M.N
             obj.M.N'*dN'                          (1/K)*obj.M.N'*obj.M.N] .*gp.j*gp.w;
          else
-         kel = kel + [...
+         kel = el.K + [...
             (gp.B'*gp.D*gp.B) - (K*(dN*dN'))    dN*obj.M.N
             obj.M.N'*dN'                          (1/K)*obj.M.N'*obj.M.N] .*gp.j*gp.w;
          end
       end
       %% Element Fint
-      function Fint = computeFint(obj, gp, el)
+      function Fint = computeFint(obj, gp, el, ~)
          dN = reshape(gp.dNdx',obj.nen*obj.ndm,1);
          K = obj.Bulk;
          if gp.i == 1

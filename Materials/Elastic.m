@@ -63,15 +63,15 @@ classdef Elastic
          end
       end
       %% Element K
-      function Kel = computeK_el(~, Kel, gp, ~)
+      function Kel = computeK_el(~, gp, ~, ~)
          if gp.i == 1
             Kel = (gp.B'*gp.D*gp.B) *gp.J *gp.w;
          else
-            Kel = Kel + (gp.B'*gp.D*gp.B) *gp.J *gp.w;
+            Kel = el.K + (gp.B'*gp.D*gp.B) *gp.J *gp.w;
          end
       end
       %% Element Fint
-      function Fint = computeFint(~, gp, el)
+      function Fint = computeFint(~, gp, el, ~)
          if gp.i == 1
             Fint = (gp.B'*gp.sigma) *gp.J *gp.w;
          else

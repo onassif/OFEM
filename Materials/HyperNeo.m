@@ -77,8 +77,9 @@ classdef HyperNeo
          ctan = c;
       end
       %% Element K
-      function Kel = computeK_el(obj, Kel, gp, ngp)
+      function Kel = computeK_el(obj, gp, ~, ~)
          % Definitions
+         ngp = size(gp.xi,1);
          B=gp.B;
          D=gp.D;
          ndf = obj.ndof;
@@ -107,11 +108,11 @@ classdef HyperNeo
          if gp.i == 1
             Kel = ( (B'*D*B) + K_geo ) *gp.j*gp.w;
          else
-            Kel = Kel + ( (B'*D*B) + K_geo ) *gp.j*gp.w;
+            Kel = el.K + ( (B'*D*B) + K_geo ) *gp.j*gp.w;
          end
       end
       %% Element Fint
-      function Fint = computeFint(~, gp, el)
+      function Fint = computeFint(~, gp, el, ~)
          if gp.i == 1
             Fint = (gp.B'*gp.sigma) *gp.j *gp.w;
          else

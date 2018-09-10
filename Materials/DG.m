@@ -173,7 +173,7 @@ classdef DG
          end
       end
       %% Element K
-      function Kel = computeK_el(obj, Kel, gp, ~)
+      function Kel = computeK_el(obj, gp, ~, ~)
          i = gp.i;
          
          if obj.toggle
@@ -187,11 +187,11 @@ classdef DG
                ElemKRL = c*( + NR'*bnAdN1 - bnAdN2'*NL - (NR'*obj.ep*NL));
                ElemKRR = c*( + NR'*bnAdN2 + bnAdN2'*NR + (NR'*obj.ep*NR));
             else
-               mid = size(Kel,1)/2;
-               ElemKLL = Kel(    1:mid,     1:mid) + c*( - NL'*bnAdN1 - bnAdN1'*NL + (NL'*obj.ep*NL));
-               ElemKLR = Kel(    1:mid, mid+1:end) + c*( - NL'*bnAdN2 + bnAdN1'*NR - (NL'*obj.ep*NR));
-               ElemKRL = Kel(mid+1:end,     1:mid) + c*( + NR'*bnAdN1 - bnAdN2'*NL - (NR'*obj.ep*NL));
-               ElemKRR = Kel(mid+1:end, mid+1:end) + c*( + NR'*bnAdN2 + bnAdN2'*NR + (NR'*obj.ep*NR));
+               mid = size(el.K,1)/2;
+               ElemKLL = el.K(    1:mid,     1:mid) + c*( - NL'*bnAdN1 - bnAdN1'*NL + (NL'*obj.ep*NL));
+               ElemKLR = el.K(    1:mid, mid+1:end) + c*( - NL'*bnAdN2 + bnAdN1'*NR - (NL'*obj.ep*NR));
+               ElemKRL = el.K(mid+1:end,     1:mid) + c*( + NR'*bnAdN1 - bnAdN2'*NL - (NR'*obj.ep*NL));
+               ElemKRR = el.K(mid+1:end, mid+1:end) + c*( + NR'*bnAdN2 + bnAdN2'*NR + (NR'*obj.ep*NR));
             end
             Kel = [...
                ElemKLL ElemKLR
@@ -202,7 +202,7 @@ classdef DG
          
       end
       %% Element Fint
-      function Fint = computeFint(obj, gp, el)
+      function Fint = computeFint(obj, gp, el, ~)
          i = gp.i;
          
          if obj.toggle
