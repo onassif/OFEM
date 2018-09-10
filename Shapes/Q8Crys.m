@@ -9,6 +9,7 @@ classdef Q8Crys
       ctan
       D
       U
+      dU
       U_n
       mesh
       Rpn_list
@@ -178,18 +179,18 @@ classdef Q8Crys
          value = obj.Rpn_list(:,:,obj.i,obj.iel);
       end
 
-      function value = get.Rn(obj)
-         value = obj.Rn_list(:,:,obj.i,obj.iel);
-      end
+%       function value = get.Rn(obj)
+%          value = obj.Rn_list(:,:,obj.i,obj.iel);
+%       end
       
       function value = get.R(obj)
            [P, ~, Q] = svd(obj.F);
            value =  P*Q';
       end
       
-      function obj = set.R(obj, value)
-         obj.Rn_list(:,:,obj.i,obj.iel) = value;
-      end
+%       function obj = set.R(obj, value)
+%          obj.Rn_list(:,:,obj.i,obj.iel) = value;
+%       end
 %       function value = get.Rn_list(obj)
 %            value(:,:,obj.i,obj.iel) = obj.R;
 %       end
@@ -210,7 +211,11 @@ classdef Q8Crys
 
       function value = get.F_hf(obj)
          I     = eye(size(obj.U,1));
-        value = (1/2)*(obj.U + obj.U_n)*obj.dNdX + I;
+         if norm(obj.U - obj.U_n) <1e-5
+            value = (1/2)*((obj.U+obj.dU) + obj.U_n)*obj.dNdX + I;
+         else
+            value = (1/2)*(obj.U + obj.U_n)*obj.dNdX + I;
+         end
       end
       
       function value = get.R_hf(obj)
@@ -318,6 +323,14 @@ classdef Q8Crys
             obj.U_n = val';
          elseif size(val,3) == 2 % DG
             obj.U_n = permute(val,[2 1 3]);
+         end
+      end
+      
+      function obj = set.dU(obj, val)
+         if size(val,3)==1 % Normal
+            obj.dU = val';
+         elseif size(val,3) == 2 % DG
+            obj.dU = permute(val,[2 1 3]);
          end
       end
       
