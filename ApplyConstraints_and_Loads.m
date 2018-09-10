@@ -1,4 +1,5 @@
-function [K, Fext, Fint, rmG, adG, indc]=ApplyConstraints_and_Loads(mult, K, Fext, Fint, U, tK, inpt, ndof)
+function [K, Fext, Fint, rmG, adG, indc]=ApplyConstraints_and_Loads(mult, K, Fext, Fint, U, tK,...
+   inpt, ndof, step, iter)
 BC    = inpt.BC;
 FORCE = inpt.FORCE;
 tBC = zeros(size(Fext));
@@ -46,7 +47,9 @@ for i = 1:size(BC,1)
 end
 rmG = G(indc);
 adG = G(~indc); 
-rmG = G(indc) - K(indc,~indc)*G(~indc);
+if step == 1 && iter == 0
+   rmG = G(indc) - K(indc,~indc)*G(~indc);
+end
 K = K(indc,indc);
 
 end

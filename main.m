@@ -27,7 +27,7 @@ for step=1:num.steps % Steps loop
          % Get information related to current element:
          el.i   = iel;        gp.iel = iel;        % element number
          coor   = el.coor;                         % element coordinates
-         gp.U   = el.Umt;     gp.U_n = el.Umt_n;   gp.dU = el.w';% element unknowns (array form, n and n+1)
+         gp.U   = el.Umt;     gp.U_n = el.Umt_n;   gp.dU = el.w;% element unknowns (array form, n and n+1)
          props  = el.props;                        % element material properties
          if isa(mat{el.im},'DG') && firstInstance
             firstInstance = false;
@@ -45,10 +45,10 @@ for step=1:num.steps % Steps loop
             [gp.sigma, mat{el.im}]      = mat{el.im}.computeCauchy(gp, el, step);
             
             %%%   5gp. K
-            el.K    = mat{el.im}.computeK_el(el.K, gp, num.gp);
+            el.K    = mat{el.im}.computeK_el(gp, el, step);
             
             %%%   6gp. Fint
-            el.Fint = mat{el.im}.computeFint(gp, el);
+            el.Fint = mat{el.im}.computeFint(gp, el, step);
             
             % store states
             hist.eps (:,igp,iel)       = gp.eps;
@@ -66,17 +66,28 @@ for step=1:num.steps % Steps loop
          NR.mult, globl.K, Fext, globl.Fint, globl.U, tempK, inpt, num.ndm, step, NR.iter);
       
       %%%   8i. dU and update Ui
-     
-      dU( rmIndc) = globl.K\G .* ~(mat{el.im}.linear==1 && NR.iter>0);
+      if el.iter == 0 && step > 1
+         dU( rmIndc) = (globl.K\G+el.w_global(rmIndc)) .* ~(mat{el.im}.linear==1 && NR.iter>0);
+      else
+         dU( rmIndc) = globl.K\G .* ~(mat{el.im}.linear==1 && NR.iter>0);
+      end
+%       dU( rmIndc) = globl.K\G .* ~(mat{el.im}.linear==1 && NR.iter>0);
       dU(~rmIndc) = knwndU .* ~(mat{el.im}.linear==1 && NR.iter>0);
+                        
+                        del_ModelDx = globl.K\G;
       globl.w = globl.w + dU;
       globl.U = globl.U + dU;
+      
+      ModelDx     = globl.U(rmIndc)
+      
       NR.correction = norm(dU)/norm(globl.w);
       NR.residual   = norm(G)/(num.np*num.ndof);
       el.w_global = globl.w;
+                        
       
       % Print iteration information:
-      NR.iter = NR.iter + 1; el.iter = NR.iter;
+      NR.iter = NR.iter + 1; 
+      el.iter = NR.iter;
       fprintf('step: %4.0d\t iteration:%2.0d\t correction: %.10f\t residual: %.10f\n',...
          step, NR.iter, NR.correction, NR.residual);
       
