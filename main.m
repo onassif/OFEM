@@ -66,11 +66,11 @@ for step=1:num.steps % Steps loop
       
       %%%   8i. dU and update Ui
       if el.iter == 0 && step > 1 && extrapolate
-         dU( rmIndc) = (globl.K\G+globl.w(rmIndc)) .* ~(mat{el.im}.linear==1 && NR.iter>0);
+         dU( rmIndc) = (globl.K\G+globl.w(rmIndc));
       else
-         dU( rmIndc) = globl.K\G .* ~(mat{el.im}.linear==1 && NR.iter>0);
+         dU( rmIndc) = globl.K\G;
       end
-      dU(~rmIndc) = knwndU .* ~(mat{el.im}.linear==1 && NR.iter>0);
+      dU(~rmIndc) = knwndU;
                         
       globl.w = globl.w*(NR.iter>0) + dU;
       globl.U = globl.U + dU;
