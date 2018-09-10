@@ -10,10 +10,11 @@ classdef Elements
       ulres
    end
    properties (SetAccess = private, GetAccess = public)
-      Umt
       w
+      Umt
       Umt_n
       Uvc
+      Uvc_n
       coor
       indices
       conn
@@ -97,6 +98,14 @@ classdef Elements
          else % DG
             value(:,1) = reshape(obj.Umt(:,:,1)', obj.ndm*obj.nen, 1);
             value(:,2) = reshape(obj.Umt(:,:,2)', obj.ndm*obj.nen, 1);
+         end
+      end
+      function value = get.Uvc_n(obj)
+         if (obj.i <= obj.numel) || ~rem(obj.i - obj.numel,2)
+            value = reshape(obj.Umt_n', obj.ndm*obj.nen, 1);
+         else % DG
+            value(:,1) = reshape(obj.Umt_n(:,:,1)', obj.ndm*obj.nen, 1);
+            value(:,2) = reshape(obj.Umt_n(:,:,2)', obj.ndm*obj.nen, 1);
          end
       end
       function value = get.im(obj)
