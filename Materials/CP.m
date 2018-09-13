@@ -9,6 +9,7 @@ classdef CP
       ngp;
       nstr;
       dNdX;
+      Q
       finiteDisp = 1;
       
       I
@@ -29,12 +30,9 @@ classdef CP
       angles    = struct('angleConv',[], 'angleType',[], 'val',[]);
       
       list = struct('D',[], 'Rp',[], 'R', [], 'S',[], 'tauT', []);
-      qList
-      deList
       de
-      ep
       S
-      eEff
+      
       sEquiv
       gradFeinv
       Rp
@@ -74,15 +72,11 @@ classdef CP
       %% Construct
       function ob = CP(num, props, cpType, cpProps, angles, slip, time, identity)
          ob.ndm   = num.ndm;
-         ob.nstr  = (ob.ndm*ob.ndm+ob.ndm)/2;
+         ob.nstr  = num.str;
          ob.ndof  = num.ndof;
          ob.nen   = num.nen;
          ob.ngp   = num.gp;
-         ob.eEff  = zeros(                num.gp, num.el, num.steps+1);
-         ob.ep    = zeros(ob.ndm, ob.ndm, num.gp, num.el, num.steps+1);
          ob.list.D = zeros(num.str, num.str, num.gp, num.el, num.steps+1);
-         ob.qList = zeros(num.str, num.str, num.gp, num.el, num.steps+1);
-         ob.deList= zeros(num.str, num.gp, num.el, num.steps+1); 
          ob.list.S = zeros(num.str, num.gp, num.el, num.steps+1);
          ob.list.tauT  = zeros(num.gp, num.el, num.steps+1);
          ob.gradFeinv = zeros(3, 9, num.el, num.steps+1);
@@ -146,20 +140,25 @@ classdef CP
       end
       %% Epsilon
       function [eps, ob] = computeStrain(ob, gp, el, step)
-         eps   = gp.q_hf' * gp.B_hf(1:6,:) *  el.Uvc;
+         
          if el.iter ==0 && step>1
-            ob.de = gp.q_hf' * gp.B_hf(1:6,:) * (el.Uvc - ob.Uvc_n(:,el.i,step-1));
+            gp.U = 1/2*((gp.U+gp.dU) + gp.U_n)';
+            Q    = ob.Qmat(gp.R);
+            
+            ob.de = Q' * gp.B(1:6,:) * (el.Uvc - ob.Uvc_n(:,el.i,step-1));
          else
-            ob.de = gp.q_hf' * gp.B_hf(1:6,:) * (el.Uvc - el.Uvc_n);
+            gp.U = 1/2*(gp.U + gp.U_n)';
+            Q    = ob.Qmat(gp.R);
+            ob.de = Q' * gp.B(1:6,:) * (el.Uvc - el.Uvc_n);
          end
-         ob.qList(:, :, gp.i, el.i, step+1) = gp.q;
-         ob.deList(  :, gp.i, el.i, step+1) = eps;
+         eps = Q' * gp.B(1:6,:) *  el.Uvc;
          ob.Uvc_n(:,el.i, step+1) = el.Uvc ;
       end
       %% Sigma
       function [sigma_voigt, ob] = computeCauchy(ob, gp, el, step)
          if el.iter == 0 && step > 1
-            sigma_voigt = ob.qList(:, :, gp.i, el.i, step)*(ob.list.S(:,gp.i,el.i, step) + ob.list.D( :,:,gp.i,el.i, step)*ob.de);
+            Q = ob.Qmat(gp.R);
+            sigma_voigt = Q*(ob.list.S(:,gp.i,el.i, step) + ob.list.D( :,:,gp.i,el.i, step)*ob.de);
             ob.S = sigma_voigt;
          else
             sigma_voigt = ob.S;
@@ -326,15 +325,15 @@ classdef CP
          % Definitions
          if el.iter == 0 && step > 1
             S = ob.list.S(   :, gp.i, el.i, step);
-            q = ob.qList(:, :, gp.i, el.i, step);
-            S = q*S;
+            Q = ob.Qmat(gp.R);
+            S = Q*S;
             gp.U = (gp.U + gp.dU)';
          else
-            S = gp.sigma_un;
-            q = gp.q;
+            Q = ob.Qmat(gp.R);
+            S = Q*gp.sigma;
          end
          B=gp.B;
-         D = [q*gp.D*q' zeros(6,3); zeros(3,9)] - [...
+         D = [Q*gp.D*Q' zeros(6,3); zeros(3,9)] - [...
             +S(1)      0         0         0.5*S(4)          0                 0.50*S(6)        -0.5*S(4)          0                 0.50*S(6)
             +0         S(2)      0         0.5*S(4)          0.50*S(5)         0                 0.5*S(4)         -0.5*S(5)          0
             +0         0         S(3)      0                 0.50*S(5)         0.50*S(6)         0                 0.5*S(5)         -0.50*S(6)
@@ -352,12 +351,13 @@ classdef CP
          end
       end
       %% Element Fint
-      function Fint = computeFint(~, gp, el, step)
+      function Fint = computeFint(ob, gp, el, step)
          if el.iter == 0 && step > 1
             sigma = [gp.sigma;0;0;0];
             gp.U = (gp.U + gp.dU)';
          else
-            sigma = [gp.sigma_un;0;0;0];
+            Q = ob.Qmat(gp.R);
+            sigma = [Q*gp.sigma;0;0;0];
          end
          if gp.i == 1
             Fint = (gp.B'*sigma) *gp.j *gp.w;
@@ -392,7 +392,6 @@ classdef CP
             value(s,:) = [A(2,3) A(1,3) A(1,2)]*RWC';
          end
       end
-      
    end
    methods (Static)
       function [gRot, schmidt] = compute_gRot_schmidt(angles, bi, ni, nslip)
@@ -445,6 +444,17 @@ classdef CP
          R(1,2)*R(3,3)-R(1,3)*R(3,2) R(1,1)*R(3,3)-R(1,3)*R(3,1) R(1,1)*R(3,2)-R(1,2)*R(3,1)
          R(1,2)*R(2,3)-R(1,3)*R(2,2) R(1,1)*R(2,3)-R(1,3)*R(2,1) R(1,1)*R(2,2)-R(1,2)*R(2,1)];
       end
-
+      function value = Qmat(R)
+         R11 = R(1,1); R12 = R(1,2); R13 = R(1,3);
+         R21 = R(2,1); R22 = R(2,2); R23 = R(2,3);
+         R31 = R(3,1); R32 = R(3,2); R33 = R(3,3);
+         value = [...
+            R11^2   	R12^2   	R13^2   	2*R11*R12        	2*R12*R13        	2*R11*R13
+            R21^2   	R22^2   	R23^2   	2*R21*R22        	2*R22*R23        	2*R21*R23
+            R31^2    R32^2   	R33^2   	2*R31*R32        	2*R32*R33        	2*R31*R33
+            R11*R21  R12*R22  R13*R23  R11*R22+R12*R21	R12*R23+R13*R22   R11*R23+R13*R21
+            R21*R31  R32*R22  R23*R33  R21*R32+R22*R31	R22*R33+R23*R32   R21*R33+R23*R31
+            R11*R31  R12*R32  R13*R33  R11*R32+R12*R31	R12*R33+R13*R32   R11*R33+R13*R31];
+      end
    end
 end
