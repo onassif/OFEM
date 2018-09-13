@@ -55,7 +55,7 @@ run('identities.m');
 
 %%%%%%%%%%%%%%%%%%%%% Create objects:
 % Hardening-related
-if exist('hardType','var')   
+if exist('cpType','var')   
    switch slipType
       case {'FCC', 'fcc'}
          slip = FCC();
@@ -85,7 +85,7 @@ for i=1:length(material)
       case 6
          mat{i} = MixedElasticPlaneStrain(num, prps);
       case 7
-         mat{i} = MTS(num, prps, hardProps, slip, time, ident.threeD.second);
+         mat{i} = CP(num, prps, cpType, hardProps, angles, slip, time, ident.threeD.second);
       case 8
          mat{i} = DG(num, prps, props); 
    end
@@ -107,7 +107,7 @@ switch eltype
    case 'Q8'
     gp = Q8(mat{1}.finiteDisp, hist);
    case 'Q8Crys'
-    gp = Q8Crys(mat{1}.finiteDisp, mat{1}.hardProps.angles, slip, hist);  
+    gp = Q8Crys(mat{1}.finiteDisp, mat{1}.angles, slip, hist);  
 end
 
 % Element-related

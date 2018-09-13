@@ -80,10 +80,10 @@ for step=1:num.steps % Steps loop
       el.w_global = globl.w;
                         
       % Print iteration information:
+      fprintf('step: %4i\t iteration:%2i\t correction: %.10f\t residual: %.10f\n',...
+         step, NR.iter, NR.correction, NR.residual);
       NR.iter = NR.iter + 1; 
       el.iter = NR.iter;
-      fprintf('step: %4.0d\t iteration:%2.0d\t correction: %.10f\t residual: %.10f\n',...
-         step, NR.iter, NR.correction, NR.residual);
       
       %%%   9i. History arrays
       hist.resid(NR.iter) = NR.residual;
