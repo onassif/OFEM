@@ -224,7 +224,7 @@ classdef CP
                   dgammdtauT = ob.cpM.compute_dgammdtauT;
                   
                   corr = ob.twoSymm(S,q_cr');
-                  J11 = (C0*ms'+corr)*(dgammdtau.*ms) +ob.IW(Wp)+eye(ob.nstr);
+                  J11 = (C0*ms'+corr)*(dgammdtau.*ms) + ob.IW(Wp) + eye(ob.nstr);
                   J12 = (C0*ms'+corr)*dgammdtauT;
                   J21 = ob.cpM.compute_dR2dtau;
                   J22 = ob.cpM.compute_dR2dtauT;
