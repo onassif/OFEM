@@ -48,28 +48,24 @@ for i=1:size(old_BC,1)
          error('unrecognized input!!');
    end  
 end
-
-rowsToDelete = [];
+% If two (or more) BC exist for the same node, remove the non-homogenous one 
+rowsToDelete = false(size(new_BC,1),1);
 for i = 1:numnp
    targetNode = find(new_BC(:,1)==i);
    if length(targetNode)>1
       for j = 1:ndm
          sameDir = find(new_BC(targetNode,2)==j);
-         targetHomoBC    = find(new_BC(targetNode(sameDir),3) == 0);
-         targetNoHomoBC  = find(new_BC(targetNode(sameDir),3) ~= 0);
-         if isempty(targetHomoBC) && length(targetNoHomoBC)>1
+         targetHomoBC    = new_BC(targetNode(sameDir),3) == 0;
+         targetNoHomoBC  = new_BC(targetNode(sameDir),3) ~= 0;
+         if sum(targetHomoBC)==0 && sum(targetNoHomoBC)>1
             error("One node, one direction but two non-homogeneous BCs");
-         elseif length(targetHomoBC)>=1 && length(targetNoHomoBC)>=1
-            for k=1:length(targetNoHomoBC)
-               rowsToDelete = [rowsToDelete;targetNode(sameDir(targetNoHomoBC))];
-            end
+         elseif sum(targetHomoBC) && sum(targetNoHomoBC)
+            rowsToDelete(targetNode(sameDir(targetNoHomoBC))) = true;
          end
       end
    end
 end
-rowsToKeep = logical(1:size(new_BC,1))';
-rowsToKeep(rowsToDelete) = 0;
-new_BC = new_BC(rowsToKeep,:);
+new_BC(rowsToDelete,:) = [];
 
 %% FORCE
 new_FORCE = [];
