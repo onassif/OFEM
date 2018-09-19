@@ -8,14 +8,13 @@ G          = zeros(numeq,1);
 globl.U    = zeros(numeq,1);
 globl.w    = zeros(numeq,1);
 globl.Fint = zeros(numeq,1);
-tempK      = [];
 step       = cell (n_steps+1,1);
 
 hist.eps   = zeros(numstr, ngp, size(elements,1), 'single');
 hist.stre  = zeros(numstr, ngp, size(elements,1), 'single');
 hist.ctan  = zeros(3,3,3,3,ngp, size(elements,1), 'single');
 hist.resid = zeros(max_iter,1,'single');
-hist.conn  = uint32(elements(:,1:nen));
+hist.conn  = uint32(elements(1:numel,1:nen));
 hist.nodes = nodes;
 maxSharedNode = 0;
 realnumnp = size(nodes,1);
@@ -73,7 +72,7 @@ for i=1:length(material)
    end
    switch material(i)
       case 1
-         mat{i} = Elastic(num, prps);
+         mat{i} = Elastic(num, prps, ident.threeD.second);
       case 2
          mat{i} = HypoElastic(num, prps, ident.threeD.second);
       case 3
