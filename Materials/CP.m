@@ -140,17 +140,15 @@ classdef CP
       end
       %% Epsilon
       function [eps, ob] = computeStrain(ob, gp, el, step)
-         
-         if el.iter ==0 && step>1
-            gp.U = 1/2*((gp.U+gp.dU) + gp.U_n)';
-            Q    = ob.Qmat(gp.R);
-            
-            ob.de = Q' * gp.B(1:6,:) * (el.Uvc - ob.Uvc_n(:,el.i,step-1));
+         gp.U  = (gp.U_n + (1/2)*gp.dU)'; % n + 1/2
+         Q     = ob.Qmat(gp.R);
+         if (el.iter==0&&step>1)
+            Un = ob.Uvc_n(:,el.i,step-1);
          else
-            gp.U = 1/2*(gp.U + gp.U_n)';
-            Q    = ob.Qmat(gp.R);
-            ob.de = Q' * gp.B(1:6,:) * (el.Uvc - el.Uvc_n);
+            Un = ob.Uvc_n(:,el.i,step);
          end
+         ob.de = Q' * gp.B(1:6,:) * (el.Uvc - Un);
+
          eps = Q' * gp.B(1:6,:) *  el.Uvc;
          ob.Uvc_n(:,el.i, step+1) = el.Uvc ;
       end
