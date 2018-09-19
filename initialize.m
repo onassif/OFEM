@@ -112,7 +112,6 @@ end
 
 % Element-related
 el = Elements(elements, nodes, num, props, globl.U, hist);
-el.w_global = globl.w;
 
 % NR-related
 if exist('time','var') && exist('fctr','var')
@@ -125,7 +124,6 @@ end
 
 inpt.BC    = BC;
 inpt.FORCE = FORCE;
-el.ulres = getInitU(1/num.steps, inpt, el);
 
 num.el = size(elements,1);
 

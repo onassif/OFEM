@@ -7,10 +7,11 @@ classdef Elements
       U_global
       w_global
       U_glb_n
-      ulres
+      Ures_glb
    end
-   properties (SetAccess = private, GetAccess = public)
+   properties (SetAccess = private)
       w
+      Ures
       Umt
       Umt_n
       Uvc
@@ -65,6 +66,8 @@ classdef Elements
          else
             error("ndof-ndm > 1")
          end
+         obj.Ures_glb = zeros(num.ndm*num.np,1);
+         obj.w_global = zeros(num.ndm*num.np,1);
       end
       %% get functions
       function value = get.coor(obj)
@@ -86,6 +89,15 @@ classdef Elements
          else % DG
             value(:,:,1) = reshaped_w(:, obj.elements(obj.i  ,:))';
             value(:,:,2) = reshaped_w(:, obj.elements(obj.i+1,:))';
+         end
+      end
+      function value = get.Ures(obj)
+         reshaped = reshape(obj.Ures_glb(1:obj.ndm*obj.numnp), obj.ndm, obj.numnp);
+         if (obj.i <= obj.numel) || ~rem(obj.i - obj.numel,2)
+            value = reshaped(:, obj.elements(obj.i,:))';
+         else % DG
+            value(:,:,1) = reshaped(:, obj.elements(obj.i  ,:))';
+            value(:,:,2) = reshaped(:, obj.elements(obj.i+1,:))';
          end
       end
       function value = get.Umt_n(obj)
