@@ -1,9 +1,8 @@
-function [K, Fext, Fint, rmG, adG, indc]=ApplyConstraints_and_Loads(mult, K, Fext, Fint, U, tK,...
+function [K, Fext, Fint, rmG, adG, indc]=ApplyConstraints_and_Loads(mult, K, Fext, Fint, U,...
    inpt, ndof, step, iter, finiteDisp)
 
 BC    = inpt.BC;
 FORCE = inpt.FORCE;
-tBC = zeros(size(Fext));
 indc = true(size(K,1),1);
 
 %%   Loads
@@ -21,19 +20,6 @@ for i = 1:size(FORCE,1)
    Fext(f_index) = FORCE(i,3)*mult(FORCE(i,4),2);
 end
 G = Fext - Fint;
-
-%% For DG
-if ~isempty(tK)
-   for i = 1:size(BC,1)
-      index = BC(i,1);     
-      direction = BC(i,2);
-
-      k_index = ndof*(index-1) + direction;
-      tBC(k_index)  = BC(i,3)*mult(BC(i,4),1);
-   end
-   tF = -tK*tBC;
-   G =  tF - G;
-end
 
 %% BC
 for i = 1:size(BC,1)

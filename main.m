@@ -28,10 +28,7 @@ for step=1:num.steps % Steps loop
          coor   = el.coor;                         % element coordinates
          gp.U   = el.Umt;     gp.U_n = el.Umt_n;   gp.dU = el.w;% element unknowns (array form, n and n+1)
          props  = el.props;                        % element material properties
-         if isa(mat{el.im},'DG') && firstInstance
-            firstInstance = false;
-            tempK = globl.K;
-         end
+
          for igp = 1:mat{el.im}.ngp;     gp.i = igp;
             %%   Start Loop over Gauss points
             %%%   2gp. Strain tensor
@@ -62,7 +59,7 @@ for step=1:num.steps % Steps loop
       %% Finished gauss points loop, back to NR loop
       %%%   7i. Fext and apply constrains
       [globl.K, Fext, globl.Fint, G, knwndU, rmIndc]  =  ApplyConstraints_and_Loads(...
-         NR.mult, globl.K, Fext, globl.Fint, globl.U, tempK, inpt, num.ndm, step, NR.iter, finiteDisp);
+         NR.mult, globl.K, Fext, globl.Fint, globl.U, inpt, num.ndm, step, NR.iter, finiteDisp);
       
       %%%   8i. dU and update Ui
       if el.iter == 0 && step > 1 && extrapolate
@@ -77,7 +74,7 @@ for step=1:num.steps % Steps loop
       
       NR.correction = norm(dU)/norm(globl.w);
       NR.residual   = norm(G)/(num.np*num.ndof);
-      el.w_global = globl.w;
+      el.w_global   = globl.w;
                         
       % Print iteration information:
       fprintf('step: %4i\t iteration:%2i\t correction: %.10f\t residual: %.10f\n',...

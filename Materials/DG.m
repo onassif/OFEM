@@ -118,8 +118,8 @@ classdef DG
             DmatL = muL*diag([2 2 1]) + lamdaL*[1; 1; 0]*[1 1 0];
             DmatR = muR*diag([2 2 1]) + lamdaR*[1; 1; 0]*[1 1 0];
             
-            ulresL = el.ulres(el.i,:)';
-            ulresR = el.ulres(el.i+1,:)';
+            ulresL = reshape(el.w(:,:,1)',numel(el.w(:,:,1)),1);
+            ulresR = reshape(el.w(:,:,2)',numel(el.w(:,:,2)),1);
             
             obj.bGP.mesh = struct('nodes', el.nodes, 'conn', el.conn(el.i,:));
             [tauL, ~] = obj.computeTau(obj.bGP, DmatL, obj.ndm-1, class(obj.bGP));
@@ -137,7 +137,7 @@ classdef DG
             edgeK  = (tauL + tauR);
             gamL   = (edgeK\tauL);
             gamR   = (edgeK\tauR);
-            obj.ep = obj.pencoeff*intedge*inv(edgeK)*eb^2;
+            obj.ep = obj.pencoeff*intedge*inv(eb^2*edgeK);
             
             nen = size(el.conn,2);
             obj.eGPL.i = gp.i;   obj.eGPR.i = gp.i;
@@ -213,12 +213,12 @@ classdef DG
             tvtr  = obj.tvtr;
             jumpu = obj.jumpu;
             if gp.i == 1
-               ElemFL = - c*( - NL'*(tvtr + obj.ep*jumpu) + bnAdN1'*jumpu);
-               ElemFR = - c*( + NR'*(tvtr + obj.ep*jumpu) + bnAdN2'*jumpu);
+               ElemFL = + c*( - NL'*(tvtr + obj.ep*jumpu) + bnAdN1'*jumpu);
+               ElemFR = + c*( + NR'*(tvtr + obj.ep*jumpu) + bnAdN2'*jumpu);
             else
                mid = size(el.Fint,1)/2;
-               ElemFL = el.Fint(    1:mid) - c*( - NL'*(tvtr + obj.ep*jumpu) + bnAdN1'*jumpu);
-               ElemFR = el.Fint(mid+1:end) - c*( + NR'*(tvtr + obj.ep*jumpu) + bnAdN2'*jumpu);
+               ElemFL = el.Fint(    1:mid) + c*( - NL'*(tvtr + obj.ep*jumpu) + bnAdN1'*jumpu);
+               ElemFR = el.Fint(mid+1:end) + c*( + NR'*(tvtr + obj.ep*jumpu) + bnAdN2'*jumpu);
             end
             Fint = [ElemFL; ElemFR];
          else
