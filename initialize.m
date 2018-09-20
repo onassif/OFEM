@@ -14,7 +14,7 @@ hist.eps   = zeros(numstr, ngp, size(elements,1), 'single');
 hist.stre  = zeros(numstr, ngp, size(elements,1), 'single');
 hist.ctan  = zeros(3,3,3,3,ngp, size(elements,1), 'single');
 hist.resid = zeros(max_iter,1,'single');
-hist.conn  = uint32(elements(1:numel,1:nen));
+hist.conn  = uint32(elements(:,1:end-1));
 hist.nodes = nodes;
 maxSharedNode = 0;
 realnumnp = size(nodes,1);
@@ -93,20 +93,22 @@ for i=1:length(material)
    end
 end
 
+hist2.conn  = hist.conn(1:numel,1:nen); 
+hist2.nodes = hist.nodes;
 % gp-related
 switch eltype
    case 'Q4'
-    gp = Q4(mat{1}.finiteDisp, hist);
+    gp = Q4(mat{1}.finiteDisp, hist2);
    case 'Q9'
-    gp = Q9(mat{1}.finiteDisp, hist);
+    gp = Q9(mat{1}.finiteDisp, hist2);
    case 'T3'
-    gp = T3(mat{1}.finiteDisp, hist);
+    gp = T3(mat{1}.finiteDisp, hist2);
    case 'T6'
-    gp = T6(mat{1}.finiteDisp, hist);
+    gp = T6(mat{1}.finiteDisp, hist2);
    case 'Q8'
-    gp = Q8(mat{1}.finiteDisp, hist);
+    gp = Q8(mat{1}.finiteDisp, hist2);
    case 'Q8Crys'
-    gp = Q8Crys(mat{1}.finiteDisp, hist);  
+    gp = Q8Crys(mat{1}.finiteDisp, hist2);  
 end
 
 % Element-related
@@ -124,7 +126,8 @@ end
 inpt.BC    = BC;
 inpt.FORCE = FORCE;
 
-num.el = size(elements,1);
+num.els = numel;
+num.el  = size(elements,1);
 
 mon_str={'Jan','Feb','Mar','Apr','May','June','Jul','Aug','Sep','Oct','Nov','Dec'};
 current = fix(clock);

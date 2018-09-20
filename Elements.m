@@ -23,13 +23,13 @@ classdef Elements
       im
       elements
       nodes
+      nen
    end
    properties (SetAccess = private, Hidden)
       numel
       numnp
       ndm
       ndof
-      nen
       property_num
       props
    end
@@ -37,7 +37,7 @@ classdef Elements
    methods
       %% Construct
       function obj = Elements(elements, nodes, num, Props, U_global, hist)
-         obj.elements     = elements(:,1:num.nen);
+         obj.elements     = elements(:,1:end-1);
          obj.nodes        = nodes;
          obj.numel        = num.el;
          obj.numnp        = num.np;
@@ -71,66 +71,36 @@ classdef Elements
       end
       %% get functions
       function value = get.coor(obj)
-         value = obj.nodes(obj.elements(obj.i,:),:);
+         value = obj.nodes(nonzeros(obj.elements(obj.i,:)),:);
       end
       function value = get.Umt(obj)
          reshaped_U = reshape(obj.U_global(1:obj.ndm*obj.numnp), obj.ndm, obj.numnp);
-         if (obj.i <= obj.numel) || ~rem(obj.i - obj.numel,2)
-            value = reshaped_U(:, obj.elements(obj.i,:))';
-         else % DG
-            value(:,:,1) = reshaped_U(:, obj.elements(obj.i  ,:))';
-            value(:,:,2) = reshaped_U(:, obj.elements(obj.i+1,:))';
-         end
+         value = reshaped_U(:, nonzeros(obj.elements(obj.i,:)))';
       end
       function value = get.w(obj)
          reshaped_w = reshape(obj.w_global(1:obj.ndm*obj.numnp), obj.ndm, obj.numnp);
-         if (obj.i <= obj.numel) || ~rem(obj.i - obj.numel,2)
-            value = reshaped_w(:, obj.elements(obj.i,:))';
-         else % DG
-            value(:,:,1) = reshaped_w(:, obj.elements(obj.i  ,:))';
-            value(:,:,2) = reshaped_w(:, obj.elements(obj.i+1,:))';
-         end
+         value = reshaped_w(:, nonzeros(obj.elements(obj.i,:)))';
       end
       function value = get.Ures(obj)
          reshaped = reshape(obj.Ures_glb(1:obj.ndm*obj.numnp), obj.ndm, obj.numnp);
-         if (obj.i <= obj.numel) || ~rem(obj.i - obj.numel,2)
-            value = reshaped(:, obj.elements(obj.i,:))';
-         else % DG
-            value(:,:,1) = reshaped(:, obj.elements(obj.i  ,:))';
-            value(:,:,2) = reshaped(:, obj.elements(obj.i+1,:))';
-         end
+         value = reshaped(:, nonzeros(obj.elements(obj.i,:)))';
       end
       function value = get.Umt_n(obj)
          reshaped_U = reshape(obj.U_glb_n(1:obj.ndm*obj.numnp), obj.ndm, obj.numnp);
-         value = reshaped_U(:, obj.elements(obj.i,:))';
+         value = reshaped_U(:, nonzeros(obj.elements(obj.i,:)))';
       end
       function value = get.Uvc(obj)
-         if (obj.i <= obj.numel) || ~rem(obj.i - obj.numel,2)
-            value = reshape(obj.Umt', obj.ndm*obj.nen, 1);
-         else % DG
-            value(:,1) = reshape(obj.Umt(:,:,1)', obj.ndm*obj.nen, 1);
-            value(:,2) = reshape(obj.Umt(:,:,2)', obj.ndm*obj.nen, 1);
-         end
+         value = reshape(obj.Umt', numel(obj.Umt), 1);
       end
       function value = get.Uvc_n(obj)
-         if (obj.i <= obj.numel) || ~rem(obj.i - obj.numel,2)
-            value = reshape(obj.Umt_n', obj.ndm*obj.nen, 1);
-         else % DG
-            value(:,1) = reshape(obj.Umt_n(:,:,1)', obj.ndm*obj.nen, 1);
-            value(:,2) = reshape(obj.Umt_n(:,:,2)', obj.ndm*obj.nen, 1);
-         end
+         value = reshape(obj.Umt_n', numel(obj.Umt_n), 1);
       end
       function value = get.im(obj)
          value = obj.property_num(obj.i);
       end
       function value = get.indices(obj)
-         if (obj.i <= obj.numel) || ~rem(obj.i - obj.numel,2)
-            indc = obj.elements(obj.i,:);
-            dofs_col = repmat((1:obj.ndm)', obj.nen,1);
-         else
-            indc = [obj.elements(obj.i,:), obj.elements(obj.i+1,:)];
-            dofs_col = repmat((1:obj.ndm)', 2*obj.nen,1);
-         end
+         indc = nonzeros(obj.elements(obj.i,:))';
+         dofs_col = repmat((1:obj.ndm)', length(indc),1);
          
          repeated_el_conn = repmat(indc, obj.ndm, 1);
 

@@ -123,14 +123,14 @@ coor = hist.coor;
 title('Undeformed vs Deformed')
 hold on
 if (num.ndm == 2)
-    if (num.gp == 4 || num.gp == 1)
+    if (num.nen == 4 || num.nen == 3)
         V0 = coor(:,:,1);
-        F0 = hist.conn;
-    elseif (num.gp == 9)
+        F0 = hist.conn(1:num.els,1:num.nen);
+    elseif (num.nen == 9)
         el = hist.conn(:,[1 5 2 6 3 7 4 8 9]);
         V0 = coor(reshape(el(:,1:num.nen-1)',num.el*(num.nen-1),1),:,1);
         F0 = reshape(1:(num.nen-1)*num.el,(num.nen-1),num.el)';
-    elseif (num.gp == 3)
+    elseif (num.nen == 6)
        el = hist.conn(:,[1,4,2,5,3,6]);
        V0 = coor(reshape(el',num.el*num.nen,1),:,1);
        F0 = reshape(1:num.nen*num.el,(num.nen),num.el)';
@@ -157,7 +157,7 @@ axisH.YLim = [min(min(hist.coor(:,2,:))) max(max(hist.coor(:,2,:)))];
 if (num.ndm == 2)
     if (num.gp == 4 || num.gp == 1) 
         Vf = coor(:,:,end);
-        Ff = hist.conn;
+        Ff = hist.conn(1:num.els,1:num.nen);
     elseif (num.gp == 9)
         el = hist.conn(:,[1 5 2 6 3 7 4 8 9]);
         Vf = coor(reshape(el(:,1:num.nen-1)',num.el*(num.nen-1),1),:,end);
@@ -185,12 +185,12 @@ function plotcont(hist, num, contH,subH)
 title('Stress contour GUI');
 set(subH,'Position',[0.6,0.02,0.35,0.75])
 axis equal
-if num.gp == 9
+if num.nen == 9
    conn = hist.conn(:,[1 5 2 6 3 7 4 8])';
-elseif num.gp == 3
+elseif num.nen == 6
    conn = hist.conn(:,[1,4,2,5,3,6])';
 else
-   conn = hist.conn';
+   conn = hist.conn(1:num.els,1:num.nen)';
 end
 X = reshape(hist.coor(conn,1,1),   size(conn,1),size(conn,2));
 Y = reshape(hist.coor(conn,2,1),   size(conn,1),size(conn,2));

@@ -96,9 +96,6 @@ classdef DG
       end
       %% Epsilon
       function [eps, obj] = computeStrain(obj, gp, ~, ~)
-         if gp.i == 1
-            obj.toggle = ~obj.toggle;
-         end
          numstr = (obj.ndm*obj.ndm + obj.ndm) /2;
          
          eps = zeros(numstr,1);
@@ -109,8 +106,10 @@ classdef DG
       end
       %% Tangential stiffness
       function [D, ctan, obj] = computeTangentStiffness(obj, gp, el, ~)
-         if obj.toggle
             ndm  = obj.ndm;
+            nen = size(el.conn(el.i,:),2)/2;
+            elL = 1:nen;
+            elR = nen+1:2*nen;
             
             lamdaL = obj.lamdaL;    lamdaR = obj.lamdaR;
             muL = obj.muL;          muR = obj.muR;
@@ -118,19 +117,19 @@ classdef DG
             DmatL = muL*diag([2 2 1]) + lamdaL*[1; 1; 0]*[1 1 0];
             DmatR = muR*diag([2 2 1]) + lamdaR*[1; 1; 0]*[1 1 0];
             
-            ulresL = reshape(el.w(:,:,1)',numel(el.w(:,:,1)),1);
-            ulresR = reshape(el.w(:,:,2)',numel(el.w(:,:,2)),1);
+            ulresL = reshape(el.w(elL,:)', numel(el.w(elL,:)),1);
+            ulresR = reshape(el.w(elR,:)', numel(el.w(elR,:)),1);
             
-            obj.bGP.mesh = struct('nodes', el.nodes, 'conn', el.conn(el.i,:));
+            obj.bGP.mesh = struct('nodes', el.nodes, 'conn', el.conn(el.i, elL));
             [tauL, ~] = obj.computeTau(obj.bGP, DmatL, obj.ndm-1, class(obj.bGP));
             
-            obj.bGP.mesh = struct('nodes', el.nodes, 'conn', el.conn(el.i+1,:));
+            obj.bGP.mesh = struct('nodes', el.nodes, 'conn', el.conn(el.i, elR));
             [tauR, ~] = obj.computeTau(obj.bGP, DmatR, obj.ndm-1, class(obj.bGP));
             
-            obj.eGPL.mesh = struct('nodes', el.nodes, 'conn', el.conn(el.i,:));   obj.eGPL.iel = 1;
-            obj.eGPR.mesh = struct('nodes', el.nodes, 'conn', el.conn(el.i+1,:)); obj.eGPR.iel = 1;
+            obj.eGPL.mesh = struct('nodes', el.nodes, 'conn', el.conn(el.i,elL)); obj.eGPL.iel = 1;
+            obj.eGPR.mesh = struct('nodes', el.nodes, 'conn', el.conn(el.i,elR)); obj.eGPR.iel = 1;
             
-            surfTan = el.nodes(el.conn(el.i,:),:)'*obj.dNdxi;
+            surfTan = el.nodes(el.conn(el.i, elL),:)'*obj.dNdxi;
             
             [eb, intedge, obj.c1, nvect] = obj.edgeInt(obj.sGP, surfTan);
             
@@ -139,7 +138,6 @@ classdef DG
             gamR   = (edgeK\tauR);
             obj.ep = obj.pencoeff*intedge*inv(eb^2*edgeK);
             
-            nen = size(el.conn,2);
             obj.eGPL.i = gp.i;   obj.eGPR.i = gp.i;
             NL = obj.eGPL.N;  NR = obj.eGPR.N;
             pad = zeros(ndm, nen);
@@ -155,7 +153,7 @@ classdef DG
             
             obj.tvtr  = (obj.bnAdN1*ulresL + obj.bnAdN2*ulresR);
             obj.jumpu = obj.NmatR*ulresR - obj.NmatL*ulresL;
-         end
+         
          Eh= obj.EL/(1-2*obj.vL)/(1+obj.vL);
          G = 0.5*obj.EL/(1+obj.vL);
          v = obj.vL;
@@ -175,8 +173,7 @@ classdef DG
       %% Element K
       function Kel = computeK_el(obj, gp, el, ~)
          i = gp.i;
-         
-         if obj.toggle
+
             NL     = obj.NmatL;         NR = obj.NmatR;
             bnAdN1 = obj.bnAdN1;    bnAdN2 = obj.bnAdN2;
             c = obj.c1(i);
@@ -196,16 +193,12 @@ classdef DG
             Kel = [...
                ElemKLL ElemKLR
                ElemKRL ElemKRR];
-         else
-            Kel = zeros(obj.numeq, obj.numeq);
-         end
          
       end
       %% Element Fint
       function Fint = computeFint(obj, gp, el, ~)
          i = gp.i;
          
-         if obj.toggle
             NL     = obj.NmatL;         NR = obj.NmatR;
             bnAdN1 = obj.bnAdN1;    bnAdN2 = obj.bnAdN2;
             c = obj.c1(i);
@@ -221,9 +214,6 @@ classdef DG
                ElemFR = el.Fint(mid+1:end) + c*( + NR'*(tvtr + obj.ep*jumpu) + bnAdN2'*jumpu);
             end
             Fint = [ElemFL; ElemFR];
-         else
-            Fint = zeros(obj.numeq,1);
-         end
          
       end
    end
