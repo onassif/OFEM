@@ -29,6 +29,7 @@ classdef Q4
       dXdxi_list
       det_dXdxi_list
       B
+      Bf
       N
       w
       F
@@ -110,16 +111,23 @@ classdef Q4
       
       function value = get.B(obj)
          if (obj.finiteDisp)
-            dx = obj.dNdx(:,1);
-            dy = obj.dNdx(:,2);
+            dx = obj.dNdx(:,1);	dy = obj.dNdx(:,2);
          else
-            dx = obj.dNdX(:,1);
-            dy = obj.dNdX(:,2);
+            dx = obj.dNdX(:,1);	dy = obj.dNdX(:,2);
          end
          value=[...
             dx(1),   0.0, dx(2),   0.0, dx(3),   0.0, dx(4),   0.0
             0.0  , dy(1),   0.0, dy(2),   0.0, dy(3),   0.0, dy(4)
             dy(1), dx(1), dy(2), dx(2), dy(3), dx(3), dy(4), dx(4)];
+      end
+      
+      function value = get.Bf(obj)
+         dx = obj.dNdx(:,1); dy = obj.dNdx(:,2);
+         value =[...
+            dx(1)  0      dx(2)  0      dx(3)  0      dx(4)  0      
+            0      dy(1)  0      dy(2)  0      dy(3)  0      dy(4)  
+            dy(1)  dx(1)  dy(2)  dx(2)  dy(3)  dx(3)  dy(4)  dx(4)   
+            dy(1) -dx(1)  dy(2) -dx(2)  dy(3) -dx(3)  dy(4) -dx(4)];
       end
       %% Set functions
       function obj = set.U(obj, val)
