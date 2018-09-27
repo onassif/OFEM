@@ -76,7 +76,7 @@ for i=1:length(material)
       case 2
          mat{i} = HypoElastic(num, prps, ident.threeD.second);
       case 3
-         mat{i} = HyperNeo(num, prps);
+         mat{i} = HyperElastic(num, prps,  ident.threeD.second);
       case 4
          mat{i} = ViscoPlastic(num, prps, time, ident.threeD.second);
       case 5
