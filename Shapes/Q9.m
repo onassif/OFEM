@@ -33,6 +33,7 @@ classdef Q9
       F
       J % det(dX/dxi) = J
       j % or det( dx/dX*dX/dxi ) = det(dx/dxi) = j
+      JxX
       xi = sqrt(0.6)*[...
          -1 +1 +1 -1  0 +1  0 -1  0
          -1 -1 +1 +1 -1  0 +1  0  0]';
@@ -88,9 +89,13 @@ classdef Q9
          I     = eye(size(obj.U,1));
          value = obj.U*obj.dNdX + I;
       end
+ 
+      function value = get.JxX(obj)
+         value = det(obj.F);
+      end
       
       function value = get.j(obj)
-         value = det(obj.F) * obj.J;
+         value = obj.JxX * obj.J;
       end
       
       function value = get.dNdx(obj)
@@ -98,9 +103,7 @@ classdef Q9
       end
       
       function value = get.b(obj)
-         if obj.finiteDisp
-            value = obj.F*obj.F';
-         end
+         value = obj.F*obj.F';
       end
       
       function value = get.B(obj)
