@@ -25,6 +25,8 @@ classdef Q8
       d2Ndxi2_list
       dNdxi
       d2Ndxi2
+      dXdxi
+      dXdxi_list
       det_dXdxi_list
       B
       Bf
@@ -71,6 +73,10 @@ classdef Q8
       
       function value = get.d2Ndxi2(obj)
          value = squeeze(obj.d2Ndxi2_list(:,:,obj.i));
+      end
+      
+      function value = get.dXdxi(obj)
+         value = obj.dXdxi_list(:,:,obj.i,obj.iel);
       end
       
       function value = get.w(obj)
@@ -152,14 +158,14 @@ classdef Q8
       end
       
       function obj = set.mesh(obj, val)
-         [obj.det_dXdxi_list, obj.dNdX_list] =...
+         [obj.det_dXdxi_list, obj.dNdX_list, obj.dXdxi_list] =...
             obj.computeJ_and_dNdX(val.nodes, val.conn, obj.dNdxi_list);
       end
    end
    
    methods (Static)
       function dNdxi_list = compute_dNdxi(obj)
-         xi = obj.xi;
+         xi  = obj.xi;
          ngp = size(xi,1);
          ndm = size(xi,2);
          nen = 8;
@@ -208,10 +214,14 @@ classdef Q8
             (1+xi(:,1)).*(1-xi(:,2)).*(1+xi(:,3)),...
             (1+xi(:,1)).*(1+xi(:,2)).*(1+xi(:,3)),...
             (1-xi(:,1)).*(1+xi(:,2)).*(1+xi(:,3))];
-         Ninv = inv(Nmat);
+         if size(Nmat,1) == size(Nmat,2)
+            Ninv = inv(Nmat);
+         else
+            Ninv = 0;
+         end
       end
       
-      function [det_dXdxi_list, dNdX_list] = computeJ_and_dNdX(nodes, conn, dNdxi_list)
+      function [det_dXdxi_list, dNdX_list, dXdxi_list] = computeJ_and_dNdX(nodes, conn, dNdxi_list)
          numel = size(conn    , 1);
          nen   = size(conn    , 2);
          ndm   = size(dNdxi_list, 2);
@@ -219,6 +229,8 @@ classdef Q8
          
          det_dXdxi_list = zeros(numel,1);
          dNdX_list      = zeros(nen, ndm, ngp, numel);
+         dXdxi_list     = zeros(ndm, ndm, ngp, numel);
+         
          for i = 1:numel
             coor  = nodes(conn(i,:),:)';
             dXdxi = coor*dNdxi_list(:,:,1);
@@ -226,11 +238,11 @@ classdef Q8
             
             for j = 1:ngp
                dXdxi = coor*dNdxi_list(:,:,j);
-               dNdX_list(:,:,j,i) = dNdxi_list(:,:,j) / dXdxi;
+               dNdX_list(:,:,j,i)  = dNdxi_list(:,:,j) / dXdxi;
+               dXdxi_list(:,:,j,i) = dXdxi;
             end
          end
       end
       
    end
 end
-

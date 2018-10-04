@@ -45,8 +45,7 @@ classdef Q4
    methods
       %% Construct
       function obj = Q4(varargin)
-         finiteDisp     = varargin{1};
-         obj.finiteDisp = finiteDisp;
+         obj.finiteDisp = varargin{1};
          
          if nargin >= 3
             obj.xi = varargin{3};
@@ -98,7 +97,7 @@ classdef Q4
       
       function value = get.JxX(obj)
          value = det(obj.F);
-      end  
+      end
       
       function value = get.j(obj)
          value = obj.JxX * obj.J;
@@ -157,7 +156,7 @@ classdef Q4
    
    methods (Static)
       function dNdxi_list = compute_dNdxi(obj)
-         xi = obj.xi;
+         xi  = obj.xi;
          ngp = size(xi,1);
          ndm = size(xi,2);
          nen = 4;
