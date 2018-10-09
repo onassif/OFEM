@@ -110,7 +110,7 @@ switch eltype
    case 'Q8'
     gp = Q8(mat{1}.finiteDisp, hist2);
    case 'Q8Crys'
-    gp = Q8Crys(mat{1}.finiteDisp, hist2);  
+    gp = Q8Crys(mat{1}.finiteDisp, hist2);
 end
 
 % Element-related

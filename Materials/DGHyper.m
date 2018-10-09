@@ -22,7 +22,8 @@ classdef DGHyper
       muL;
       NmatL;
       NmatR;
-      c1;
+      c1L;
+      c1R;
       C1;
       bnAdN1
       bnAdN2
@@ -36,6 +37,9 @@ classdef DGHyper
       sGP;
       bGP;
       el;
+      
+      tauLHist;
+      tauRHist;
       
       P1_2 = [...
          1 0 0 0
@@ -165,6 +169,8 @@ classdef DGHyper
          ob.muR    = ob.ER/(2*(1+ob.vR));
          ob.I      = eye(ob.ndm);
          ob.I4_bulk= identity.I4_bulk;
+         ob.tauLHist= zeros(ob.ndm, ob.ndm, size(ob.sGP.Nmat,1), num.el);
+         ob.tauRHist= zeros(ob.ndm, ob.ndm, size(ob.sGP.Nmat,1), num.el);
       end
       %% Epsilon
       function [eps, ob] = computeStrain(ob, ~, ~, ~)
@@ -175,7 +181,7 @@ classdef DGHyper
          sigma_voigt = gp.D*gp.eps;
       end
       %% Tangential stiffness
-      function [D, ctan, ob] = computeTangentStiffness(ob, gp, el, ~)
+      function [D, ctan, ob] = computeTangentStiffness(ob, gp, el, step)
          ndm  = ob.ndm;
          if ndm == 2
             P1 = ob.P1_2;  P2 = ob.P2_2;  P3 = ob.P3_2;
@@ -195,11 +201,20 @@ classdef DGHyper
          ulresR = reshape(el.Umt(elR,:)', numel(el.Umt(elR,:)),1);
          
          ob.bGP.mesh = struct('nodes', el.nodes, 'conn', el.conn(el.i, elL));
-         tauL = ob.computeTau(ob.bGP, muL, lamL, ob.ndm, class(ob.bGP), ob.eGPL.U);
-         
+         iterset = 3;
+         if el.iter < iterset
+            tauL = ob.computeTau(ob.bGP, muL, lamL, ob.ndm, class(ob.bGP), ob.eGPL.U);
+            ob.tauLHist(:, :, gp.i, el.i)= tauL;
+         else
+            tauL = ob.tauLHist(:, :, gp.i, el.i);
+         end
          ob.bGP.mesh = struct('nodes', el.nodes, 'conn', el.conn(el.i, elR));
-         tauR = ob.computeTau(ob.bGP, muR, lamR, ob.ndm, class(ob.bGP), ob.eGPR.U);
-         
+         if el.iter < iterset
+            tauR = ob.computeTau(ob.bGP, muR, lamR, ob.ndm, class(ob.bGP), ob.eGPR.U);
+            ob.tauRHist(:, :, gp.i, el.i)= tauR;
+         else
+            tauR = ob.tauRHist(:, :, gp.i, el.i);
+         end
          ob.eGPL.mesh = struct('nodes', el.nodes, 'conn', el.conn(el.i,elL)); ob.eGPL.iel = 1;
          ob.eGPR.mesh = struct('nodes', el.nodes, 'conn', el.conn(el.i,elR)); ob.eGPR.iel = 1;
          
@@ -215,8 +230,8 @@ classdef DGHyper
          
          eb = ob.edgeBubbleInt(ob.eGPL.xi, ob.C1, class(ob.eGPL));
          
-         [ ~, ob.c1, nvectL] = ob.edgeInt(ob.sGP, tanL);
-         [ ~,     ~, nvectR] = ob.edgeInt(ob.sGP, tanR);
+         [ ~, ob.c1L, nvectL] = ob.edgeInt(ob.sGP, tanL);
+         [ ~, ob.c1R, nvectR] = ob.edgeInt(ob.sGP, tanR);
          
          edgeK  = (tauL*eb^2 + tauR*eb^2);
          gamL   = eb^2*(edgeK\tauL);
@@ -234,6 +249,9 @@ classdef DGHyper
          
          [sigmaL,  cmatL]  = ob.SigmaCmat(ob.eGPL.b, ob.eGPL.JxX, muL, lamL, ob.I, ob.I4_bulk);
          [sigmaR,  cmatR]  = ob.SigmaCmat(ob.eGPR.b, ob.eGPR.JxX, muR, lamR, ob.I, ob.I4_bulk);
+         % Make kirchhoff stress into cauchy:
+         sigmaL = sigmaL/ob.eGPL.JxX;  cmatL = cmatL/ob.eGPL.JxX;
+         sigmaR = sigmaR/ob.eGPR.JxX;  cmatR = cmatR/ob.eGPR.JxX;
          
          nvecL = diag(nvectL(1:ndm,1:ndm));
          nvecR = diag(nvectR(1:ndm,1:ndm));
@@ -259,10 +277,10 @@ classdef DGHyper
          term18L  = P1'*(gamL*nvectL*cmatL)';
          term18R  = P1'*(gamR*nvectR*cmatR)';
          
-         ob.term28L = ob.NmatL'*(gamL*sigmaL*nvecL-gamR*sigmaR*nvecR);
-         ob.term28R = ob.NmatR'*(gamL*sigmaL*nvecL-gamR*sigmaR*nvecR);
+         ob.term28L = ob.NmatL'*(ob.c1L(gp.i)*gamL*sigmaL*nvecL-ob.c1R(gp.i)*gamR*sigmaR*nvecR);
+         ob.term28R = ob.NmatR'*(ob.c1L(gp.i)*gamL*sigmaL*nvecL-ob.c1R(gp.i)*gamR*sigmaR*nvecR);
          
-         ob.jumpu = ob.NmatR*ulresR - ob.NmatL*ulresL;
+         ob.jumpu = ob.NmatL*ulresL - ob.NmatR*ulresR;
          
          ob.term30L = ob.NmatL'*ob.ep*ob.jumpu;
          ob.term30R = ob.NmatR'*ob.ep*ob.jumpu;
@@ -350,19 +368,20 @@ classdef DGHyper
          NL     = ob.NmatL;         NR = ob.NmatR;
          bnAdN1 = ob.bnAdN1;
          bnAdN2 = ob.bnAdN2;
-         c = ob.c1(i);
-         C = ob.C1(i);
+         cL = ob.c1L(i);
+         cR = ob.c1R(i);
+         C  = ob.C1(i);
          if gp.i == 1
-            ElemKLL = + C*(NL'*ob.ep*NL) + c*( - NL'*bnAdN1 - bnAdN1'*NL - ob.jumpAddL);
-            ElemKLR = - C*(NL'*ob.ep*NR) + c*( + NL'*bnAdN2 + bnAdN1'*NR);
-            ElemKRL = - C*(NR'*ob.ep*NL) + c*( + NR'*bnAdN1 + bnAdN2'*NL);
-            ElemKRR = + C*(NR'*ob.ep*NR) + c*( - NR'*bnAdN2 - bnAdN2'*NR + ob.jumpAddR);
+            ElemKLL = + C*(NL'*ob.ep*NL) - cL*NL'*bnAdN1 - cL*bnAdN1'*NL - cL*ob.jumpAddL;
+            ElemKLR = - C*(NL'*ob.ep*NR) + cR*NL'*bnAdN2 + cL*bnAdN1'*NR;
+            ElemKRL = - C*(NR'*ob.ep*NL) + cL*NR'*bnAdN1 + cR*bnAdN2'*NL;
+            ElemKRR = + C*(NR'*ob.ep*NR) - cR*NR'*bnAdN2 - cR*bnAdN2'*NR + cR*ob.jumpAddR;
          else
             mid = size(el.K,1)/2;
-            ElemKLL = el.K(    1:mid,     1:mid) + C*(NL'*ob.ep*NL) + c*( - NL'*bnAdN1 - bnAdN1'*NL - ob.jumpAddL);
-            ElemKLR = el.K(    1:mid, mid+1:end) - C*(NL'*ob.ep*NR) + c*( + NL'*bnAdN2 + bnAdN1'*NR);
-            ElemKRL = el.K(mid+1:end,     1:mid) - C*(NR'*ob.ep*NL) + c*( + NR'*bnAdN1 + bnAdN2'*NL);
-            ElemKRR = el.K(mid+1:end, mid+1:end) + C*(NR'*ob.ep*NR) + c*( - NR'*bnAdN2 - bnAdN2'*NR + ob.jumpAddR);
+            ElemKLL = el.K(    1:mid,     1:mid) + C*(NL'*ob.ep*NL) - cL*NL'*bnAdN1 - cL*bnAdN1'*NL - cL*ob.jumpAddL;
+            ElemKLR = el.K(    1:mid, mid+1:end) - C*(NL'*ob.ep*NR) + cR*NL'*bnAdN2 + cL*bnAdN1'*NR;
+            ElemKRL = el.K(mid+1:end,     1:mid) - C*(NR'*ob.ep*NL) + cL*NR'*bnAdN1 + cR*bnAdN2'*NL;
+            ElemKRR = el.K(mid+1:end, mid+1:end) + C*(NR'*ob.ep*NR) - cR*NR'*bnAdN2 - cR*bnAdN2'*NR + cR*ob.jumpAddR;
          end
          Kel = [...
             ElemKLL ElemKLR
@@ -375,21 +394,21 @@ classdef DGHyper
          
          NL     = ob.NmatL;         NR = ob.NmatR;
          bnAdN1 = ob.bnAdN1;    bnAdN2 = ob.bnAdN2;
-         c = ob.c1(i);
+         cL = ob.c1L(i);
+         cR = ob.c1R(i);
          C = ob.C1(i);
          
          tvtr  = ob.tvtr;
          jumpu = ob.jumpu;
          if gp.i == 1
-            ElemFL = + C*ob.term30L + c*( - ob.term28L - bnAdN1'*jumpu);
-            ElemFR = - C*ob.term30R + c*( + ob.term28R + bnAdN2'*jumpu);
+            ElemFL = + C*ob.term30L - cL*bnAdN1'*jumpu - ob.term28L;
+            ElemFR = - C*ob.term30R + cR*bnAdN2'*jumpu + ob.term28R;
          else
             mid = size(el.Fint,1)/2;
-            ElemFL = el.Fint(    1:mid) + C*ob.term30L + c*( - ob.term28L - bnAdN1'*jumpu);
-            ElemFR = el.Fint(mid+1:end) - C*ob.term30R + c*( + ob.term28R + bnAdN2'*jumpu);
+            ElemFL = el.Fint(    1:mid) + C*ob.term30L - cL*bnAdN1'*jumpu - ob.term28L;
+            ElemFR = el.Fint(mid+1:end) - C*ob.term30R + cR*bnAdN2'*jumpu + ob.term28R;
          end
          Fint = [ElemFL; ElemFR];
-         
       end
    end
    methods (Static)
@@ -416,14 +435,14 @@ classdef DGHyper
             
             [S, cmat] = DGHyper.SigmaCmat(bGP.b, bGP.JxX, mu, lam, I, I4_bulk);
             if ndm == 2
-               Dgeo = bGP.JxX.*formGeo(S);
-               Dmat = bGP.JxX.*[cmat zeros(3,1); zeros(1,4)];
+               Dgeo = formGeo(S);
+               Dmat = [cmat zeros(3,1); zeros(1,4)];
             elseif ndm == 3
-               Dgeo = bGP.JxX.*formGeo(S);
-               Dmat = bGP.JxX.*[cmat zeros(6,3); zeros(3,9)];
+               Dgeo = formGeo(S);
+               Dmat = [cmat zeros(6,3); zeros(3,9)];
             end
             
-            tau  = tau  + bGP.J/bGP.JxX *bGP.w* (B'*(Dgeo+Dmat)*B);
+            tau  = tau  + bGP.J *bGP.w* (B'*(Dgeo+Dmat)*B);
          end
          tau = inv(tau);
       end
@@ -497,8 +516,8 @@ classdef DGHyper
          ndm  = size(I,1);
          matE = diag([2,2,2,1,1,1]);
          
-         sigma = 1/JxX*mu*(b-I) + lam*(JxX-1)*I;
-         cmat  = 1/JxX*mu*matE  + lam*( (2*JxX-1)*I4_bulk - (JxX-1)*matE );
+         sigma = mu*(b-I) + lam*JxX*(JxX-1)*I;
+         cmat  = mu*matE  + lam*JxX*( (2*JxX-1)*I4_bulk - (JxX-1)*matE );
          if ndm == 2
             sigma = sigma(1:2,1:2);
             cmat  = cmat([1,2,4],[1,2,4]);
