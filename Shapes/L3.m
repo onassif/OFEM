@@ -2,7 +2,7 @@ classdef L3
    properties
       i
       iel
-
+      
       b
       eps
       sigma
@@ -34,6 +34,7 @@ classdef L3
       F
       J % det(dX/dxi) = J
       j % or det( dx/dX*dX/dxi ) = det(dx/dxi) = j
+      JxX
       xi      = [-sqrt(0.6); 0; sqrt(0.6)];
       weights = (1/9).*[5 8 5]';
    end
@@ -41,8 +42,7 @@ classdef L3
    methods
       %% Construct
       function obj = L3(varargin)
-         finiteDisp     = varargin{1};
-         obj.finiteDisp = finiteDisp;
+         obj.finiteDisp = varargin{1};
          
          if nargin >= 3
             obj.xi = varargin{3};
@@ -74,24 +74,28 @@ classdef L3
       function value = get.dXdxi(obj)
          value = obj.dXdxi_list(obj.i,obj.iel);
       end
-
+      
       function value = get.w(obj)
          value = obj.weights(obj.i);
       end
-
+      
       function value = get.J(obj)
-         value = obj.det_dXdxi_list(obj.iel);
+         value = obj.det_dXdxi_list(obj.i, obj.iel);
       end
-
+      
       function value = get.dNdX(obj)
          value = obj.dNdX_list(:,obj.i,obj.iel);
       end
-
+      
       function value = get.F(obj)
          I     = eye(size(obj.U,1));
          value = obj.U*obj.dNdX + I;
       end
-
+      
+      function value = get.JxX(obj)
+         value = det(obj.F);
+      end
+      
       function value = get.j(obj)
          value = det(obj.F) * obj.J;
       end
@@ -101,11 +105,9 @@ classdef L3
       end
 
       function value = get.b(obj)
-         if obj.finiteDisp
-            value = obj.F*obj.F';
-         end
+         value = obj.F*obj.F';
       end
-
+      
       function value = get.B(obj)
          if (obj.finiteDisp)
             dx = obj.dNdx;
@@ -149,19 +151,17 @@ classdef L3
          nen   = size(conn    , 2);
          ngp   = size(dNdxi_list, 2);
          
-         det_dXdxi_list = zeros(numel,1);
+         det_dXdxi_list = zeros(ngp, numel);
          dNdX_list      = zeros(nen, ngp, numel);
          dXdxi_list     = zeros(ngp, numel);
          
          for i = 1:numel
             coor  = nodes(conn(i,:),:)';
-            dXdxi = coor*dNdxi_list(:,1);
-            det_dXdxi_list(i) = det(dXdxi);
-            
             for j = 1:ngp
                dXdxi = coor*dNdxi_list(:,j);
-               dNdX_list(:,j,i) = dNdxi_list(:,j) / dXdxi;
-               dXdxi_list(j,i) = dXdxi;
+               det_dXdxi_list(j,i) = det(dXdxi);
+               dNdX_list( :,j,i) = dNdxi_list(:,j) / dXdxi;
+               dXdxi_list(:,j,i) = dXdxi;
             end
          end
       end

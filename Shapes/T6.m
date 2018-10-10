@@ -25,6 +25,8 @@ classdef T6
       d2Ndxi2_list
       dNdxi
       d2Ndxi2
+      dXdxi
+      dXdxi_list
       det_dXdxi_list
       B
       Bf
@@ -70,12 +72,16 @@ classdef T6
          value = obj.Nmat(obj.i, :);
       end
       
+      function value = get.dXdxi(obj)
+         value = obj.dXdxi_list(:,:,obj.i,obj.iel);
+      end
+      
       function value = get.w(obj)
          value = obj.weights(obj.i);
       end
       
       function value = get.J(obj)
-         value = obj.det_dXdxi_list(obj.iel);
+         value = obj.det_dXdxi_list(obj.i,obj.iel);
       end
       
       function value = get.dNdX(obj)
@@ -105,9 +111,9 @@ classdef T6
       
       function value = get.B(obj)
          if (obj.finiteDisp)
-            dx = obj.dNdx(:,1);  dy = obj.dNdx(:,2);
+            dx = obj.dNdx(:,1);	dy = obj.dNdx(:,2);
          else
-            dx = obj.dNdX(:,1);  dy = obj.dNdX(:,2);
+            dx = obj.dNdX(:,1);	dy = obj.dNdX(:,2);
          end
          value=[...
             dx(1),   0.0, dx(2),   0.0, dx(3),   0.0, dx(4),   0.0, dx(5),   0.0, dx(6),   0.0
@@ -141,7 +147,7 @@ classdef T6
       end
       
       function obj = set.mesh(obj, val)
-         [obj.det_dXdxi_list, obj.dNdX_list] =...
+         [obj.det_dXdxi_list, obj.dNdX_list, obj.dXdxi_list] =...
             obj.computeJ_and_dNdX(val.nodes, val.conn, obj.dNdxi_list);
       end
    end
@@ -198,27 +204,26 @@ classdef T6
          Ninv = ((Nmat*Nmat')\Nmat)';
       end
       
-      function [det_dXdxi_list, dNdX_list] = computeJ_and_dNdX(nodes, conn, dNdxi_list)
+      function [det_dXdxi_list, dNdX_list, dXdxi_list] = computeJ_and_dNdX(nodes, conn, dNdxi_list)
          numel = size(conn    , 1);
          nen   = size(conn    , 2);
          ndm   = size(dNdxi_list, 2);
          ngp   = size(dNdxi_list, 3);
          
-         det_dXdxi_list = zeros(numel,1);
+         det_dXdxi_list = zeros(ngp, numel);
          dNdX_list      = zeros(nen, ndm, ngp, numel);
+         dXdxi_list     = zeros(ndm, ndm, ngp, numel);
          
          for i = 1:numel
             coor  = nodes(conn(i,:),:)';
-            dXdxi = coor*dNdxi_list(:,:,1);
-            det_dXdxi_list(i) = det(dXdxi);
-            
             for j = 1:ngp
                dXdxi = coor*dNdxi_list(:,:,j);
-               dNdX_list(:,:,j,i) = dNdxi_list(:,:,j) / dXdxi;
+               det_dXdxi_list(j,i) = det(dXdxi);
+               dNdX_list( :,:,j,i) = dNdxi_list(:,:,j) / dXdxi;
+               dXdxi_list(:,:,j,i) = dXdxi;
             end
          end
       end
       
    end
 end
-
