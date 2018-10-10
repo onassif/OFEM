@@ -120,65 +120,49 @@ end
 function plotDeformation(hist,num)
 
 coor = hist.coor;
+conn = hist.conn(1:num.els,1:num.nen);
 title('Undeformed vs Deformed')
 hold on
 if (num.ndm == 2)
-    if (num.nen == 4 || num.nen == 3)
+   switch num.nen
+      case {4,3}
         V0 = coor(:,:,1);
-        F0 = hist.conn(1:num.els,1:num.nen);
-    elseif (num.nen == 9)
-        el = hist.conn(:,[1 5 2 6 3 7 4 8 9]);
-        V0 = coor(reshape(el(:,1:num.nen-1)',num.el*(num.nen-1),1),:,1);
-        F0 = reshape(1:(num.nen-1)*num.el,(num.nen-1),num.el)';
-    elseif (num.nen == 6)
-       el = hist.conn(:,[1,4,2,5,3,6]);
-       V0 = coor(reshape(el',num.el*num.nen,1),:,1);
-       F0 = reshape(1:num.nen*num.el,(num.nen),num.el)';
-    else
+        Vf = coor(:,:,end);
+        F  = conn;
+      case 9
+        el = conn(:,[1 5 2 6 3 7 4 8 9]);
+        V0 = coor(reshape(el(:,1:num.nen-1)',num.els*(num.nen-1),1),:,1);
+        Vf = coor(reshape(el(:,1:num.nen-1)',num.els*(num.nen-1),1),:,end);
+        F  = reshape(1:(num.nen-1)*num.els,(num.nen-1),num.els)';
+      case 6
+       el = conn(:,[1,4,2,5,3,6]);
+       V0 = coor(reshape(el',num.els*num.nen,1),:,1);
+       Vf = coor(reshape(el',num.els*num.nen,1),:,end);
+       F  = reshape(1:num.nen*num.els,(num.nen),num.els)';
+      otherwise
         error("unsupported shape function plot");
     end
-    scatter(coor(:,1,1), coor(:,2,1), 'Marker', 'o', 'MarkerFaceColor', 'g', 'SizeData', 24);
+    scatter(coor(:,1,  1), coor(:,2,  1), 'Marker', 'o', 'MarkerFaceColor', 'g', 'SizeData', 24);
+    scatter(coor(:,1,end), coor(:,2,end), 'Marker', 'o', 'MarkerFaceColor', 'r', 'SizeData', 24);
 elseif (num.ndm == 3)
     i = [1 2 6 5 2 3 7 6 3 4 8 7 4 1 5 8 1 2 3 4 5 6 7 8];
-    fac = reshape(1:num.nen*num.el,num.nen,num.el);
-    F0  = reshape(fac(i,:),num.nen/2,6*num.el)';
-    V0  = hist.coor(reshape(hist.conn',num.el*num.nen,1),:,1);
-    
+    V0  = coor(reshape(conn',num.els*num.nen,1),:,1);
+    Vf  = coor(reshape(conn',num.els*num.nen,1),:,end);
+    fac = reshape(1:num.nen*num.els,num.nen,num.els);
+    F   = reshape(fac(i,:),num.nen/2,6*num.els)';
+
     set(gca,'DataAspectRatio',[1 1 1],'PlotBoxAspectRatio',[570.5 570.5 570.5])
     view (gca,[-0.8 -0.4 0.1])
-    scatter3(coor(:,1,1),coor(:,2,1),coor(:,3,1), 'Marker','o', 'MarkerFaceColor','g', 'SizeData',24);
+    scatter3(coor(:,1,  1),coor(:,2,  1),coor(:,3,  1), 'Marker','o', 'MarkerFaceColor','g', 'SizeData',24);
+    scatter3(coor(:,1,end),coor(:,2,end),coor(:,3,end), 'Marker','o', 'MarkerFaceColor','r', 'SizeData',24);
 end
-h = patch('Vertices',V0, 'Faces',F0, 'FaceColor','none', 'EdgeColor','g');
+patch('Vertices',V0, 'Faces',F, 'FaceColor','none', 'EdgeColor','g');
+patch('Vertices',Vf, 'Faces',F, 'FaceColor','none', 'EdgeColor','r');
 axis equal
 axisH = gca; %
 axisH.XLim = [min(min(hist.coor(:,1,:))) max(max(hist.coor(:,1,:)))];
 axisH.YLim = [min(min(hist.coor(:,2,:))) max(max(hist.coor(:,2,:)))];
 
-if (num.ndm == 2)
-    if (num.gp == 4 || num.gp == 1) 
-        Vf = coor(:,:,end);
-        Ff = hist.conn(1:num.els,1:num.nen);
-    elseif (num.gp == 9)
-        el = hist.conn(:,[1 5 2 6 3 7 4 8 9]);
-        Vf = coor(reshape(el(:,1:num.nen-1)',num.el*(num.nen-1),1),:,end);
-        Ff = reshape(1:(num.nen-1)*num.el,(num.nen-1),num.el)';
-    elseif (num.gp == 3)
-       el = hist.conn(:,[1,4,2,5,3,6]);
-       Vf = coor(reshape(el',num.el*num.nen,1),:,end);
-       Ff = reshape(1:num.nen*num.el,(num.nen),num.el)';  
-    else
-        error("unsupported shape function plot");
-    end
-    scatter(coor(:,1,end), coor(:,2,end), 'Marker', 'o','MarkerFaceColor', 'r', 'SizeData', 24);
-elseif (num.ndm == 3)
-    i = [1 2 6 5 2 3 7 6 3 4 8 7 4 1 5 8 1 2 3 4 5 6 7 8];
-    fac = reshape(1:num.nen*num.el,num.nen,num.el);
-    Ff  = reshape(fac(i,:),num.nen/2,6*num.el)';
-    Vf  = hist.coor(reshape(hist.conn',num.el*num.nen,1),:,end);
-    scatter3(coor(:,1,end),coor(:,2,end),coor(:,3,end),...
-       'Marker','o', 'MarkerFaceColor','r', 'SizeData',24);
-end
-patch('Vertices',Vf,'Faces',Ff,'FaceColor', 'none', 'EdgeColor','r');
 end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function plotcont(hist, num, contH,subH)
