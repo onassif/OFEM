@@ -96,14 +96,10 @@ classdef DGHyper
          ob.numeq  = num.nen*num.ndm;
          ob.numstr = num.str;
          if num.nen == 3 || num.nen == 4
-            ob.ngp = 3;
-            xiL = [...
-               -sqrt(0.6)  0   sqrt(0.6)
-               -1         -1  -1        ]';
-            xiR = [...
-               sqrt(0.6)  0  -sqrt(0.6)
-               -1        -1  -1        ]';
-            w = (1/18).*[5 8 5];
+               ob.ngp = 3;
+               xiL = [-sqrt(0.6)  0   sqrt(0.6); -1 -1 -1]';
+               xiR = [ sqrt(0.6)  0  -sqrt(0.6); -1 -1 -1]';
+               w = (1/18).*[5 8 5];
          elseif num.nen == 8
             ob.ngp = 4;
             xiL = [...

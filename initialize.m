@@ -86,7 +86,7 @@ for i=1:length(material)
       case 7
          mat{i} = CP(num, prps, cpType, hardProps, angles, slip, time, ident.threeD.second);
       case 8
-         mat{i} = DG(num, prps, props); 
+         mat{i} = DG(num, prps, props, ident.threeD.second); 
       case 9
          mat{i} = DGHyper(num, prps, props, ident.threeD.second); 
    end

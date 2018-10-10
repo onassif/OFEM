@@ -1,5 +1,5 @@
 classdef Elastic
-   %Elastic 3D class   
+   %Elastic 3D class
    properties (SetAccess = private)
       ndm;
       ndof;
@@ -16,16 +16,8 @@ classdef Elastic
          ob.ndof = num.ndof;
          ob.ngp  = num.gp;
          
-         if strcmp(props{1,1} ,'E') && strcmp(props{2,1} ,'v')
-            E  = props{1,2};
-            nu = props{2,2};
-         elseif strcmp(props{1,1} ,'v') && strcmp(props{2,1} ,'E')
-            nu = props{1,2};
-            E  = props{2,2};
-         else
-            error(['You''ve chosen Elastic material but specified ',...
-               'incompatible material properties, I''m disapponted']);
-         end
+         [E, nu] = ob.getProps(props);
+         
          G =   0.5*E/(1+  nu);
          K = (1/3)*E/(1-2*nu);
          
@@ -63,6 +55,18 @@ classdef Elastic
             Fint = (gp.B'*gp.sigma) *gp.J *gp.w;
          else
             Fint = el.Fint + (gp.B'*gp.sigma) *gp.J *gp.w;
+         end
+      end
+   end
+   methods (Static)
+      function [E, v] = getProps(props)
+         for j = 1:length(props)
+            switch props{j,1}
+               case 'E'
+                  E = props{j,2};
+               case 'nu'
+                  v = props{j,2};
+            end
          end
       end
    end
