@@ -147,9 +147,9 @@ classdef CP
          else
             Un = ob.Uvc_n(:,el.i,step);
          end
-         ob.de = Q' * gp.B(1:6,:) * (el.Uvc - Un);
+         ob.de = Q'*gp.B*(el.Uvc - Un);
          
-         eps = Q' * gp.B(1:6,:) *  el.Uvc;
+         eps = Q'*gp.B*el.Uvc;
          ob.Uvc_n(:,el.i, step+1) = el.Uvc ;
       end
       %% Sigma
@@ -328,7 +328,7 @@ classdef CP
          else
             S = gp.sigma;
          end
-         B=gp.B;
+         B=gp.Bf;
          cep  = Q*gp.j*gp.w*gp.D*Q';
          qbar = gp.j*gp.w*[...
             2*S(1) 0      0      S(4)            0               S(6)
@@ -362,9 +362,9 @@ classdef CP
             gp.U = (gp.U + gp.dU)';
          end
          if gp.i == 1
-            Fint = (gp.B'*sigma) *gp.j *gp.w;
+            Fint = (gp.Bf'*sigma) *gp.j *gp.w;
          else
-            Fint = el.Fint + (gp.B'*sigma) *gp.j *gp.w;
+            Fint = el.Fint + (gp.Bf'*sigma) *gp.j *gp.w;
          end
       end
       %% m(slip)

@@ -31,6 +31,7 @@ classdef Q8
       B
       Bf
       N
+      R
       w
       F
       J % det(dX/dxi) = J
@@ -140,6 +141,12 @@ classdef Q8
             0      dz(1) -dy(1)  0      dz(2) -dy(2)  0      dz(3) -dy(3)  0      dz(4) -dy(4)  0      dz(5) -dy(5)  0      dz(6) -dy(6)  0      dz(7) -dy(7)  0      dz(8) -dy(8)
            -dz(1)  0      dx(1) -dz(2)  0      dx(2) -dz(3)  0      dx(3) -dz(4)  0      dx(4) -dz(5)  0      dx(5) -dz(6)  0      dx(6) -dz(7)  0      dx(7) -dz(8)  0      dx(8)];
       end
+      
+      function value = get.R(obj)
+           [P, ~, Q] = svd(obj.F);
+           value =  P*Q';
+      end
+      
       %% Set functions
       function obj = set.U(obj, val)
          if size(val,3)==1 % Normal
@@ -154,6 +161,14 @@ classdef Q8
             obj.U_n = val';
          elseif size(val,3) == 2 % DG
             obj.U_n = permute(val,[2 1 3]);
+         end
+      end
+      
+      function obj = set.dU(obj, val)
+         if size(val,3)==1 % Normal
+            obj.dU = val';
+         elseif size(val,3) == 2 % DG
+            obj.dU = permute(val,[2 1 3]);
          end
       end
       
@@ -232,7 +247,7 @@ classdef Q8
          dXdxi_list     = zeros(ndm, ndm, ngp, numel);
          
          for i = 1:numel
-            coor  = nodes(conn(i,:),:)';  
+            coor  = nodes(conn(i,:),:)';
             for j = 1:ngp
                dXdxi = coor*dNdxi_list(:,:,j);
                det_dXdxi_list(j,i) = det(dXdxi);

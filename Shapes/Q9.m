@@ -31,6 +31,7 @@ classdef Q9
       B
       Bf
       N
+      R
       w
       F
       J % det(dX/dxi) = J
@@ -131,6 +132,12 @@ classdef Q9
             dy(1)  dx(1)  dy(2)  dx(2)  dy(3)  dx(3)  dy(4)  dx(4)  dy(5)  dx(5)  dy(6)  dx(6)  dy(7)  dx(7)  dy(8)  dx(8)    dy(9)  dx(9)
             dy(1) -dx(1)  dy(2) -dx(2)  dy(3) -dx(3)  dy(4) -dx(4)  dy(5) -dx(5)  dy(6) -dx(6)  dy(7) -dx(7)  dy(8) -dx(8)    dy(9) -dx(9)];
       end
+      
+      function value = get.R(obj)
+           [P, ~, Q] = svd(obj.F);
+           value =  P*Q';
+      end
+      
       %% Set functions
       function obj = set.U(obj, val)
          if size(val,3)==1 % Normal
@@ -145,6 +152,14 @@ classdef Q9
             obj.U_n = val';
          elseif size(val,3) == 2 % DG
             obj.U_n = permute(val,[2 1 3]);
+         end
+      end
+      
+      function obj = set.dU(obj, val)
+         if size(val,3)==1 % Normal
+            obj.dU = val';
+         elseif size(val,3) == 2 % DG
+            obj.dU = permute(val,[2 1 3]);
          end
       end
       

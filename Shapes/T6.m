@@ -31,6 +31,7 @@ classdef T6
       B
       Bf
       N
+      R
       w
       F
       J % det(dX/dxi) = J
@@ -64,12 +65,12 @@ classdef T6
          end
       end
       %% Get functions
-      function value = get.dNdxi(obj)
-         value = squeeze(obj.dNdxi_list(:,:,obj.i));
+      function value = get.N(obj)
+         value = obj.Nmat(obj.i,:);
       end
       
-      function value = get.N(obj)
-         value = obj.Nmat(obj.i, :);
+      function value = get.dNdxi(obj)
+         value = squeeze(obj.dNdxi_list(:,:,obj.i));
       end
       
       function value = get.dXdxi(obj)
@@ -129,6 +130,12 @@ classdef T6
             dy(1)  dx(1)  dy(2)  dx(2)  dy(3)  dx(3)  dy(4)  dx(4)  dy(5)  dx(5)  dy(6)  dx(6)
             dy(1) -dx(1)  dy(2) -dx(2)  dy(3) -dx(3)  dy(4) -dx(4)  dy(5) -dx(5)  dy(6) -dx(6)];
       end
+      
+      function value = get.R(obj)
+           [P, ~, Q] = svd(obj.F);
+           value =  P*Q';
+      end
+      
       %% Set functions
       function obj = set.U(obj, val)
          if size(val,3)==1 % Normal
@@ -143,6 +150,14 @@ classdef T6
             obj.U_n = val';
          elseif size(val,3) == 2 % DG
             obj.U_n = permute(val,[2 1 3]);
+         end
+      end
+      
+      function obj = set.dU(obj, val)
+         if size(val,3)==1 % Normal
+            obj.dU = val';
+         elseif size(val,3) == 2 % DG
+            obj.dU = permute(val,[2 1 3]);
          end
       end
       
