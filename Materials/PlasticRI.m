@@ -13,8 +13,6 @@ classdef PlasticRI
       I4_dev
       I4_bulk
       linear = false;
-      
-      name = 'PlasticRI';
    end
    
    properties (SetAccess = private)
@@ -124,11 +122,11 @@ classdef PlasticRI
          
          if (np1.sEqv*np1.deEff>0)
             np1.dbkStrss = np1.deEff * Hp * (np1.S_ht/np1.sEqv);
-            np1.dep      = (3/2)*np1.deEff* (np1.S_ht/np1.sEqv);
+            np1.dep      = 3/2*np1.deEff* (np1.S_ht/np1.sEqv);
             
             np1.theta = 1 - 3*G* (np1.deEff/np1.sEqv);
             c2        = (1-np1.theta) - 1/(1+ (Kp+Hp)/(3*G)) ;
-            c3        = (3/2)*c2/(np1.sEqv)^2;
+            c3        = 3/2*c2/(np1.sEqv)^2;
          else
             np1.dbkStrss = zeros(size(np1.S_ht));
             np1.dep      = 0;

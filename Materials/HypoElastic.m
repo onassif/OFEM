@@ -13,13 +13,10 @@ classdef HypoElastic
       nExp;
       nu;
       K;
-      linear = false;
       
       I
       I4_dev
       I4_bulk
-      
-      name = 'HypoElastic';
    end
    
    properties (SetAccess = private)
@@ -118,14 +115,9 @@ classdef HypoElastic
          end
          
          if (eEff > 0 )
-            D =...
-               (2/3)*(sEff/eEff)*I4_dev + ...
-               (4/9)*(dsde-(sEff/eEff))/(eEff^2)*(e*e') + ...
-               (K/3)*I4_bulk;
+            D = 2/3*(sEff/eEff)*I4_dev + 4/9*(dsde-(sEff/eEff))/(eEff^2)*(e*e') + K/3*I4_bulk;
          else
-            D =...
-               (2/3)*dsde*I4_dev ...
-               + (K/3)*I4_bulk;
+            D = 2/3*dsde*I4_dev + (K/3)*I4_bulk;
          end
          
          ctan = reshape(D([1,4,6,4,2,5,6,5,3],[1,4,6,4,2,5,6,5,3]),3,3,3,3);

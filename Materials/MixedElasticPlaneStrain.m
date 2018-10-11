@@ -10,20 +10,16 @@ classdef MixedElasticPlaneStrain
       diff;
       finiteDisp = 0;
       
-      Young;
-      Poisson;
+      C0;
       Bulk;
       
       npress = 1;
       M = struct('i',[],'N',[]);
-      linear = true;
-      
-      name = 'MixedElasticPlaneStrain';
    end
    %%
    methods
       %% Construct
-      function obj = MixedElasticPlaneStrain(num, props)
+      function obj = MixedElasticPlaneStrain(num, props, identity)
          obj.ndm  = num.ndm;
          obj.ndof = num.ndof;
          obj.nen  = num.nen;
@@ -44,18 +40,13 @@ classdef MixedElasticPlaneStrain
             obj.M = Q4(0, 0, xi);
          end
          
-         if strcmp(props{1,1} ,'E') && strcmp(props{2,1} ,'v')
-            obj.Young  = props{1,2};
-            obj.Poisson= props{2,2};
-         elseif strcmp(props{1,1} ,'v') && strcmp(props{2,1} ,'E')
-            obj.Poisson= props{1,2};
-            obj.Young  = props{2,2};
-         else
-            error(['You''ve chosen Plane Strain material but specified',...
-               'incompatible material properties, I''m disapponted']);
-         end
+         [E,v] = obj.getProps(props);
+         G =   0.5*E/(1+  v);
+         K = (1/3)*E/(1-2*v);
          
-         obj.Bulk = (1/3)*obj.Young/(1-2*obj.Poisson);
+         obj.C0 = K*identity.I4_bulk + 2*G*identity.I4_dev;
+         
+         obj.Bulk = K;
       end
       %% Epsilon
       function [eps, obj] = computeStrain(obj, gp, el, ~)
@@ -67,24 +58,10 @@ classdef MixedElasticPlaneStrain
       end
       %% Tangential stiffness
       function [D, ctan, obj] = computeTangentStiffness(obj, ~, ~, ~)
-         E = obj.Young;
-         v = obj.Poisson;
+         c = obj.C0;
          
-         Eh= E/(1-2*v)/(1+v);
-         G = 0.5*E/(1+v);
-         c =[Eh*(1-v)	Eh*v        Eh*v        0 0 0
-            Eh*v        Eh*(1-v)    Eh*v        0 0 0
-            Eh*v        Eh*v        Eh*(1-v)    0 0 0
-            0           0           0           G 0 0
-            0           0           0           0 G 0
-            0           0           0           0 0 G];
-         
-         
-         D=[c(1,1) c(1,2) c(1,4)
-            c(2,1) c(2,2) c(2,4)
-            c(4,1) c(4,2) c(4,4)];
+         D = c([1,2,4],[1,2,4]);
          ctan = reshape(c([1,4,6,4,2,5,6,5,3],[1,4,6,4,2,5,6,5,3]),3,3,3,3);
-         
       end
       %% Element K
       function kel = computeK_el(obj, gp, el, ~)
@@ -110,6 +87,18 @@ classdef MixedElasticPlaneStrain
          else
          Fint = el.Fint +...
             [(gp.B'*gp.sigma - (K*(dN*dN'))*el.Uvc ); zeros(size(obj.M.N,2),1)] *gp.j *gp.w;  
+         end
+      end
+   end
+      methods (Static)
+      function [E, v] = getProps(props)
+         for j = 1:length(props)
+            switch props{j,1}
+               case 'E'
+                  E = props{j,2};
+               case 'v'
+                  v = props{j,2};
+            end
          end
       end
    end

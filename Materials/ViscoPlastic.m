@@ -13,9 +13,6 @@ classdef ViscoPlastic
       I2 = eye(3);
       I4_dev
       I4_bulk
-      linear = false;
-      
-      name = 'ViscoPlastic';
    end
    
    properties (SetAccess = private)

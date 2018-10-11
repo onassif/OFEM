@@ -38,7 +38,6 @@ end
 
 num.el    = numel;
 num.np    = numnp;
-% num.rnp   = realnumnp;
 num.nen   = nen;
 num.ndof  = ndof;
 num.eq    = numeq;
@@ -82,7 +81,7 @@ for i=1:length(material)
       case 5
          mat{i} = PlasticRI(num, prps, ident.threeD.second);
       case 6
-         mat{i} = MixedElasticPlaneStrain(num, prps);
+         mat{i} = MixedElasticPlaneStrain(num, prps, ident.threeD.second);
       case 7
          mat{i} = CP(num, prps, cpType, hardProps, angles, slip, time, ident.threeD.second);
       case 8
