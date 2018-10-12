@@ -26,7 +26,7 @@ classdef CP
       q_cr
       
       
-      props     = struct('E',[], 'nu',[], 'Y',[], 'G',[], 'Bulk',[]);
+      props     = struct('E',[], 'nu',[], 'G',[], 'Bulk',[]);
       angles    = struct('angleConv',[], 'angleType',[], 'val',[]);
       
       list = struct('D',[], 'Rp',[], 'R', [], 'S',[], 'tauT', []);
@@ -93,8 +93,6 @@ classdef CP
                   ob.props.E     = props{i,2};
                case 'nu'
                   ob.props.nu    = props{i,2};
-               case 'Y'
-                  ob.props.Y     = props{i,2};
                otherwise
                   error( ['You''ve chosen mm10 material but specified incompatible ',...
                      'material properties, I''m disapponted']);
