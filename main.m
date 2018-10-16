@@ -2,7 +2,6 @@ clear; close all
 % Dialog
 run(ReadInput())
 initialize;
-mat = mat; % Becauce MATLAB is crazy
 
 for step=1:num.steps % Steps loop
    %% Start time loop
@@ -27,24 +26,23 @@ for step=1:num.steps % Steps loop
          el.i   = iel;        gp.iel = iel;        % element number
          coor   = el.coor;                         % element coordinates
          gp.U   = el.Umt;     gp.U_n = el.Umt_n;   gp.dU = el.w;% element unknowns (array form, n and n+1)
-         props  = el.props;                        % element material properties
 
-         for igp = 1:mat{el.im}.ngp;     gp.i = igp;
+         for igp = 1:el.mat{el.im}.ngp;     gp.i = igp;
             %%   Start Loop over Gauss points
             %%%   2gp. Strain tensor
-            [gp.eps, mat{el.im}]        = mat{el.im}.computeStrain(gp, el, step);
+            [gp.eps, el.mat{el.im}]        = el.mat{el.im}.computeStrain(gp, el, step);
             
             %%%   3gp. Tangential stifness
-            [gp.D, gp.ctan, mat{el.im}] = mat{el.im}.computeTangentStiffness(gp, el, step);
+            [gp.D, gp.ctan, el.mat{el.im}] = el.mat{el.im}.computeTangentStiffness(gp, el, step);
             
             %%%   4gp. Stress
-            [gp.sigma, mat{el.im}]      = mat{el.im}.computeCauchy(gp, el, step);
+            [gp.sigma, el.mat{el.im}]      = el.mat{el.im}.computeCauchy(gp, el, step);
             
             %%%   5gp. K
-            el.K    = mat{el.im}.computeK_el(gp, el, step);
+            el.K    = el.mat{el.im}.computeK_el(gp, el, step);
             
             %%%   6gp. Fint
-            el.Fint = mat{el.im}.computeFint(gp, el, step);
+            el.Fint = el.mat{el.im}.computeFint(gp, el, step);
             
             % store states
             hist.eps (:,igp,iel)       = gp.eps;

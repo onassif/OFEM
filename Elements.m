@@ -8,6 +8,7 @@ classdef Elements
       w_global
       U_glb_n
       Ures_glb
+      mat
    end
    properties (SetAccess = private)
       w
@@ -24,19 +25,18 @@ classdef Elements
       elements
       nodes
       nen
+      property_num
    end
    properties (SetAccess = private, Hidden)
       numel
       numnp
       ndm
       ndof
-      property_num
-      props
    end
    
    methods
       %% Construct
-      function obj = Elements(elements, nodes, num, Props, U_global, hist)
+      function obj = Elements(elements, nodes, num, U_global, hist)
          obj.elements     = elements(:,1:end-1);
          obj.nodes        = nodes;
          obj.numel        = num.el;
@@ -45,7 +45,6 @@ classdef Elements
          obj.ndof         = num.ndof;
          obj.nen          = num.nen;
          obj.property_num = elements(:,end);
-         obj.props        = Props;
          obj.U_global     = U_global;
          obj.conn         = hist.conn;
          obj.nconn        = hist.nconn;

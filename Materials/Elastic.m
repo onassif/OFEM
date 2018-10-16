@@ -64,7 +64,7 @@ classdef Elastic
             switch props{j,1}
                case 'E'
                   E = props{j,2};
-               case 'nu'
+               case 'v'
                   v = props{j,2};
             end
          end

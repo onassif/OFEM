@@ -60,8 +60,11 @@ if exist('cpType','var')
    end
 end
 
+% Element-related
+el = Elements(elements, nodes, num, globl.U, hist);
+
 % Material-related
-mat = cell(length(material),1);
+el.mat = cell(length(material),1);
 finiteDisp = 0;
 for i=1:length(material)
    if length(material) == 1
@@ -71,27 +74,29 @@ for i=1:length(material)
    end
    switch material(i)
       case 1
-         mat{i} = Elastic(num, prps, ident.threeD.second);
+         el.mat{i} = Elastic(num, prps, ident.threeD.second);
       case 2
-         mat{i} = HypoElastic(num, prps, ident.threeD.second);
+         el.mat{i} = HypoElastic(num, prps, ident.threeD.second);
       case 3
-         mat{i} = HyperElastic(num, prps,  ident.threeD.second);
+         el.mat{i} = HyperElastic(num, prps,  ident.threeD.second);
       case 4
-         mat{i} = ViscoPlastic(num, prps, time, ident.threeD.second);
+         el.mat{i} = ViscoPlastic(num, prps, time, ident.threeD.second);
       case 5
-         mat{i} = PlasticRI(num, prps, ident.threeD.second);
+         el.mat{i} = PlasticRI(num, prps, ident.threeD.second);
       case 6
-         mat{i} = MixedElasticPlaneStrain(num, prps, ident.threeD.second);
+         el.mat{i} = MixedElasticPlaneStrain(num, prps, ident.threeD.second);
       case 7
-         mat{i} = CP(num, prps, cpType, hardProps, angles, slip, time, ident.threeD.second);
+         el.mat{i} = CP(num, prps, cpType, hardProps, angles, slip, time, ident.threeD.second);
       case 8
-         mat{i} = DG(num, prps, props, ident.threeD.second); 
+         el.mat{i} = DG(num, prps, props, ident.threeD.second); 
       case 9
-         mat{i} = DGHyper(num, prps, props, ident.threeD.second); 
+         el.mat{i} = DGHyper(num, prps, props, ident.threeD.second); 
       case 10
-         mat{i} = DGCP(num, prps, props, ident.threeD.second); 
+         el.mat{i} = DGCP(num, prps, props, ident.threeD.second); 
+      case 11
+         el.mat{i} = CP2(num, prps, cpType, hardProps, angles, slip, time, ident.threeD.second);
    end
-   if mat{i}.finiteDisp
+   if el.mat{i}.finiteDisp
       finiteDisp = 1;
    end
 end
@@ -101,21 +106,16 @@ hist2.nodes = hist.nodes;
 % gp-related
 switch eltype
    case 'Q4'
-    gp = Q4(mat{1}.finiteDisp, hist2);
+    gp = Q4(el.mat{1}.finiteDisp, hist2);
    case 'Q9'
-    gp = Q9(mat{1}.finiteDisp, hist2);
+    gp = Q9(el.mat{1}.finiteDisp, hist2);
    case 'T3'
-    gp = T3(mat{1}.finiteDisp, hist2);
+    gp = T3(el.mat{1}.finiteDisp, hist2);
    case 'T6'
-    gp = T6(mat{1}.finiteDisp, hist2);
+    gp = T6(el.mat{1}.finiteDisp, hist2);
    case 'Q8'
-    gp = Q8(mat{1}.finiteDisp, hist2);
-   case 'Q8Crys'
-    gp = Q8Crys(mat{1}.finiteDisp, hist2);
+    gp = Q8(el.mat{1}.finiteDisp, hist2);
 end
-
-% Element-related
-el = Elements(elements, nodes, num, props, globl.U, hist);
 
 % NR-related
 if exist('time','var') && exist('fctr','var')
