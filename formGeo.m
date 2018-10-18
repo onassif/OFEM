@@ -8,13 +8,13 @@ elseif size(S,2)==3
    S = [S(1,1) S(2,2) S(3,3) S(1,2) S(2,3) S(3,1)]';
 end
 %% Form the matrix
-if (size(S,2)==1 && size(S,1)==3)
+if length(S) == 3
    Dgeo = [...
         S(1)       0        S(3)/2        S(3)/2
            0    S(2)        S(3)/2       -S(3)/2
       S(3)/2  S(3)/2 (S(2)+S(1))/4 (S(2)-S(1))/4
       S(3)/2 -S(3)/2 (S(2)-S(1))/4 (S(2)+S(1))/4];
-elseif (size(S,2)==1 && size(S,1)==6)
+elseif length(S) == 6
    Dgeo = [...
       S(1)       0       0          S(4)/2               0          S(6)/2          S(4)/2               0         -S(6)/2
          0    S(2)       0          S(4)/2          S(5)/2               0         -S(4)/2          S(5)/2               0
