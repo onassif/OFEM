@@ -6,7 +6,6 @@ classdef L3
       b
       eps
       sigma
-      ctan
       D
       U
       U_n

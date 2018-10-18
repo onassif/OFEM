@@ -6,7 +6,6 @@ classdef Q4
       b
       eps
       sigma
-      ctan
       D
       U
       U_n
