@@ -27,45 +27,34 @@ classdef Elastic
       function [eps, ob] = computeStrain(ob, gp, el, ~)
          eps = gp.B * el.Uvc;
       end
-      %% Sigma
-      function [sigma_voigt, ob] = computeCauchy(ob, gp, ~, ~)
-         sigma_voigt = gp.D*gp.eps;
-      end
-      %% Tangential stiffness
-      function [D, ctan, ob] = computeTangentStiffness(ob, ~, ~, ~)
+      %% Sigma and Tangential stiffness
+      function [sigma_v, D, ob] = SigmaCmat(ob, gp, ~, ~)
          D = ob.C0;
-         
-         ctan = reshape(D([1,4,6,4,2,5,6,5,3],[1,4,6,4,2,5,6,5,3]),3,3,3,3);
-         
          if ob.ndm == 2
-            D =D([1,2,4],[1,2,4]);
+            sigma_v = D([1,2,4],[1,2,4])*gp.eps;
+         elseif ob.ndm == 3
+            sigma_v = D*gp.eps;
          end
       end
       %% Element K
-      function Kel = computeK_el(~, gp, el, ~)
-         if gp.i == 1
-            Kel = (gp.B'*gp.D*gp.B) *gp.J *gp.w;
-         else
-            Kel = el.K + (gp.B'*gp.D*gp.B) *gp.J *gp.w;
-         end
+      function Kel = computeK_el(ob, gp, el, ~)
+         if (ob.ndm == 2); gp.D = gp.D([1,2,4],[1,2,4]); end
+         
+         Kel = el.K + (gp.B'*gp.D*gp.B) *gp.J *gp.w;
       end
       %% Element Fint
       function Fint = computeFint(~, gp, el, ~)
-         if gp.i == 1
-            Fint = (gp.B'*gp.sigma) *gp.J *gp.w;
-         else
-            Fint = el.Fint + (gp.B'*gp.sigma) *gp.J *gp.w;
-         end
+         Fint = el.Fint + (gp.B'*gp.sigma) *gp.J *gp.w;
       end
    end
    methods (Static)
-      function [E, v] = getProps(props)
+      function [E, nu] = getProps(props)
          for j = 1:length(props)
             switch props{j,1}
                case 'E'
                   E = props{j,2};
-               case 'v'
-                  v = props{j,2};
+               case 'nu'
+                  nu = props{j,2};
             end
          end
       end

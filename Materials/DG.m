@@ -7,6 +7,7 @@ classdef DG
       ndof;
       numeq;
       ngp
+      numstr
       finiteDisp = 0;
       C0;
       
@@ -45,6 +46,7 @@ classdef DG
          ob.ndm   = num.ndm;
          ob.ndof  = num.ndof;
          ob.numeq = num.nen*num.ndm;
+         ob.numstr= num.str;
          if num.nen == 3 || num.nen == 4
             ob.ngp = 3;
             xiL = [-sqrt(0.6)  0   sqrt(0.6); -1 -1 -1]';
@@ -119,17 +121,11 @@ classdef DG
          ob.C0 = K*identity.I4_bulk + 2*G*identity.I4_dev;
       end
       %% Epsilon
-      function [eps, ob] = computeStrain(ob, gp, ~, ~)
-         numstr = (ob.ndm*ob.ndm + ob.ndm) /2;
-         
-         eps = zeros(numstr,1);
+      function [eps, ob] = computeStrain(ob, ~, ~, ~)
+         eps = zeros(ob.numstr,1);
       end
-      %% Sigma
-      function [sigma_voigt, ob] = computeCauchy(ob, gp, ~, ~)
-         sigma_voigt = gp.D*gp.eps;
-      end
-      %% Tangential stiffness
-      function [D, ctan, ob] = computeTangentStiffness(ob, gp, el, ~)
+      %% Sigma & Tangential stiffness
+      function [sigma_v, D, ob] = SigmaCmat(ob, gp, el, ~)
          ndm  = ob.ndm;
          nen = size(el.conn(el.i,:),2)/2;
          elL = 1:nen;
@@ -161,9 +157,8 @@ classdef DG
          ob.eGPL.i = gp.i;   ob.eGPR.i = gp.i;
          
          TanL = ob.eGPL.dXdxi(:,1:end-1);
-         TanR = ob.eGPR.dXdxi(:,1:end-1);
          
-         [intedge, ob.c1, nvect] = ob.edgeInt(ob.sGP, TanL);
+         [intedge, ob.c1, nvect] = edgeInt(ob.sGP, TanL);
          
          eb = ob.edgeBubbleInt(ob.eGPL.xi, ob.c1, class(ob.eGPL));
          
@@ -188,12 +183,8 @@ classdef DG
          ob.tvtr  = (ob.bnAdN1*ulresL + ob.bnAdN2*ulresR);
          ob.jumpu = ob.NmatR*ulresR - ob.NmatL*ulresL;
          
-         D = ob.C0;
-         ctan = reshape(D([1,4,6,4,2,5,6,5,3],[1,4,6,4,2,5,6,5,3]),3,3,3,3);
-         
-         if ob.ndm == 2
-            D =D([1,2,4],[1,2,4]);
-         end
+         D = zeros(6,6);
+         sigma_v = zeros(ob.numstr,1);
       end
       %% Element K
       function Kel = computeK_el(ob, gp, el, ~)
@@ -203,18 +194,12 @@ classdef DG
          bnAdN1 = ob.bnAdN1;    bnAdN2 = ob.bnAdN2;
          c = ob.c1(i);
          
-         if gp.i == 1
-            ElemKLL = c*( - NL'*bnAdN1 - bnAdN1'*NL + (NL'*ob.ep*NL));
-            ElemKLR = c*( - NL'*bnAdN2 + bnAdN1'*NR - (NL'*ob.ep*NR));
-            ElemKRL = c*( + NR'*bnAdN1 - bnAdN2'*NL - (NR'*ob.ep*NL));
-            ElemKRR = c*( + NR'*bnAdN2 + bnAdN2'*NR + (NR'*ob.ep*NR));
-         else
-            mid = size(el.K,1)/2;
-            ElemKLL = el.K(    1:mid,     1:mid) + c*( - NL'*bnAdN1 - bnAdN1'*NL + (NL'*ob.ep*NL));
-            ElemKLR = el.K(    1:mid, mid+1:end) + c*( - NL'*bnAdN2 + bnAdN1'*NR - (NL'*ob.ep*NR));
-            ElemKRL = el.K(mid+1:end,     1:mid) + c*( + NR'*bnAdN1 - bnAdN2'*NL - (NR'*ob.ep*NL));
-            ElemKRR = el.K(mid+1:end, mid+1:end) + c*( + NR'*bnAdN2 + bnAdN2'*NR + (NR'*ob.ep*NR));
-         end
+         mid = size(el.K,1)/2;
+         ElemKLL = el.K(    1:mid,     1:mid) + c*( - NL'*bnAdN1 - bnAdN1'*NL + (NL'*ob.ep*NL));
+         ElemKLR = el.K(    1:mid, mid+1:end) + c*( - NL'*bnAdN2 + bnAdN1'*NR - (NL'*ob.ep*NR));
+         ElemKRL = el.K(mid+1:end,     1:mid) + c*( + NR'*bnAdN1 - bnAdN2'*NL - (NR'*ob.ep*NL));
+         ElemKRR = el.K(mid+1:end, mid+1:end) + c*( + NR'*bnAdN2 + bnAdN2'*NR + (NR'*ob.ep*NR));
+         
          Kel = [...
             ElemKLL ElemKLR
             ElemKRL ElemKRR];
@@ -230,14 +215,11 @@ classdef DG
          
          tvtr  = ob.tvtr;
          jumpu = ob.jumpu;
-         if gp.i == 1
-            ElemFL = + c*( - NL'*(tvtr + ob.ep*jumpu) + bnAdN1'*jumpu);
-            ElemFR = + c*( + NR'*(tvtr + ob.ep*jumpu) + bnAdN2'*jumpu);
-         else
-            mid = size(el.Fint,1)/2;
-            ElemFL = el.Fint(    1:mid) + c*( - NL'*(tvtr + ob.ep*jumpu) + bnAdN1'*jumpu);
-            ElemFR = el.Fint(mid+1:end) + c*( + NR'*(tvtr + ob.ep*jumpu) + bnAdN2'*jumpu);
-         end
+         
+         mid = size(el.Fint,1)/2;
+         ElemFL = el.Fint(    1:mid) + c*( - NL'*(tvtr + ob.ep*jumpu) + bnAdN1'*jumpu);
+         ElemFR = el.Fint(mid+1:end) + c*( + NR'*(tvtr + ob.ep*jumpu) + bnAdN2'*jumpu);
+         
          Fint = [ElemFL; ElemFR];
          
       end
@@ -260,32 +242,10 @@ classdef DG
          for i = 1:ngp
             bGP.i = i;
             B = DG.edgeBubbleB(bGP.xi(i,:), bGP.dXdxi, elType);
-
+            
             tau  = tau  + bGP.J*bGP.w* (B'*D*B);
          end
          tau = inv(tau);
-      end
-      %% Integrate normal vectors
-      function [intedge, c1, nvect] = edgeInt(sGP, surfTan)
-         sGP.iel = 1;
-         ndm = size(surfTan,2)+1;
-         if ndm == 2
-            J = norm(surfTan);
-            n = cross([surfTan;0],[0;0;1] )/J;
-            nvect = [...
-               n(1) 0    n(2)
-               0    n(2) n(1)];
-         elseif ndm == 3
-            J = abs(det(surfTan(2:3,:)));
-            n = cross(surfTan(:,2),surfTan(:,1))/J;
-            nvect = [...
-               n(1) 0    0    n(2) 0    n(3)
-               0    n(2) 0    n(1) n(3) 0
-               0    0    n(3) 0    n(2) n(1)];
-         end
-         
-         c1 = J * sGP.weights;
-         intedge = sum(J * sGP.weights); % length of the edge
       end
       %% Compute Edge Bubble shape function' B matrix
       function B = edgeBubbleB(xi, dXdxi, elType)
@@ -311,7 +271,7 @@ classdef DG
          elseif ndm == 3
             B = [...
                dbdX(1) 0       0       dbdX(2) 0       dbdX(3)
-               0       dbdX(2) 0       dbdX(1) dbdX(3) 0      
+               0       dbdX(2) 0       dbdX(1) dbdX(3) 0
                0       0       dbdX(3) 0       dbdX(2) dbdX(1)]';
          end
       end

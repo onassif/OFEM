@@ -164,17 +164,9 @@ classdef CP2
       function [sigma_voigt, ob] = computeCauchy(ob, gp, el, step)
          if el.iter == 0 && step > 1
             %             Q = ob.Qmat(gp.R);
-            Smat  = zeros(ob.ndm,ob.ndm,ob.ndm,ob.ndm);
             C     = ob.list.D( :,:,:,:,gp.i,el.i, step);
-            for i =1:ob.ndm
-               for j=1:ob.ndm
-                  for k=1:ob.ndm
-                     for l=1:ob.ndm
-                        Smat(i,j,k,l) = Smat(i,j,k,l) + C(i,j,k,l)*ob.de(k,l);
-                     end
-                  end
-               end
-            end
+            Smat = Tmult(C, ob.de);
+            
             sigma_voigt = gp.R*(ob.list.S(:,:,gp.i,el.i, step))*gp.R' + Smat(i,j,k,l);
             ob.S = sigma_voigt;
          else
@@ -253,17 +245,17 @@ classdef CP2
                   J = [T4T2(J11) T2T1(J12);T2T1(J21)' J22];
                   dx = J\R;
                   norm(dx)
-%                   RRR = [...
-%                      J(1:6,1:6)*dx(1:6)+J(1:6,7).*dx(7)
-%                      J(7  ,1:6)*dx(1:6)+J(7  ,7).*dx(7)];
-%                   ddx = [...
-%                      dx(1)    ,1/2*dx(4),1/2*dx(6)
-%                      1/2*dx(4),dx(2)    ,1/2*dx(5)
-%                      1/2*dx(6),1/2*dx(5),dx(3)];
-%                   R4 = Tmult(T2T4(J(1:6,1:6)),ddx)+T1T2(J(1:6,7)).*dx(7)
-%                   R5 = sum(sum(T1T2(J(7,1:6)).*ddx))+J(7,7).*dx(7)
-%                   RRR - R
-
+                  %                   RRR = [...
+                  %                      J(1:6,1:6)*dx(1:6)+J(1:6,7).*dx(7)
+                  %                      J(7  ,1:6)*dx(1:6)+J(7  ,7).*dx(7)];
+                  %                   ddx = [...
+                  %                      dx(1)    ,1/2*dx(4),1/2*dx(6)
+                  %                      1/2*dx(4),dx(2)    ,1/2*dx(5)
+                  %                      1/2*dx(6),1/2*dx(5),dx(3)];
+                  %                   R4 = Tmult(T2T4(J(1:6,1:6)),ddx)+T1T2(J(1:6,7)).*dx(7)
+                  %                   R5 = sum(sum(T1T2(J(7,1:6)).*ddx))+J(7,7).*dx(7)
+                  %                   RRR - R
+                  
                   alpha = 1;
                   ls  = 0;
                   x = [T2T1(S);tauT];
@@ -385,11 +377,8 @@ classdef CP2
             +0         1/2*S(5) -1/2*S(5)  1/4*S(6)         1/4*(S(3)-S(2)) -1/4*S(4)        -1/4*S(6)         1/4*(S(2)+S(3)) -1/4*S(4)
             -1/2*S(6)  0         1/2*S(6) -1/4*S(5)         1/4*S(4)         1/4*(S(1)-S(3)) -1/4*S(5)        -1/4*S(4)         1/4*(S(1)+S(3))];
          %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-         if gp.i == 1
-            Kel = (B'*(Kmat+Kgeo)*B);
-         else
-            Kel = el.K + (B'*(Kmat+Kgeo)*B);
-         end
+         
+         Kel = el.K + (B'*(Kmat+Kgeo)*B);
       end
       %% Element Fint
       function Fint = computeFint(~, gp, el, step)
@@ -397,11 +386,8 @@ classdef CP2
          if el.iter == 0 && step > 1
             gp.U = (gp.U + gp.dU)';
          end
-         if gp.i == 1
-            Fint = (gp.Bf'*sigma) *gp.j *gp.w;
-         else
-            Fint = el.Fint + (gp.Bf'*sigma) *gp.j *gp.w;
-         end
+         
+         Fint = el.Fint + (gp.Bf'*sigma) *gp.j *gp.w;
       end
       %% m(slip)
       function value = get.ms(ob)

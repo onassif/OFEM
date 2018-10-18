@@ -96,10 +96,10 @@ classdef DGHyper
          ob.numeq  = num.nen*num.ndm;
          ob.numstr = num.str;
          if num.nen == 3 || num.nen == 4
-               ob.ngp = 3;
-               xiL = [-sqrt(0.6)  0   sqrt(0.6); -1 -1 -1]';
-               xiR = [ sqrt(0.6)  0  -sqrt(0.6); -1 -1 -1]';
-               w = (1/18).*[5 8 5];
+            ob.ngp = 3;
+            xiL = [-sqrt(0.6)  0   sqrt(0.6); -1 -1 -1]';
+            xiR = [ sqrt(0.6)  0  -sqrt(0.6); -1 -1 -1]';
+            w = (1/18).*[5 8 5];
          elseif num.nen == 8
             ob.ngp = 4;
             xiL = [...
@@ -172,12 +172,8 @@ classdef DGHyper
       function [eps, ob] = computeStrain(ob, ~, ~, ~)
          eps = zeros(ob.numstr,1);
       end
-      %% Sigma
-      function [sigma_voigt, ob] = computeCauchy(ob, gp, ~, ~)
-         sigma_voigt = gp.D*gp.eps;
-      end
-      %% Tangential stiffness
-      function [D, ctan, ob] = computeTangentStiffness(ob, gp, el, step)
+      %% Sigma & Tangential stiffness
+      function [sigma_v, D, ob] = SigmaCmat(ob, gp, el, ~)
          ndm  = ob.ndm;
          if ndm == 2
             P1 = ob.P1_2;  P2 = ob.P2_2;  P3 = ob.P3_2;
@@ -196,21 +192,22 @@ classdef DGHyper
          ulresL = reshape(el.Umt(elL,:)', numel(el.Umt(elL,:)),1);
          ulresR = reshape(el.Umt(elR,:)', numel(el.Umt(elR,:)),1);
          
-         ob.bGP.mesh = struct('nodes', el.nodes, 'conn', el.conn(el.i, elL));
+         
          iterset = 3;
          if el.iter < iterset
+            ob.bGP.mesh = struct('nodes', el.nodes, 'conn', el.conn(el.i, elL));
             tauL = ob.computeTau(ob.bGP, muL, lamL, ob.ndm, class(ob.bGP), ob.eGPL.U);
-            ob.tauLHist(:, :, gp.i, el.i)= tauL;
-         else
-            tauL = ob.tauLHist(:, :, gp.i, el.i);
-         end
-         ob.bGP.mesh = struct('nodes', el.nodes, 'conn', el.conn(el.i, elR));
-         if el.iter < iterset
+            
+            ob.bGP.mesh = struct('nodes', el.nodes, 'conn', el.conn(el.i, elR));
             tauR = ob.computeTau(ob.bGP, muR, lamR, ob.ndm, class(ob.bGP), ob.eGPR.U);
+            
+            ob.tauLHist(:, :, gp.i, el.i)= tauL;
             ob.tauRHist(:, :, gp.i, el.i)= tauR;
          else
+            tauL = ob.tauLHist(:, :, gp.i, el.i);
             tauR = ob.tauRHist(:, :, gp.i, el.i);
          end
+         
          ob.eGPL.mesh = struct('nodes', el.nodes, 'conn', el.conn(el.i,elL)); ob.eGPL.iel = 1;
          ob.eGPR.mesh = struct('nodes', el.nodes, 'conn', el.conn(el.i,elR)); ob.eGPR.iel = 1;
          
@@ -222,12 +219,12 @@ classdef DGHyper
          tanL = ob.eGPL.F*TanL;
          tanR = ob.eGPR.F*TanR;
          
-         [intedge, ob.C1, ~] = ob.edgeInt(ob.sGP, TanL);
+         [intedge, ob.C1, ~] = edgeInt(ob.sGP, TanL);
          
          eb = ob.edgeBubbleInt(ob.eGPL.xi, ob.C1, class(ob.eGPL));
          
-         [ ~, ob.c1L, nvectL] = ob.edgeInt(ob.sGP, tanL);
-         [ ~, ob.c1R, nvectR] = ob.edgeInt(ob.sGP, tanR);
+         [ ~, ob.c1L, nvectL] = edgeInt(ob.sGP, tanL);
+         [ ~, ob.c1R, nvectR] = edgeInt(ob.sGP, tanR);
          
          edgeK  = (tauL*eb^2 + tauR*eb^2);
          gamL   = eb^2*(edgeK\tauL);
@@ -243,8 +240,8 @@ classdef DGHyper
          BmatfL = ob.eGPL.Bf;    BmatfR = ob.eGPR.Bf;
          BmatL  = ob.eGPL.B;     BmatR  = ob.eGPR.B;
          
-         [sigmaL,  cmatL]  = ob.SigmaCmat(ob.eGPL.b, ob.eGPL.JxX, muL, lamL, ob.I, ob.I4_bulk);
-         [sigmaR,  cmatR]  = ob.SigmaCmat(ob.eGPR.b, ob.eGPR.JxX, muR, lamR, ob.I, ob.I4_bulk);
+         [sigmaL,  cmatL]  = ob.SigmaCmat2(ob.eGPL.b, ob.eGPL.JxX, muL, lamL, ob.I, ob.I4_bulk);
+         [sigmaR,  cmatR]  = ob.SigmaCmat2(ob.eGPR.b, ob.eGPR.JxX, muR, lamR, ob.I, ob.I4_bulk);
          % Make kirchhoff stress into cauchy:
          sigmaL = sigmaL/ob.eGPL.JxX;  cmatL = cmatL/ob.eGPL.JxX;
          sigmaR = sigmaR/ob.eGPR.JxX;  cmatR = cmatR/ob.eGPR.JxX;
@@ -343,19 +340,8 @@ classdef DGHyper
          ob.jumpAddL = term5L+term5L'+term7L+term8L;
          ob.jumpAddR = term5R+term5R'+term7R+term8R;
          
-         D = cmatL;
-         D =[...
-            D(1,1) D(1,2) D(1,2) 0      0      0
-            D(2,1) D(2,2) D(1,2) 0      0      0
-            D(2,1) D(2,1) D(2,2) 0      0      0
-            0      0      0      D(3,3) 0      0
-            0      0      0      0      D(3,3) 0
-            0      0      0      0      0      D(3,3)];
-         ctan = reshape(D([1,4,6,4,2,5,6,5,3],[1,4,6,4,2,5,6,5,3]),3,3,3,3);
-         
-         if ob.ndm == 2
-            D =D([1,2,4],[1,2,4]);
-         end
+         D       = zeros(6,6);
+         sigma_v = zeros(ob.numstr,1);
       end
       %% Element K
       function Kel = computeK_el(ob, gp, el, ~)
@@ -367,18 +353,13 @@ classdef DGHyper
          cL = ob.c1L(i);
          cR = ob.c1R(i);
          C  = ob.C1(i);
-         if gp.i == 1
-            ElemKLL = + C*(NL'*ob.ep*NL) - cL*NL'*bnAdN1 - cL*bnAdN1'*NL - cL*ob.jumpAddL;
-            ElemKLR = - C*(NL'*ob.ep*NR) + cR*NL'*bnAdN2 + cL*bnAdN1'*NR;
-            ElemKRL = - C*(NR'*ob.ep*NL) + cL*NR'*bnAdN1 + cR*bnAdN2'*NL;
-            ElemKRR = + C*(NR'*ob.ep*NR) - cR*NR'*bnAdN2 - cR*bnAdN2'*NR + cR*ob.jumpAddR;
-         else
-            mid = size(el.K,1)/2;
-            ElemKLL = el.K(    1:mid,     1:mid) + C*(NL'*ob.ep*NL) - cL*NL'*bnAdN1 - cL*bnAdN1'*NL - cL*ob.jumpAddL;
-            ElemKLR = el.K(    1:mid, mid+1:end) - C*(NL'*ob.ep*NR) + cR*NL'*bnAdN2 + cL*bnAdN1'*NR;
-            ElemKRL = el.K(mid+1:end,     1:mid) - C*(NR'*ob.ep*NL) + cL*NR'*bnAdN1 + cR*bnAdN2'*NL;
-            ElemKRR = el.K(mid+1:end, mid+1:end) + C*(NR'*ob.ep*NR) - cR*NR'*bnAdN2 - cR*bnAdN2'*NR + cR*ob.jumpAddR;
-         end
+         
+         mid = size(el.K,1)/2;
+         ElemKLL = el.K(    1:mid,     1:mid) + C*(NL'*ob.ep*NL) - cL*NL'*bnAdN1 - cL*bnAdN1'*NL - cL*ob.jumpAddL;
+         ElemKLR = el.K(    1:mid, mid+1:end) - C*(NL'*ob.ep*NR) + cR*NL'*bnAdN2 + cL*bnAdN1'*NR;
+         ElemKRL = el.K(mid+1:end,     1:mid) - C*(NR'*ob.ep*NL) + cL*NR'*bnAdN1 + cR*bnAdN2'*NL;
+         ElemKRR = el.K(mid+1:end, mid+1:end) + C*(NR'*ob.ep*NR) - cR*NR'*bnAdN2 - cR*bnAdN2'*NR + cR*ob.jumpAddR;
+         
          Kel = [...
             ElemKLL ElemKLR
             ElemKRL ElemKRR];
@@ -396,14 +377,11 @@ classdef DGHyper
          
          tvtr  = ob.tvtr;
          jumpu = ob.jumpu;
-         if gp.i == 1
-            ElemFL = + C*ob.term30L - cL*bnAdN1'*jumpu - ob.term28L;
-            ElemFR = - C*ob.term30R + cR*bnAdN2'*jumpu + ob.term28R;
-         else
-            mid = size(el.Fint,1)/2;
-            ElemFL = el.Fint(    1:mid) + C*ob.term30L - cL*bnAdN1'*jumpu - ob.term28L;
-            ElemFR = el.Fint(mid+1:end) - C*ob.term30R + cR*bnAdN2'*jumpu + ob.term28R;
-         end
+         
+         mid = size(el.Fint,1)/2;
+         ElemFL = el.Fint(    1:mid) + C*ob.term30L - cL*bnAdN1'*jumpu - ob.term28L;
+         ElemFR = el.Fint(mid+1:end) - C*ob.term30R + cR*bnAdN2'*jumpu + ob.term28R;
+         
          Fint = [ElemFL; ElemFR];
       end
    end
@@ -429,7 +407,7 @@ classdef DGHyper
             dxdxi = bGP.F*bGP.dXdxi;
             B = DGHyper.edgeBubbleB(bGP.xi(i,:), dxdxi, elType);
             
-            [S, cmat] = DGHyper.SigmaCmat(bGP.b, bGP.JxX, mu, lam, I, I4_bulk);
+            [S, cmat] = DGHyper.SigmaCmat2(bGP.b, bGP.JxX, mu, lam, I, I4_bulk);
             if ndm == 2
                Dgeo = formGeo(S);
                Dmat = [cmat zeros(3,1); zeros(1,4)];
@@ -441,28 +419,6 @@ classdef DGHyper
             tau  = tau  + bGP.J *bGP.w* (B'*(Dgeo+Dmat)*B);
          end
          tau = inv(tau);
-      end
-      %% Integrate normal vectors
-      function [intedge, c1, nvect] = edgeInt(sGP, surfTan)
-         sGP.iel = 1;
-         ndm = size(surfTan,2)+1;
-         if ndm == 2
-            J = norm(surfTan);
-            n = cross([surfTan;0],[0;0;1] )/J;
-            nvect = [...
-               n(1) 0    n(2)
-               0    n(2) n(1)];
-         elseif ndm == 3
-            J = abs(det(surfTan(2:3,:)));
-            n = cross(surfTan(:,2),surfTan(:,1))/J;
-            nvect = [...
-               n(1) 0    0    n(2) 0    n(3)
-               0    n(2) 0    n(1) n(3) 0
-               0    0    n(3) 0    n(2) n(1)];
-         end
-         
-         c1 = J * sGP.weights;
-         intedge = sum(J * sGP.weights); % length of the edge
       end
       %% Compute Edge Bubble shape function' B matrix
       function B = edgeBubbleB(xi, dxdxi, elType)
@@ -508,7 +464,7 @@ classdef DGHyper
          intb = sum(C1.*bubble);
       end
       %% Compute sigma and Cmat
-      function [sigma, cmat] = SigmaCmat(b, JxX, mu, lam, I, I4_bulk)
+      function [sigma, cmat] = SigmaCmat2(b, JxX, mu, lam, I, I4_bulk)
          ndm  = size(I,1);
          matE = diag([2,2,2,1,1,1]);
          

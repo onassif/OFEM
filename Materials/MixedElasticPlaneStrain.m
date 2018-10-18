@@ -19,78 +19,64 @@ classdef MixedElasticPlaneStrain
    %%
    methods
       %% Construct
-      function obj = MixedElasticPlaneStrain(num, props, identity)
-         obj.ndm  = num.ndm;
-         obj.ndof = num.ndof;
-         obj.nen  = num.nen;
-         obj.ngp  = num.gp;
-         obj.diff = obj.ndof - obj.ndm;
+      function ob = MixedElasticPlaneStrain(num, props, identity)
+         ob.ndm  = num.ndm;
+         ob.ndof = num.ndof;
+         ob.nen  = num.nen;
+         ob.ngp  = num.gp;
+         ob.diff = ob.ndof - ob.ndm;
          switch num.nen
             case {3,4} % T3 and Q4
-               obj.M.N = 1;
+               ob.M.N = 1;
             case 6 % T6
                xi = 1/6*[...
                   4 1 1
                   1 1 4]';
-               obj.M = T3(0, 0, xi);
+               ob.M = T3(0, 0, xi);
             case 9 % Q9
                xi = sqrt(0.6)*[...
                   -1 +1 +1 -1  0 +1  0 -1 0
                   -1 -1 +1 +1 -1  0 +1  0 0]';
-               obj.M = Q4(0, 0, xi);
+               ob.M = Q4(0, 0, xi);
          end
          
-         [E,v] = obj.getProps(props);
+         [E,v] = ob.getProps(props);
          G =   0.5*E/(1+  v);
          K = (1/3)*E/(1-2*v);
          
-         obj.C0 = K*identity.I4_bulk + 2*G*identity.I4_dev;
+         ob.C0 = K*identity.I4_bulk + 2*G*identity.I4_dev;
          
-         obj.Bulk = K;
+         ob.Bulk = K;
       end
       %% Epsilon
-      function [eps, obj] = computeStrain(obj, gp, el, ~)
+      function [eps, ob] = computeStrain(ob, gp, el, ~)
          eps = gp.B * el.Uvc;
       end
-      %% Sigma
-      function [sigma_voigt, obj] = computeCauchy(obj, gp, ~, ~)
-         sigma_voigt = gp.D *gp.eps;
-      end
-      %% Tangential stiffness
-      function [D, ctan, obj] = computeTangentStiffness(obj, ~, ~, ~)
-         c = obj.C0;
-         
-         D = c([1,2,4],[1,2,4]);
-         ctan = reshape(c([1,4,6,4,2,5,6,5,3],[1,4,6,4,2,5,6,5,3]),3,3,3,3);
+      %% Sigma & Tangential stiffness
+      function [sigma_v, D, ob] = computeTangentStiffness(ob, gp, ~, ~)
+         D       = ob.C0;
+         sigma_v = ob.C0([1,2,4],[1,2,4])*gp.eps;
       end
       %% Element K
-      function kel = computeK_el(obj, gp, el, ~)
-         dN      = reshape(gp.dNdx',obj.nen*obj.ndm,1);
-         obj.M.i = gp.i;
-         K = obj.Bulk;
-         if gp.i == 1
-            kel = [...
-               (gp.B'*gp.D*gp.B) - (K*(dN*dN'))    dN*obj.M.N
-               obj.M.N'*dN'                          (1/K)*obj.M.N'*obj.M.N] .*gp.j*gp.w;
-         else
-            kel = el.K + [...
-               (gp.B'*gp.D*gp.B) - (K*(dN*dN'))    dN*obj.M.N
-               obj.M.N'*dN'                          (1/K)*obj.M.N'*obj.M.N] .*gp.j*gp.w;
-         end
+      function kel = computeK_el(ob, gp, el, ~)
+         if (ob.ndm == 2); gp.D = gp.D([1,2,4],[1,2,4]); end
+         dN      = reshape(gp.dNdx',ob.nen*ob.ndm,1);
+         ob.M.i = gp.i;
+         K = ob.Bulk;
+         kel = el.K + [...
+            (gp.B'*gp.D*gp.B) - (K*(dN*dN'))    dN*ob.M.N
+            ob.M.N'*dN'                          (1/K)*ob.M.N'*ob.M.N] .*gp.j*gp.w;
       end
       %% Element Fint
-      function Fint = computeFint(obj, gp, el, ~)
+      function Fint = computeFint(ob, gp, el, ~)
          numU = numel(el.nodes);
-         dN = reshape(gp.dNdx',obj.nen*obj.ndm,1);
-         K = obj.Bulk;
+         dN = reshape(gp.dNdx',ob.nen*ob.ndm,1);
+         K = ob.Bulk;
          
-         Sdev = [gp.sigma(1:2) - 1/3*sum(obj.C0(1:3,1:3)*[gp.eps(1:2);0]); gp.sigma(3)];
+         Sdev = [gp.sigma(1:2) - 1/3*sum(ob.C0(1:3,1:3)*[gp.eps(1:2);0]); gp.sigma(3)];
          p = el.U_global(numU+el.i);
-         if gp.i == 1
-            Fint = [gp.B'*Sdev; 0] *gp.j *gp.w;
-         else
-            Fint = el.Fint + [gp.B'*Sdev; 0] *gp.j *gp.w;
-         end
+         
+         Fint = el.Fint + [gp.B'*Sdev; 0] *gp.j *gp.w;
       end
    end
    methods (Static)

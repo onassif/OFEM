@@ -9,14 +9,8 @@ classdef DGCP
       I
       I4_bulk
       
-      EL;
-      ER;
-      vL;
-      vR;
-      lamdaR;
-      lamdaL;
-      muR;
-      muL;
+      matL
+      matR
       NmatL;
       NmatR;
       c1L;
@@ -151,15 +145,12 @@ classdef DGCP
          for i = 1:2
             switch props{i,1}
                case 'L'
-                  [ob.EL, ob.vL] = ob.getProps(propsList{props{i,2}});
+                  ob.matL = props{i,2};
                case 'R'
-                  [ob.ER, ob.vR] = ob.getProps(propsList{props{i,2}});
+                  ob.matR = props{i,2};
             end
          end
-         ob.lamdaL = ob.vL*ob.EL/((1+ob.vL)*(1-2*ob.vL));
-         ob.lamdaR = ob.vR*ob.ER/((1+ob.vR)*(1-2*ob.vR));
-         ob.muL    = ob.EL/(2*(1+ob.vL));
-         ob.muR    = ob.ER/(2*(1+ob.vR));
+
          ob.I      = eye(ob.ndm);
          ob.I4_bulk= identity.I4_bulk;
          ob.tauLHist= zeros(ob.ndm, ob.ndm, size(ob.sGP.Nmat,1), num.el);
@@ -184,30 +175,28 @@ classdef DGCP
          nen = size(el.conn(el.i,:),2)/2;
          elL = 1:nen;
          elR = nen+1:2*nen;
-         
-         lamL = ob.lamdaL;    lamR = ob.lamdaR;
-         muL  = ob.muL;        muR = ob.muR;
-         
+                 
          ob.eGPL.U = el.Umt(elL,:);
          ob.eGPR.U = el.Umt(elR,:);
          ulresL = reshape(el.Umt(elL,:)', numel(el.Umt(elL,:)),1);
          ulresR = reshape(el.Umt(elR,:)', numel(el.Umt(elR,:)),1);
          
-         ob.bGP.mesh = struct('nodes', el.nodes, 'conn', el.conn(el.i, elL));
+         
          iterset = 3;
          if el.iter < iterset
-            tauL = ob.computeTau(ob.bGP, muL, lamL, ob.ndm, class(ob.bGP), ob.eGPL.U);
+            ob.bGP.mesh = struct('nodes', el.nodes, 'conn', el.conn(el.i, elL));
+            tauL = ob.computeTau(ob.bGP, el.mat{ob.matL}, ob.ndm, class(ob.bGP), ob.eGPL.U);
+            
+            ob.bGP.mesh = struct('nodes', el.nodes, 'conn', el.conn(el.i, elR));
+            tauR = ob.computeTau(ob.bGP, el.mat{ob.matR}, ob.ndm, class(ob.bGP), ob.eGPR.U);           
+            
             ob.tauLHist(:, :, gp.i, el.i)= tauL;
-         else
-            tauL = ob.tauLHist(:, :, gp.i, el.i);
-         end
-         ob.bGP.mesh = struct('nodes', el.nodes, 'conn', el.conn(el.i, elR));
-         if el.iter < iterset
-            tauR = ob.computeTau(ob.bGP, muR, lamR, ob.ndm, class(ob.bGP), ob.eGPR.U);
             ob.tauRHist(:, :, gp.i, el.i)= tauR;
          else
+            tauL = ob.tauLHist(:, :, gp.i, el.i);
             tauR = ob.tauRHist(:, :, gp.i, el.i);
          end
+
          ob.eGPL.mesh = struct('nodes', el.nodes, 'conn', el.conn(el.i,elL)); ob.eGPL.iel = 1;
          ob.eGPR.mesh = struct('nodes', el.nodes, 'conn', el.conn(el.i,elR)); ob.eGPR.iel = 1;
          
@@ -219,12 +208,12 @@ classdef DGCP
          tanL = ob.eGPL.F*TanL;
          tanR = ob.eGPR.F*TanR;
          
-         [intedge, ob.C1, ~] = ob.edgeInt(ob.sGP, TanL);
+         [intedge, ob.C1, ~] = edgeInt(ob.sGP, TanL);
          
          eb = ob.edgeBubbleInt(ob.eGPL.xi, ob.C1, class(ob.eGPL));
          
-         [ ~, ob.c1L, nvectL] = ob.edgeInt(ob.sGP, tanL);
-         [ ~, ob.c1R, nvectR] = ob.edgeInt(ob.sGP, tanR);
+         [ ~, ob.c1L, nvectL] = edgeInt(ob.sGP, tanL);
+         [ ~, ob.c1R, nvectR] = edgeInt(ob.sGP, tanR);
          
          edgeK  = (tauL*eb^2 + tauR*eb^2);
          gamL   = eb^2*(edgeK\tauL);
@@ -416,17 +405,18 @@ classdef DGCP
          end
       end
       %% Compute tau
-      function tau = computeTau(bGP, mu, lam, ndm, elType, U)
+      function tau = computeTau(bGP, CP, ndm, elType, U)
+         Q = CP.Qmat(CP.gRot');
+         cmat = Q*CP.C0*Q';
+         S = zeros(6,1);
          ngp = size(bGP.xi,1);
          bGP.U = U';
-         I4_bulk = zeros(6); I4_bulk(1:3,1:3) = ones(3);
-         bGP.iel=1; tau = zeros(ndm, ndm); I = eye(ndm);
+         bGP.iel=1; tau = zeros(ndm, ndm);
          for i = 1:ngp
             bGP.i = i;
             dxdxi = bGP.F*bGP.dXdxi;
-            B = DGHyper.edgeBubbleB(bGP.xi(i,:), dxdxi, elType);
+            B = DGCP.edgeBubbleB(bGP.xi(i,:), dxdxi, elType);
             
-            [S, cmat] = DGHyper.SigmaCmat(bGP.b, bGP.JxX, mu, lam, I, I4_bulk);
             if ndm == 2
                Dgeo = formGeo(S);
                Dmat = [cmat zeros(3,1); zeros(1,4)];
@@ -438,28 +428,6 @@ classdef DGCP
             tau  = tau  + bGP.J *bGP.w* (B'*(Dgeo+Dmat)*B);
          end
          tau = inv(tau);
-      end
-      %% Integrate normal vectors
-      function [intedge, c1, nvect] = edgeInt(sGP, surfTan)
-         sGP.iel = 1;
-         ndm = size(surfTan,2)+1;
-         if ndm == 2
-            J = norm(surfTan);
-            n = cross([surfTan;0],[0;0;1] )/J;
-            nvect = [...
-               n(1) 0    n(2)
-               0    n(2) n(1)];
-         elseif ndm == 3
-            J = abs(det(surfTan(2:3,:)));
-            n = cross(surfTan(:,2),surfTan(:,1))/J;
-            nvect = [...
-               n(1) 0    0    n(2) 0    n(3)
-               0    n(2) 0    n(1) n(3) 0
-               0    0    n(3) 0    n(2) n(1)];
-         end
-         
-         c1 = J * sGP.weights;
-         intedge = sum(J * sGP.weights); % length of the edge
       end
       %% Compute Edge Bubble shape function' B matrix
       function B = edgeBubbleB(xi, dxdxi, elType)

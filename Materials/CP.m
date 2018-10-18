@@ -150,18 +150,8 @@ classdef CP
          eps = Q'*gp.B*el.Uvc;
          ob.Uvc_n(:,el.i, step+1) = el.Uvc ;
       end
-      %% Sigma
-      function [sigma_voigt, ob] = computeCauchy(ob, gp, el, step)
-         if el.iter == 0 && step > 1
-            Q = ob.Qmat(gp.R);
-            sigma_voigt = Q*(ob.list.S(:,gp.i,el.i, step) + ob.list.D( :,:,gp.i,el.i, step)*ob.de);
-            ob.S = sigma_voigt;
-         else
-            sigma_voigt = ob.Qmat(gp.R)*ob.S;
-         end
-      end
-      %% Tangential stiffness
-      function [D, ctan, ob] = computeTangentStiffness(ob, gp, el, step)
+      %% Sigma & Tangential stiffness
+      function [sigma_v, D, ob] = SigmaCmat(ob, gp, el, step)
          ob.cpM.list = ob.list;
          ob.cpM.step = step;
          ob.cpM.iter = el.iter;
@@ -170,6 +160,8 @@ classdef CP
          
          if el.iter == 0 && step > 1
             D = ob.list.D( :,:,gp.i,el.i, step);
+            sigma_v = ob.Qmat(gp.R)*(ob.list.S(:,gp.i,el.i, step) + D*ob.de);
+            ob.S = sigma_v;
          else
             dt   = ob.dt(step);
             % Identities
@@ -305,10 +297,8 @@ classdef CP
             ob.list.R( :,:,gp.i,el.i, step+1) = gp.R;
             ob.list.tauT(  gp.i,el.i, step+1) = tauT;
             ob.list.S(   :,gp.i,el.i, step+1) = ob.S;
-         end
-         ctan = reshape(D([1,4,6,4,2,5,6,5,3],[1,4,6,4,2,5,6,5,3]),3,3,3,3);
-         if ob.ndm == 2
-            D =D([1,2,4],[1,2,4]);
+            
+            sigma_v = ob.Qmat(gp.R)*ob.S;
          end
          
          if gp.i == ob.ngp
@@ -336,22 +326,10 @@ classdef CP
             0      S(5)   S(5)   1/2*S(6)        1/2*(S(2)+S(3)) 1/2*S(4)
             S(6)   0      S(6)   1/2*S(5)        1/2*S(4)        1/2*(S(1)+S(3))];
          Kmat = [cep - qbar, zeros(6,3); zeros(3,9)];
-         Kgeo = gp.j*gp.w*[...
-            +S(1)      0         0         1/2*S(4)         0                1/2*S(6)         1/2*S(4)         0               -1/2*S(6)
-            +0         S(2)      0         1/2*S(4)         1/2*S(5)         0               -1/2*S(4)         1/2*S(5)         0
-            +0         0         S(3)      0                1/2*S(5)         1/2*S(6)         0               -1/2*S(5)         1/2*S(6)
-            +1/2*S(4)  1/2*S(4)  0         1/4*(S(1)+S(2))  1/4*S(6)         1/4*S(5)         1/4*(S(2)-S(1))  1/4*S(6)        -1/4*S(5)
-            +0         1/2*S(5)  1/2*S(5)  1/4*S(6)         1/4*(S(2)+S(3))  1/4*S(4)        -1/4*S(6)         1/4*(S(3)-S(2))  1/4*S(4)
-            +1/2*S(6)  0         1/2*S(6)  1/4*S(5)         1/4*S(4)         1/4*(S(1)+S(3))  1/4*S(5)        -1/4*S(4)         1/4*(S(1)-S(3))
-            +1/2*S(4) -1/2*S(4)  0         1/4*(S(2)-S(1)) -1/4*S(6)         1/4*S(5)         1/4*(S(1)+S(2)) -1/4*S(6)        -1/4*S(5)
-            +0         1/2*S(5) -1/2*S(5)  1/4*S(6)         1/4*(S(3)-S(2)) -1/4*S(4)        -1/4*S(6)         1/4*(S(2)+S(3)) -1/4*S(4)
-            -1/2*S(6)  0         1/2*S(6) -1/4*S(5)         1/4*S(4)         1/4*(S(1)-S(3)) -1/4*S(5)        -1/4*S(4)         1/4*(S(1)+S(3))];
+         Kgeo = gp.j*gp.w*formGeo(S);
          %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-         if gp.i == 1
-            Kel = (B'*(Kmat+Kgeo)*B);
-         else
-            Kel = el.K + (B'*(Kmat+Kgeo)*B);
-         end
+         
+         Kel = el.K + (B'*(Kmat+Kgeo)*B);
       end
       %% Element Fint
       function Fint = computeFint(~, gp, el, step)
@@ -359,11 +337,8 @@ classdef CP
          if el.iter == 0 && step > 1
             gp.U = (gp.U + gp.dU)';
          end
-         if gp.i == 1
-            Fint = (gp.Bf'*sigma) *gp.j *gp.w;
-         else
-            Fint = el.Fint + (gp.Bf'*sigma) *gp.j *gp.w;
-         end
+         
+         Fint = el.Fint + (gp.Bf'*sigma) *gp.j *gp.w;
       end
       %% m(slip)
       function value = get.ms(ob)
