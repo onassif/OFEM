@@ -12,7 +12,7 @@ step       = cell (n_steps+1,1);
 
 hist.eps   = zeros(numstr, ngp, size(elements,1), 'single');
 hist.stre  = zeros(numstr, ngp, size(elements,1), 'single');
-hist.ctan  = zeros(3,3,3,3,ngp, size(elements,1), 'single');
+hist.D     = zeros(   6,6, ngp, size(elements,1), 'single');
 hist.resid = zeros(max_iter,1,'single');
 hist.conn  = uint32(elements(:,1:end-1));
 hist.nodes = nodes;

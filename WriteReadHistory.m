@@ -17,7 +17,7 @@ if(nargin==6)
 
     eps  = reshape(hist.eps , num.str, num.gp*num.el);
     stre = reshape(hist.stre, num.str, num.gp*num.el);
-    ctan = reshape(hist.ctan, 3*3*3*3, num.gp*num.el);
+    ctan = reshape(hist.D,        6,6, num.gp*num.el);
     
     fidF = fopen(strgF,'w');
     fidd = fopen(strgd,'w');
@@ -29,8 +29,6 @@ if(nargin==6)
     
     fwrite(fidF, Fext(1:num.ndm*num.np)       , 'single');
     fwrite(fidd, d   (1:num.ndm*num.np)       , 'single');
-%     fwrite(fidF, Fext       , 'single');
-%     fwrite(fidd, d          , 'single');
     fwrite(fidc, coor       , 'single');
     fwrite(fidr, hist.resid , 'single');
     fwrite(fide, eps        , 'single');
@@ -43,12 +41,11 @@ elseif(nargin==3)
     
     hist.disp        = zeros(num.ndm*num.np, num.steps, 'single');
     hist.force       = zeros(num.ndm*num.np, num.steps, 'single');
-%     hist.disp        = zeros(num.eq, num.steps, 'single');
-%     hist.force       = zeros(num.eq, num.steps, 'single');
-    hist.coor        = zeros(num.np, num.ndm, num.steps, 'single');
+    hist.coor        = zeros(num.np,num.ndm, num.steps, 'single');
     hist.coor(:,:,1) = nodes;
     hist.eps         = zeros(num.str,num.gp, num.el, num.steps, 'single');
     hist.stre        = zeros(num.str,num.gp, num.el, num.steps, 'single');
+    hist.D           = zeros(    6,6,num.gp, num.el, num.steps, 'single');
     hist.ctan        = zeros(3,3,3,3,num.gp, num.el, num.steps, 'single');
     
     for i=1:num.steps-1
@@ -66,26 +63,28 @@ elseif(nargin==3)
         fids = fopen(strgs,'r');
         fidC = fopen(strgC,'r');
      
-        hist.force (:,i+1)	= fread(fidF, [num.ndm*num.np, 1]       , 'single');
-        hist.disp  (:,i+1)	= fread(fidd, [num.ndm*num.np, 1]       , 'single');
-%         hist.force (:,i+1)	= fread(fidF, [num.eq, 1]       , 'single');
-%         hist.disp  (:,i+1)	= fread(fidd, [num.eq, 1]       , 'single');
-        hist.coor  (:,:,i+1)= fread(fidc, [num.np, num.ndm] , 'single');
-        hist.eps (:,:,:,i+1)      = reshape (fread(fide, [num.str, num.gp*num.el], 'single'), num.str, num.gp,num.el);
-        hist.stre(:,:,:,i+1)      = reshape (fread(fids, [num.str, num.gp*num.el], 'single'), num.str, num.gp,num.el);
-        hist.ctan(:,:,:,:,:,:,i+1)= reshape (fread(fidC, [3*3*3*3, num.gp*num.el], 'single'), 3,3,3,3, num.gp,num.el);      
+        hist.force( :,i+1)	= fread(fidF, [num.ndm*num.np, 1] , 'single');
+        hist.disp(  :,i+1)	= fread(fidd, [num.ndm*num.np, 1] , 'single');
+        hist.coor(:,:,i+1) = fread(fidc,   [num.np, num.ndm] , 'single');
+        hist.eps(   :,:,:,i+1) = reshape(fread(fide, [num.str, num.gp*num.el], 'single'), num.str, num.gp,num.el);
+        hist.stre(  :,:,:,i+1) = reshape(fread(fids, [num.str, num.gp*num.el], 'single'), num.str, num.gp,num.el);
+        hist.D(   :,:,:,:,i+1) = reshape(fread(fidC, [    6*6, num.gp*num.el], 'single'),     6,6, num.gp,num.el);      
         
         fclose('all');    
     end
     hist.disp = permute(reshape(hist.disp ,num.ndm,num.np,num.steps),[2 1 3]);
     hist.force= permute(reshape(hist.force,num.ndm,num.np,num.steps),[2 1 3]); 
-%     hist.disp = permute(reshape(hist.disp ,num.ndof,num.np,num.steps),[2 1 3]);
-%     hist.force= permute(reshape(hist.force,num.ndof,num.np,num.steps),[2 1 3]); 
+    
+    for i=1:num.gp
+       for j=1:num.el
+          for k=1:num.steps
+             hist.ctan(:,:,:,:,i,j,k) = T2T4(hist.D(:,:,i,j,k));
+          end
+       end
+    end
     varargout{1} = hist;
     varargout{2} = num;
     
 end
 fclose('all');
-
 end
-

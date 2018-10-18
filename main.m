@@ -23,21 +23,20 @@ for step=1:num.steps % Steps loop
       for iel =1:num.el
          %% Start elements loop
          % Get information related to current element:
-         el.i   = iel;        gp.iel = iel;        % element number
-         coor   = el.coor;                         % element coordinates
-         gp.U   = el.Umt;     gp.U_n = el.Umt_n;   gp.dU = el.w;% element unknowns (array form, n and n+1)
+         el.i = iel;        gp.iel = iel;        % element number
+         coor = el.coor;                         % element coordinates
+         gp.U = el.Umt;     gp.U_n = el.Umt_n;   gp.dU = el.w;% element unknowns (array form, n and n+1)
+         el.Fint = zeros(length(el.indices),1);
+         el.K    = zeros(length(el.indices), length(el.indices)); 
 
          for igp = 1:el.mat{el.im}.ngp;     gp.i = igp;
             %%   Start Loop over Gauss points
             %%%   2gp. Strain tensor
             [gp.eps, el.mat{el.im}]        = el.mat{el.im}.computeStrain(gp, el, step);
             
-            %%%   3gp. Tangential stifness
-            [gp.D, gp.ctan, el.mat{el.im}] = el.mat{el.im}.computeTangentStiffness(gp, el, step);
-            
-            %%%   4gp. Stress
-            [gp.sigma, el.mat{el.im}]      = el.mat{el.im}.computeCauchy(gp, el, step);
-            
+            %%%   3gp. Stress & Tangential stifness
+            [gp.sigma, gp.D, el.mat{el.im}] = el.mat{el.im}.SigmaCmat(gp, el, step);
+                        
             %%%   5gp. K
             el.K    = el.mat{el.im}.computeK_el(gp, el, step);
             
@@ -45,9 +44,9 @@ for step=1:num.steps % Steps loop
             el.Fint = el.mat{el.im}.computeFint(gp, el, step);
             
             % store states
-            hist.eps (:,igp,iel)       = gp.eps;
-            hist.stre(:,igp,iel)       = gp.sigma;
-            hist.ctan(:,:,:,:,igp,iel) = gp.ctan;
+            hist.eps( :,igp,iel) = gp.eps;
+            hist.stre(:,igp,iel) = gp.sigma;
+            hist.D( :,:,igp,iel) = gp.D;
          end
          
          % Assemble to global arrays
