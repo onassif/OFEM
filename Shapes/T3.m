@@ -11,6 +11,8 @@ classdef T3
       U_n
       dU
       mesh
+      xi      
+      weights = 0.5;
    end
    
    properties (SetAccess = private)
@@ -36,89 +38,85 @@ classdef T3
       J % det(dX/dxi) = J
       j % or det( dx/dX*dX/dxi ) = det(dx/dxi) = j
       JxX
-      xi      = 1/3 .*[1 1];
-      weights = 0.5;
    end
    
    methods
       %% Construct
-      function obj = T3(varargin)
+      function ob = T3(varargin)
          finiteDisp     = varargin{1};
-         obj.finiteDisp = finiteDisp;
+         ob.finiteDisp = finiteDisp;
          
          if nargin >= 3
-            obj.xi = varargin{3};
+            ob.xi = varargin{3};
+         else
+            ob.xi = 1/3 .*[1 1];
          end
          if nargin == 4
-            obj.weights = varargin{4};
-         end
-         [obj.Nmat, obj.Ninv] = obj.compute_Nmat(   obj);
-         obj.dNdxi_list       = obj.compute_dNdxi(  obj);
-         obj.d2Ndxi2_list     = obj.compute_d2Ndxi2(obj);
-         
+            ob.weights = varargin{4};
+         end 
          if nargin >= 2 && isstruct(varargin{2})
-            obj.mesh = varargin{2};
+            ob.mesh = varargin{2};
          end
       end
       %% Get functions
-      function value = get.N(obj)
-         if size(obj.xi, 1)>1
-            value = obj.Nmat(obj.i,:);
+      function value = get.N(ob)
+         if size(ob.xi, 1)>1
+            value = ob.Nmat(ob.i,:);
          else
-            value = obj.Nmat;
+            value = ob.Nmat;
          end
       end
       
-      function value = get.dNdxi(obj)
-         value = obj.dNdxi_list;
+      function value = get.dNdxi(ob)
+         value = ob.dNdxi_list;
       end
 
-      function value = get.d2Ndxi2(obj)
-         value = obj.d2Ndxi2_list;
+      function value = get.d2Ndxi2(ob)
+         value = ob.d2Ndxi2_list;
       end
       
-      function value = get.dXdxi(obj)
-         value = obj.dXdxi_list(:,:,obj.iel);
+      function value = get.dXdxi(ob)
+         value = ob.dXdxi_list(:,:,ob.iel);
       end
       
-      function value = get.w(obj)
-         value = obj.weights(obj.i);
+      function value = get.w(ob)
+         value = ob.weights(ob.i);
       end
       
-      function value = get.J(obj)
-         value = obj.det_dXdxi_list(obj.iel);
+      function value = get.J(ob)
+         value = ob.det_dXdxi_list(ob.iel);
       end
       
-      function value = get.dNdX(obj)
-         value = obj.dNdX_list(:,:,obj.iel);
+      function value = get.dNdX(ob)
+         value = ob.dNdX_list(:,:,ob.iel);
       end
       
-      function value = get.F(obj)
-         I     = eye(size(obj.U,1));
-         value = obj.U*obj.dNdX + I;
+      function value = get.F(ob)
+         I     = eye(size(ob.U,1));
+         value = ob.U*ob.dNdX + I;
       end
       
-      function value = get.JxX(obj)
-         value = det(obj.F);
+      function value = get.JxX(ob)
+         value = det(ob.F);
       end
       
-      function value = get.j(obj)
-         value = obj.JxX * obj.J;
+      function value = get.j(ob)
+         value = ob.JxX * ob.J;
       end
       
-      function value = get.dNdx(obj)
-         value = obj.dNdX / obj.F;
+      function value = get.dNdx(ob)
+         value = ob.dNdX / ob.F;
       end
       
-      function value = get.b(obj)
-         value = obj.F*obj.F';
+      function value = get.b(ob)
+         value = ob.F*ob.F';
       end
       
-      function value = get.B(obj)
-         if (obj.finiteDisp)
-            dx = obj.dNdx(:,1);  dy = obj.dNdx(:,2);
+      function value = get.B(ob)
+         if (ob.finiteDisp)
+            dx = ob.dNdx(:,1);  dy = ob.dNdx(:,2);
          else
-            dx = obj.dNdX(:,1);  dy = obj.dNdX(:,2);
+            dx = ob.dNdX(:,1);  dy = ob.dNdX(:,2);
          end
          value=[...
             dx(1),   0.0, dx(2),   0.0, dx(3),   0.0
@@ -126,8 +124,8 @@ classdef T3
             dy(1), dx(1), dy(2), dx(2), dy(3), dx(3)];
       end
       
-      function value = get.Bf(obj)
-         dx = obj.dNdx(:,1); dy = obj.dNdx(:,2);
+      function value = get.Bf(ob)
+         dx = ob.dNdx(:,1); dy = ob.dNdx(:,2);
          value =[...
             dx(1)  0      dx(2)  0      dx(3)  0    
             0      dy(1)  0      dy(2)  0      dy(3)
@@ -135,63 +133,47 @@ classdef T3
             dy(1) -dx(1)  dy(2) -dx(2)  dy(3) -dx(3)];
       end
       
-      function value = get.R(obj)
-           [P, ~, Q] = svd(obj.F);
+      function value = get.R(ob)
+           [P, ~, Q] = svd(ob.F);
            value =  P*Q';
       end
       
       %% Set functions
-      function obj = set.U(obj, val)
-         if size(val,3)==1 % Normal
-            obj.U = val';
-         elseif size(val,3) == 2 % DG
-            obj.U = permute(val,[2 1 3]);
-         end
+      function ob = set.mesh(ob, val)
+         ob.mesh = val; 
+         [ob.det_dXdxi_list, ob.dNdX_list, ob.dXdxi_list] = ...
+            ob.computeJ_and_dNdX(val.nodes, val.conn, ob.dNdxi_list);
       end
       
-      function obj = set.U_n(obj, val)
-         if size(val,3)==1 % Normal
-            obj.U_n = val';
-         elseif size(val,3) == 2 % DG
-            obj.U_n = permute(val,[2 1 3]);
-         end
-      end
-      
-      function obj = set.dU(obj, val)
-         if size(val,3)==1 % Normal
-            obj.dU = val';
-         elseif size(val,3) == 2 % DG
-            obj.dU = permute(val,[2 1 3]);
-         end
-      end
-      
-      function obj = set.mesh(obj, val)
-         [obj.det_dXdxi_list, obj.dNdX_list, obj.dXdxi_list] =...
-            obj.computeJ_and_dNdX(val.nodes, val.conn, obj.dNdxi_list);
+      function ob = set.xi(ob, val)
+         ob.xi = val;
+         [ob.Nmat, ob.Ninv] = ob.compute_Nmat(val);
+         ob.dNdxi_list      = ob.compute_dNdxi(  );
+         ob.d2Ndxi2_list    = ob.compute_d2Ndxi2();
       end
    end
    
    methods (Static)
-      function dNdxi_list = compute_dNdxi(~)
+      function [Nmat, Ninv] = compute_Nmat(ob)
+         xi = ob.xi;
+         Nmat = [1-xi(:,1)-xi(:,2), xi(:,1), xi(:,2)];
+         Ninv = ((Nmat*Nmat')\Nmat)';
+      end
+      
+      function dNdxi_list = compute_dNdxi()
          dNdxi_list =[...
             -1 -1
             +1  0
             +0  1];
       end
       
-      function d2Ndxi2_list = compute_d2Ndxi2(~)
+      function d2Ndxi2_list = compute_d2Ndxi2()
          d2Ndxi2_list =[...
             0 0 0
             0 0 0
             0 0 0];
       end
-      
-      function [Nmat, Ninv] = compute_Nmat(obj)
-         xi = obj.xi;
-         Nmat = [1-xi(:,1)-xi(:,2), xi(:,1), xi(:,2)];
-         Ninv = ((Nmat*Nmat')\Nmat)';
-      end
-      
+   
       function [det_dXdxi_list, dNdX_list, dXdxi_list] = computeJ_and_dNdX(nodes, conn, dNdxi_list)
          numel = size(conn    , 1);
          nen   = size(conn    , 2);

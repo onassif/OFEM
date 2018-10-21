@@ -136,7 +136,7 @@ classdef CP2
          
       end
       %% Epsilon
-      function [eps, ob] = computeStrain(ob, gp, el, step)
+      function [eps, ob] = Strain(ob, gp, el, step)
          gp.U  = (gp.U_n + (1/2)*gp.dU)'; % n + 1/2
          Q     = ob.Qmat(gp.R);
          if (el.iter==0&&step>1)

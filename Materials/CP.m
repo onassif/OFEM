@@ -137,8 +137,8 @@ classdef CP
          
       end
       %% Epsilon
-      function [eps, ob] = computeStrain(ob, gp, el, step)
-         gp.U  = (gp.U_n + (1/2)*gp.dU)'; % n + 1/2
+      function [eps, ob] = Strain(ob, gp, el, step)
+         gp.U  = (gp.U_n + (1/2)*gp.dU); % n + 1/2
          Q     = ob.Qmat(gp.R);
          if (el.iter==0&&step>1)
             Un = ob.Uvc_n(:,el.i,step-1);
@@ -148,7 +148,7 @@ classdef CP
          ob.de = Q'*gp.B*(el.Uvc - Un);
          
          eps = Q'*gp.B*el.Uvc;
-         ob.Uvc_n(:,el.i, step+1) = el.Uvc ;
+         ob.Uvc_n(:,el.i, step+1) = el.Uvc;
       end
       %% Sigma & Tangential stiffness
       function [sigma_v, D, ob] = SigmaCmat(ob, gp, el, step)
@@ -312,7 +312,7 @@ classdef CP
          Q = ob.Qmat(gp.R);
          if el.iter == 0 && step > 1
             S = Q*ob.list.S(:, gp.i, el.i, step);
-            gp.U = (gp.U + gp.dU)';
+            gp.U = (gp.U + gp.dU);
          else
             S = gp.sigma;
          end
@@ -335,7 +335,7 @@ classdef CP
       function Fint = computeFint(~, gp, el, step)
          sigma = [gp.sigma;0;0;0]; % already rotated
          if el.iter == 0 && step > 1
-            gp.U = (gp.U + gp.dU)';
+            gp.U = (gp.U + gp.dU);
          end
          
          Fint = el.Fint + (gp.Bf'*sigma) *gp.j *gp.w;
