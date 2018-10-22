@@ -32,7 +32,7 @@ for step=1:num.steps % Steps loop
          for igp = 1:el.mat{el.im}.ngp;     gp.i = igp;
             %%   Start Loop over Gauss points
             %%%   2gp. Strain tensor
-            [gp.eps, el.mat{el.im}]        = el.mat{el.im}.computeStrain(gp, el, step);
+            [gp.eps, el.mat{el.im}]        = el.mat{el.im}.Strain(gp, el, step);
             
             %%%   3gp. Stress & Tangential stifness
             [gp.sigma, gp.D, el.mat{el.im}] = el.mat{el.im}.SigmaCmat(gp, el, step);

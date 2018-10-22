@@ -24,7 +24,7 @@ classdef Elastic
          ob.C0 = K*identity.I4_bulk + 2*G*identity.I4_dev;
       end
       %% Epsilon
-      function [eps, ob] = computeStrain(ob, gp, el, ~)
+      function [eps, ob] = Strain(ob, gp, el, ~)
          eps = gp.B * el.Uvc;
       end
       %% Sigma and Tangential stiffness

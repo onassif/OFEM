@@ -29,7 +29,7 @@ classdef HyperElastic
          ob.I4_bulk= identity.I4_bulk;
       end
       %% Epsilon
-      function [eps, ob] = computeStrain(ob, gp, el, ~)
+      function [eps, ob] = Strain(ob, gp, el, ~)
          eps = gp.B * el.Uvc;
       end
       %% Sigma & Tangential stiffness

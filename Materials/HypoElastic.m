@@ -52,7 +52,7 @@ classdef HypoElastic
          
       end
       %% Epsilon
-      function [eps, ob] = computeStrain(ob, gp, el, ~)
+      function [eps, ob] = Strain(ob, gp, el, ~)
          eps  = gp.B * el.Uvc;
          ob.e = T1T2(eps,2) - (1/3)*trace(T1T2(eps,2))*ob.I;
       end

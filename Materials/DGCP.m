@@ -157,15 +157,11 @@ classdef DGCP
          ob.tauRHist= zeros(ob.ndm, ob.ndm, size(ob.sGP.Nmat,1), num.el);
       end
       %% Epsilon
-      function [eps, ob] = computeStrain(ob, ~, ~, ~)
+      function [eps, ob] = Strain(ob, ~, ~, ~)
          eps = zeros(ob.numstr,1);
       end
-      %% Sigma
-      function [sigma_voigt, ob] = computeCauchy(ob, gp, ~, ~)
-         sigma_voigt = gp.D*gp.eps;
-      end
       %% Tangential stiffness
-      function [D, ctan, ob] = computeTangentStiffness(ob, gp, el, step)
+      function [D, ctan, ob] = SigmaCmat(ob, gp, el, step)
          ndm  = ob.ndm;
          if ndm == 2
             P1 = ob.P1_2;  P2 = ob.P2_2;  P3 = ob.P3_2;
@@ -176,11 +172,10 @@ classdef DGCP
          elL = 1:nen;
          elR = nen+1:2*nen;
                  
-         ob.eGPL.U = el.Umt(elL,:);
-         ob.eGPR.U = el.Umt(elR,:);
-         ulresL = reshape(el.Umt(elL,:)', numel(el.Umt(elL,:)),1);
-         ulresR = reshape(el.Umt(elR,:)', numel(el.Umt(elR,:)),1);
-         
+         ob.eGPL.U = el.Umt(:,elL);
+         ob.eGPR.U = el.Umt(:,elR);
+         ulresL = reshape(el.Umt(:,elL), numel(el.Umt(:,elL)),1);
+         ulresR = reshape(el.Umt(:,elR), numel(el.Umt(:,elR)),1);
          
          iterset = 3;
          if el.iter < iterset
@@ -229,7 +224,8 @@ classdef DGCP
          BmatfL = ob.eGPL.Bf;    BmatfR = ob.eGPR.Bf;
          BmatL  = ob.eGPL.B;     BmatR  = ob.eGPR.B;
          
-         [sigmaL,  cmatL]  = ob.SigmaCmat(ob.eGPL.b, ob.eGPL.JxX, muL, lamL, ob.I, ob.I4_bulk);
+         [sigmaL,cmatL,el.mat{ob.matL}] = el.mat{ob.matL}.SigmaCmat(el.mat{ob.matL},ob.eGPL,el,step);
+%          [sigmaL,  cmatL]  = ob.SigmaCmat(ob.eGPL.b, ob.eGPL.JxX, muL, lamL, ob.I, ob.I4_bulk);
          [sigmaR,  cmatR]  = ob.SigmaCmat(ob.eGPR.b, ob.eGPR.JxX, muR, lamR, ob.I, ob.I4_bulk);
          % Make kirchhoff stress into cauchy:
          sigmaL = sigmaL/ob.eGPL.JxX;  cmatL = cmatL/ob.eGPL.JxX;
@@ -473,7 +469,7 @@ classdef DGCP
          intb = sum(C1.*bubble);
       end
       %% Compute sigma and Cmat
-      function [sigma, cmat] = SigmaCmat(b, JxX, mu, lam, I, I4_bulk)
+      function [sigma, cmat] = SigmaCmat2(b, JxX, mu, lam, I, I4_bulk)
          ndm  = size(I,1);
          matE = diag([2,2,2,1,1,1]);
          
