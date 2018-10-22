@@ -121,7 +121,7 @@ classdef DG
          ob.C0 = K*identity.I4_bulk + 2*G*identity.I4_dev;
       end
       %% Epsilon
-      function [eps, ob] = computeStrain(ob, ~, ~, ~)
+      function [eps, ob] = Strain(ob, ~, ~, ~)
          eps = zeros(ob.numstr,1);
       end
       %% Sigma & Tangential stiffness
@@ -142,23 +142,26 @@ classdef DG
             DmatR = muR*diag([2 2 2 1 1 1]) + lamdaR*[1; 1; 1; 0; 0; 0]*[1 1 1 0 0 0];
          end
          
-         ulresL = reshape(el.w(elL,:)', numel(el.w(elL,:)),1);
-         ulresR = reshape(el.w(elR,:)', numel(el.w(elR,:)),1);
+         ulresL = reshape(el.w(:,elL), numel(el.w(:,elL)),1);
+         ulresR = reshape(el.w(:,elR), numel(el.w(:,elL)),1);
          
-         ob.bGP.mesh = struct('nodes', el.nodes, 'conn', el.conn(el.i, elL));
+         coorL = el.nodes(el.conn(el.i, elL),:)';
+         coorR = el.nodes(el.conn(el.i, elR),:)';
+         [xlintL, xlintR, drdrL, ~, ob.eGPL.xi, ob.eGPR.xi] = ...
+            intBounds2(coorL,coorR,ob.eGPL.xi,ob.eGPR.xi,ndm);
+
+         ob.bGP.mesh = struct('nodes', xlintL', 'conn', 1:nen);
          tauL = ob.computeTau(ob.bGP, DmatL, ob.ndm, class(ob.bGP));
          
-         ob.bGP.mesh = struct('nodes', el.nodes, 'conn', el.conn(el.i, elR));
+         ob.bGP.mesh = struct('nodes', xlintR', 'conn', 1:nen);
          tauR = ob.computeTau(ob.bGP, DmatR, ob.ndm, class(ob.bGP));
          
-         ob.eGPL.mesh = struct('nodes', el.nodes, 'conn', el.conn(el.i,elL)); ob.eGPL.iel = 1;
-         ob.eGPR.mesh = struct('nodes', el.nodes, 'conn', el.conn(el.i,elR)); ob.eGPR.iel = 1;
-         
-         ob.eGPL.i = gp.i;   ob.eGPR.i = gp.i;
+         ob.eGPL.mesh = struct('nodes',el.nodes, 'conn',el.conn(el.i, elL));	ob.eGPL.iel = 1;  ob.eGPL.i = gp.i;
+         ob.eGPR.mesh = struct('nodes',el.nodes, 'conn',el.conn(el.i, elR));	ob.eGPR.iel = 1;  ob.eGPR.i = gp.i;
          
          TanL = ob.eGPL.dXdxi(:,1:end-1);
          
-         [intedge, ob.c1, nvect] = edgeInt(ob.sGP, TanL);
+         [intedge, ob.c1, nvect] = edgeInt(ob.sGP, TanL, drdrL);
          
          eb = ob.edgeBubbleInt(ob.eGPL.xi, ob.c1, class(ob.eGPL));
          

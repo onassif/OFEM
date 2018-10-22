@@ -37,6 +37,7 @@ for i=1:numnp
 end
 
 num.el    = numel;
+num.el2   = size(elements,1);
 num.np    = numnp;
 num.nen   = nen;
 num.ndof  = ndof;

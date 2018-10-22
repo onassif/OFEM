@@ -1,5 +1,5 @@
 %% Integrate normal vectors
-function [intedge, c1, nvect] = edgeInt(sGP, surfTan)
+function [intedge, c1, nvect] = edgeInt(sGP, surfTan, drdr)
 sGP.iel = 1;
 ndm = size(surfTan,2)+1;
 if ndm == 2
@@ -17,6 +17,6 @@ elseif ndm == 3
       0    0    n(3) 0    n(2) n(1)];
 end
 
-c1 = J * sGP.weights;
+c1 = J * sGP.weights * drdr;
 intedge = sum(J * sGP.weights); % length of the edge
 end

@@ -169,7 +169,7 @@ classdef DGHyper
          ob.tauRHist= zeros(ob.ndm, ob.ndm, size(ob.sGP.Nmat,1), num.el);
       end
       %% Epsilon
-      function [eps, ob] = computeStrain(ob, ~, ~, ~)
+      function [eps, ob] = Strain(ob, ~, ~, ~)
          eps = zeros(ob.numstr,1);
       end
       %% Sigma & Tangential stiffness
@@ -187,18 +187,22 @@ classdef DGHyper
          lamL = ob.lamdaL;    lamR = ob.lamdaR;
          muL  = ob.muL;        muR = ob.muR;
          
-         ob.eGPL.U = el.Umt(elL,:);
-         ob.eGPR.U = el.Umt(elR,:);
-         ulresL = reshape(el.Umt(elL,:)', numel(el.Umt(elL,:)),1);
-         ulresR = reshape(el.Umt(elR,:)', numel(el.Umt(elR,:)),1);
+         ob.eGPL.U = el.Umt(:,elL);
+         ob.eGPR.U = el.Umt(:,elR);
+         ulresL = reshape(el.Umt(:,elL), numel(el.Umt(:,elL)),1);
+         ulresR = reshape(el.Umt(:,elR), numel(el.Umt(:,elR)),1);
          
-         
+         coorL = el.nodes(el.conn(el.i, elL),:)';
+         coorR = el.nodes(el.conn(el.i, elR),:)';
+         [xlintL, xlintR, drdrL, drdrR, ob.eGPL.xi, ob.eGPR.xi] = ...
+            intBounds2(coorL,coorR,ob.eGPL.xi,ob.eGPR.xi,ndm);
+
          iterset = 3;
          if el.iter < iterset
-            ob.bGP.mesh = struct('nodes', el.nodes, 'conn', el.conn(el.i, elL));
+            ob.bGP.mesh = struct('nodes', xlintL', 'conn', 1:nen);
             tauL = ob.computeTau(ob.bGP, muL, lamL, ob.ndm, class(ob.bGP), ob.eGPL.U);
             
-            ob.bGP.mesh = struct('nodes', el.nodes, 'conn', el.conn(el.i, elR));
+            ob.bGP.mesh = struct('nodes', xlintR', 'conn', 1:nen);
             tauR = ob.computeTau(ob.bGP, muR, lamR, ob.ndm, class(ob.bGP), ob.eGPR.U);
             
             ob.tauLHist(:, :, gp.i, el.i)= tauL;
@@ -219,12 +223,12 @@ classdef DGHyper
          tanL = ob.eGPL.F*TanL;
          tanR = ob.eGPR.F*TanR;
          
-         [intedge, ob.C1, ~] = edgeInt(ob.sGP, TanL);
+         [intedge, ob.C1, ~] = edgeInt(ob.sGP, TanL, drdrL);
          
          eb = ob.edgeBubbleInt(ob.eGPL.xi, ob.C1, class(ob.eGPL));
          
-         [ ~, ob.c1L, nvectL] = edgeInt(ob.sGP, tanL);
-         [ ~, ob.c1R, nvectR] = edgeInt(ob.sGP, tanR);
+         [ ~, ob.c1L, nvectL] = edgeInt(ob.sGP, tanL, drdrL);
+         [ ~, ob.c1R, nvectR] = edgeInt(ob.sGP, tanR, drdrR);
          
          edgeK  = (tauL*eb^2 + tauR*eb^2);
          gamL   = eb^2*(edgeK\tauL);
@@ -399,7 +403,7 @@ classdef DGHyper
       %% Compute tau
       function tau = computeTau(bGP, mu, lam, ndm, elType, U)
          ngp = size(bGP.xi,1);
-         bGP.U = U';
+         bGP.U = U;
          I4_bulk = zeros(6); I4_bulk(1:3,1:3) = ones(3);
          bGP.iel=1; tau = zeros(ndm, ndm); I = eye(ndm);
          for i = 1:ngp
