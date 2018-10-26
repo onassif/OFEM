@@ -17,6 +17,8 @@ classdef Q8
    
    properties (SetAccess = private)
       finiteDisp
+      bubb
+      bubbB
       Nmat
       Ninv
       dNdX_list
@@ -142,6 +144,30 @@ classdef Q8
       function value = get.R(ob)
          [P, ~, Q] = svd(ob.F);
          value =  P*Q';
+      end
+      
+      function val = get.bubb(ob)
+         r = ob.xi(:,1); s = ob.xi(:,2); t = ob.xi(:,3);
+         val = (1-r.^2).*(1-s.^2).*(1-t);
+      end
+      
+      function val = get.bubbB(ob)
+         r = ob.xi(ob.i,1); s = ob.xi(ob.i,2); t = ob.xi(ob.i,3);
+         dbdxi = [-2*r*(1-s^2)*(1-t), -2*s*(1-r^2)*(1-t), -(1-r^2)*(1-s^2)];
+         if (ob.finiteDisp)
+            dxdxi = ob.F*ob.dXdxi;
+            dbdx  = dbdxi / dxdxi;
+            val   = [...
+               dbdx(1) 0       0       dbdx(2) 0       dbdx(3)  dbdx(2)  0       -dbdx(3)
+               0       dbdx(2) 0       dbdx(1) dbdx(3) 0       -dbdx(1)  dbdx(3)  0
+               0       0       dbdx(3) 0       dbdx(2) dbdx(1)  0       -dbdx(2)  dbdx(1)]';
+         else
+            dbdX = dbdxi / ob.dXdxi;
+            val  = [...
+               dbdX(1) 0       0       dbdX(2) 0       dbdX(3)
+               0       dbdX(2) 0       dbdX(1) dbdX(3) 0
+               0       0       dbdX(3) 0       dbdX(2) dbdX(1)]';
+         end
       end
       
       %% Set functions

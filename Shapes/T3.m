@@ -11,12 +11,14 @@ classdef T3
       U_n
       dU
       mesh
-      xi      
+      xi
       weights = 0.5;
    end
    
    properties (SetAccess = private)
       finiteDisp
+      bubb
+      bubbB
       Nmat
       Ninv
       dNdX_list
@@ -53,7 +55,7 @@ classdef T3
          end
          if nargin == 4
             ob.weights = varargin{4};
-         end 
+         end
          if nargin >= 2 && isstruct(varargin{2})
             ob.mesh = varargin{2};
          end
@@ -70,7 +72,7 @@ classdef T3
       function value = get.dNdxi(ob)
          value = ob.dNdxi_list;
       end
-
+      
       function value = get.d2Ndxi2(ob)
          value = ob.d2Ndxi2_list;
       end
@@ -127,20 +129,42 @@ classdef T3
       function value = get.Bf(ob)
          dx = ob.dNdx(:,1); dy = ob.dNdx(:,2);
          value =[...
-            dx(1)  0      dx(2)  0      dx(3)  0    
+            dx(1)  0      dx(2)  0      dx(3)  0
             0      dy(1)  0      dy(2)  0      dy(3)
             dy(1)  dx(1)  dy(2)  dx(2)  dy(3)  dx(3)
             dy(1) -dx(1)  dy(2) -dx(2)  dy(3) -dx(3)];
       end
       
       function value = get.R(ob)
-           [P, ~, Q] = svd(ob.F);
-           value =  P*Q';
+         [P, ~, Q] = svd(ob.F);
+         value =  P*Q';
+      end
+      
+      function val = get.bubb(ob)
+         r = ob.xi(:,1); s = ob.xi(:,2);
+         val = 4*(1-r-s).*r;
+      end
+      
+      function val = get.bubbB(ob)
+         r = ob.xi(ob.i,1); s = ob.xi(ob.i,2);
+         dbdxi = 4*[(1-2*r-s), -r];
+         if (ob.finiteDisp)
+            dxdxi = ob.F*ob.dXdxi;
+            dbdx  = dbdxi / dxdxi;
+            val = [...
+               dbdx(1) 0       dbdx(2)  dbdx(2)
+               0       dbdx(2) dbdx(1) -dbdx(1)]';
+         else
+            dbdX  = dbdxi / ob.dXdxi;
+            val = [...
+               dbdX(1) 0       dbdX(2)
+               0       dbdX(2) dbdX(1)]';
+         end
       end
       
       %% Set functions
       function ob = set.mesh(ob, val)
-         ob.mesh = val; 
+         ob.mesh = val;
          [ob.det_dXdxi_list, ob.dNdX_list, ob.dXdxi_list] = ...
             ob.computeJ_and_dNdX(val.nodes, val.conn, ob.dNdxi_list);
       end
@@ -173,7 +197,7 @@ classdef T3
             0 0 0
             0 0 0];
       end
-   
+      
       function [det_dXdxi_list, dNdX_list, dXdxi_list] = computeJ_and_dNdX(nodes, conn, dNdxi_list)
          numel = size(conn    , 1);
          nen   = size(conn    , 2);
@@ -196,4 +220,3 @@ classdef T3
       
    end
 end
-

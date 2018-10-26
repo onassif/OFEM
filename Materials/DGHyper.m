@@ -12,6 +12,8 @@ classdef DGHyper
       I
       I4_bulk
       
+      matL
+      matR
       EL;
       ER;
       vL;
@@ -95,61 +97,7 @@ classdef DGHyper
          ob.ndof   = num.ndof;
          ob.numeq  = num.nen*num.ndm;
          ob.numstr = num.str;
-         if num.nen == 3 || num.nen == 4
-            ob.ngp = 3;
-            xiL = [-sqrt(0.6)  0   sqrt(0.6); -1 -1 -1]';
-            xiR = [ sqrt(0.6)  0  -sqrt(0.6); -1 -1 -1]';
-            w = (1/18).*[5 8 5];
-         elseif num.nen == 8
-            ob.ngp = 4;
-            xiL = [...
-               -sqrt(1/3)  sqrt(1/3) -sqrt(1/3)  sqrt(1/3)
-               -sqrt(1/3) -sqrt(1/3)  sqrt(1/3)  sqrt(1/3)
-               -1         -1         -1         -1        ]';
-            xiR = [...
-               -sqrt(1/3) -sqrt(1/3)  sqrt(1/3)  sqrt(1/3)
-               -sqrt(1/3)  sqrt(1/3) -sqrt(1/3)  sqrt(1/3)
-               -1         -1         -1         -1        ]';
-            w = [1 1 1 1]';
-         end
-         switch num.nen
-            case 3
-               xiL = (1+xiL)/2;
-               xiR = (1+xiR)/2;
-               ob.eGPL = T3(0,0,xiL,w);     ob.eGPR = T3(0,0,xiR,w);
-               
-               xi = [...
-                  1/3 1/3
-                  0.05971587179 0.47014206410
-                  0.47014206410 0.05971587179
-                  0.47014206410 0.47014206410
-                  0.79742698540 0.10128650730
-                  0.10128650730 0.79742698540
-                  0.10128650730 0.10128650730];
-               w = [0.1125 0.0662 0.0662 0.0662 0.0630 0.0630 0.0630];
-               ob.bGP = T3(1, 0, xi, w);
-            case 4
-               ob.eGPL = Q4(1,0,xiL,w);     ob.eGPR = Q4(1,0,xiR,w);
-               ob.sGP  = L3(0);
-               
-               xi = sqrt(0.6)*[...
-                  -1 +1 +1 -1 0 +1 0 -1 0
-                  -1 -1 +1 +1 -1 0 +1 0 0]';
-               w = (1/81).*[25 25 25 25 40 40 40 40 64];
-               ob.bGP = Q4(1, 0, xi, w);
-            case 8
-               ob.eGPL = Q8(1,0,xiL,w);     ob.eGPR = Q8(1,0,xiR,w);
-               ob.sGP  = Q4(0);
-               
-               xi =  1/sqrt(3) .*[...
-                  -1  1 -1  1 -1  1 -1  1
-                  -1 -1  1  1 -1 -1  1  1
-                  -1 -1 -1 -1  1  1  1  1]';
-               w = [1 1 1 1 1 1 1 1]';
-               ob.bGP = Q8(1, 0, xi, w);
-            otherwise
-               error("unimplemented shape");
-         end
+         [ob.eGPL,ob.eGPR,ob.bGP,ob.sGP,ob.ngp] = DGxi(num.nen,1);
          
          for i = 1:2
             switch props{i,1}
@@ -157,6 +105,15 @@ classdef DGHyper
                   [ob.EL, ob.vL] = ob.getProps(propsList{props{i,2}});
                case 'R'
                   [ob.ER, ob.vR] = ob.getProps(propsList{props{i,2}});
+            end
+         end
+         
+         for i = 1:2
+            switch props{i,1}
+               case 'L'
+                  ob.matL = props{i,2};
+               case 'R'
+                  ob.matR = props{i,2};
             end
          end
          ob.lamdaL = ob.vL*ob.EL/((1+ob.vL)*(1-2*ob.vL));
@@ -199,11 +156,11 @@ classdef DGHyper
 
          iterset = 3;
          if el.iter < iterset
-            ob.bGP.mesh = struct('nodes', xlintL', 'conn', 1:nen);
-            tauL = ob.computeTau(ob.bGP, muL, lamL, ob.ndm, class(ob.bGP), ob.eGPL.U);
+            ob.bGP.mesh = struct('nodes', xlintL', 'conn', 1:nen);   ob.bGP.U=ob.eGPL.U;	ob.bGP.iel=1;
+            tauL = ob.computeTau(ob.bGP, el.mat{ob.matL}, ob.ndm);
             
-            ob.bGP.mesh = struct('nodes', xlintR', 'conn', 1:nen);
-            tauR = ob.computeTau(ob.bGP, muR, lamR, ob.ndm, class(ob.bGP), ob.eGPR.U);
+            ob.bGP.mesh = struct('nodes', xlintR', 'conn', 1:nen);   ob.bGP.U=ob.eGPR.U;
+            tauR = ob.computeTau(ob.bGP, el.mat{ob.matR}, ob.ndm);
             
             ob.tauLHist(:, :, gp.i, el.i)= tauL;
             ob.tauRHist(:, :, gp.i, el.i)= tauR;
@@ -225,7 +182,7 @@ classdef DGHyper
          
          [intedge, ob.C1, ~] = edgeInt(ob.sGP, TanL, drdrL);
          
-         eb = ob.edgeBubbleInt(ob.eGPL.xi, ob.C1, class(ob.eGPL));
+         eb = ob.eGPL.bubb'*ob.C1;
          
          [ ~, ob.c1L, nvectL] = edgeInt(ob.sGP, tanL, drdrL);
          [ ~, ob.c1R, nvectR] = edgeInt(ob.sGP, tanR, drdrR);
@@ -244,11 +201,14 @@ classdef DGHyper
          BmatfL = ob.eGPL.Bf;    BmatfR = ob.eGPR.Bf;
          BmatL  = ob.eGPL.B;     BmatR  = ob.eGPR.B;
          
-         [sigmaL,  cmatL]  = ob.SigmaCmat2(ob.eGPL.b, ob.eGPL.JxX, muL, lamL, ob.I, ob.I4_bulk);
-         [sigmaR,  cmatR]  = ob.SigmaCmat2(ob.eGPR.b, ob.eGPR.JxX, muR, lamR, ob.I, ob.I4_bulk);
+         [SL, cmatL] = el.mat{ob.matL}.SigmaCmat(ob.eGPL,0,0);
+         [SR, cmatR] = el.mat{ob.matR}.SigmaCmat(ob.eGPR,0,0);
+         if ob.ndm == 2
+            cmatL = cmatL([1,2,4],[1,2,4]);    cmatR = cmatR([1,2,4],[1,2,4]);
+         end
          % Make kirchhoff stress into cauchy:
-         sigmaL = sigmaL/ob.eGPL.JxX;  cmatL = cmatL/ob.eGPL.JxX;
-         sigmaR = sigmaR/ob.eGPR.JxX;  cmatR = cmatR/ob.eGPR.JxX;
+         sigmaL = T1T2(SL,1)/ob.eGPL.JxX;  cmatL = cmatL/ob.eGPL.JxX;
+         sigmaR = T1T2(SR,1)/ob.eGPR.JxX;  cmatR = cmatR/ob.eGPR.JxX;
          
          nvecL = diag(nvectL(1:ndm,1:ndm));
          nvecR = diag(nvectR(1:ndm,1:ndm));
@@ -401,83 +361,18 @@ classdef DGHyper
          end
       end
       %% Compute tau
-      function tau = computeTau(bGP, mu, lam, ndm, elType, U)
+      function tau = computeTau(bGP, mat, ndm)
          ngp = size(bGP.xi,1);
-         bGP.U = U;
-         I4_bulk = zeros(6); I4_bulk(1:3,1:3) = ones(3);
-         bGP.iel=1; tau = zeros(ndm, ndm); I = eye(ndm);
+         tau = zeros(ndm, ndm);
          for i = 1:ngp
             bGP.i = i;
-            dxdxi = bGP.F*bGP.dXdxi;
-            B = DGHyper.edgeBubbleB(bGP.xi(i,:), dxdxi, elType);
+            B = bGP.bubbB;
+            [S, cmat] = mat.SigmaCmat(bGP,0,0);
+            D         = formCombD(S, cmat, bGP.finiteDisp);
             
-            [S, cmat] = DGHyper.SigmaCmat2(bGP.b, bGP.JxX, mu, lam, I, I4_bulk);
-            if ndm == 2
-               Dgeo = formGeo(S);
-               Dmat = [cmat zeros(3,1); zeros(1,4)];
-            elseif ndm == 3
-               Dgeo = formGeo(S);
-               Dmat = [cmat zeros(6,3); zeros(3,9)];
-            end
-            
-            tau  = tau  + bGP.J *bGP.w* (B'*(Dgeo+Dmat)*B);
+            tau  = tau + bGP.J*bGP.w* (B'*D*B);
          end
          tau = inv(tau);
-      end
-      %% Compute Edge Bubble shape function' B matrix
-      function B = edgeBubbleB(xi, dxdxi, elType)
-         ndm = length(xi);
-         switch elType
-            case 'T3'
-               r = xi(1); s = xi(2);
-               dbdxi  = 4*[(1-2*r-s), -r];
-               dbdx   = dbdxi / dxdxi;
-            case 'Q4'
-               r = xi(1); s = xi(2);
-               dbdxi  = [r*(s-1), 1/2*(r^2-1)];
-               dbdx   = dbdxi / dxdxi;
-            case 'Q8'
-               r = xi(1); s = xi(2); t = xi(3);
-               dbdxi  =[-2*r*(1-s^2)*(1-t), -2*s*(1-r^2)*(1-t), -(1-r^2)*(1-s^2)];
-               dbdx   = dbdxi / dxdxi;
-         end
-         if ndm == 2
-            B = [...
-               dbdx(1) 0       dbdx(2)  dbdx(2)
-               0       dbdx(2) dbdx(1) -dbdx(1)]';
-         elseif ndm == 3
-            B = [...
-               dbdx(1) 0       0       dbdx(2) 0       dbdx(3)  dbdx(2)  0       -dbdx(3)
-               0       dbdx(2) 0       dbdx(1) dbdx(3) 0       -dbdx(1)  dbdx(3)  0
-               0       0       dbdx(3) 0       dbdx(2) dbdx(1)  0       -dbdx(2)  dbdx(1)]';
-         end
-      end
-      %% Compute integral of bubble at the edge
-      function intb = edgeBubbleInt(xi, C1, elType)
-         switch elType
-            case 'T3'
-               r = xi(:,1); s = xi(:,2);
-               bubble = 4*(1-r-s).*r;
-            case 'Q4'
-               r = xi(:,1); s = xi(:,2);
-               bubble = 1/2*(1-s).*(1-r.^2);
-            case 'Q8'
-               r = xi(:,1); s = xi(:,2); t = xi(:,3);
-               bubble = (1-r.^2).*(1-s.^2).*(1-t);
-         end
-         intb = sum(C1.*bubble);
-      end
-      %% Compute sigma and Cmat
-      function [sigma, cmat] = SigmaCmat2(b, JxX, mu, lam, I, I4_bulk)
-         ndm  = size(I,1);
-         matE = diag([2,2,2,1,1,1]);
-         
-         sigma = mu*(b-I) + lam*JxX*(JxX-1)*I;
-         cmat  = mu*matE  + lam*JxX*( (2*JxX-1)*I4_bulk - (JxX-1)*matE );
-         if ndm == 2
-            sigma = sigma(1:2,1:2);
-            cmat  = cmat([1,2,4],[1,2,4]);
-         end
       end
       %% %d_ijklmn term
       function dmat = dmat2_no_p(JxX,mu,lam,ndm)

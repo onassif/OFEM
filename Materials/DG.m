@@ -22,7 +22,7 @@ classdef DG
       NmatL;
       NmatR;
       dNdxi
-      c1;
+      C1;
       bnAdN1
       bnAdN2
       tvtr
@@ -47,62 +47,7 @@ classdef DG
          ob.ndof  = num.ndof;
          ob.numeq = num.nen*num.ndm;
          ob.numstr= num.str;
-         if num.nen == 3 || num.nen == 4
-            ob.ngp = 3;
-            xiL = [-sqrt(0.6)  0   sqrt(0.6); -1 -1 -1]';
-            xiR = [ sqrt(0.6)  0  -sqrt(0.6); -1 -1 -1]';
-            w = (1/18).*[5 8 5];
-         elseif num.nen == 8
-            ob.ngp = 4;
-            xiL = [...
-               -sqrt(1/3)  sqrt(1/3) -sqrt(1/3)  sqrt(1/3)
-               -sqrt(1/3) -sqrt(1/3)  sqrt(1/3)  sqrt(1/3)
-               -1         -1         -1         -1        ]';
-            xiR = [...
-               -sqrt(1/3) -sqrt(1/3)  sqrt(1/3)  sqrt(1/3)
-               -sqrt(1/3)  sqrt(1/3) -sqrt(1/3)  sqrt(1/3)
-               -1         -1         -1         -1        ]';
-            w = [1 1 1 1]';
-         end
-         switch num.nen
-            case 3
-               xiL = (1+xiL)/2;
-               xiR = (1+xiR)/2;
-               ob.eGPL = T3(0,0,xiL,w);     ob.eGPR = T3(0,0,xiR,w);
-               
-               xi = [...
-                  1/3 1/3
-                  0.05971587179 0.47014206410
-                  0.47014206410 0.05971587179
-                  0.47014206410 0.47014206410
-                  0.79742698540 0.10128650730
-                  0.10128650730 0.79742698540
-                  0.10128650730 0.10128650730];
-               w = [0.1125 0.0662 0.0662 0.0662 0.0630 0.0630 0.0630];
-               ob.bGP = T3(0, 0, xi, w);
-            case 4
-               ob.eGPL = Q4(0,0,xiL,w);     ob.eGPR = Q4(0,0,xiR,w);
-               ob.sGP  = L3(0);
-               
-               xi = sqrt(0.6)*[...
-                  -1 +1 +1 -1 0 +1 0 -1 0
-                  -1 -1 +1 +1 -1 0 +1 0 0]';
-               w = (1/81).*[25 25 25 25 40 40 40 40 64];
-               ob.bGP = Q4(0, 0, xi, w);
-            case 8
-               ob.eGPL = Q8(0,0,xiL,w);     ob.eGPR = Q8(0,0,xiR,w);
-               ob.sGP  = Q4(0);
-               
-               xi =  1/sqrt(3) .*[...
-                  -1  1 -1  1 -1  1 -1  1
-                  -1 -1  1  1 -1 -1  1  1
-                  -1 -1 -1 -1  1  1  1  1]';
-               w = [1 1 1 1 1 1 1 1]';
-               ob.bGP = Q8(0, 0, xi, w);
-            otherwise
-               error("unimplemented shape");
-         end
-         
+         [ob.eGPL,ob.eGPR,ob.bGP,ob.sGP,ob.ngp] = DGxi(num.nen,0);
          for i = 1:2
             switch props{i,1}
                case 'L'
@@ -151,20 +96,20 @@ classdef DG
             intBounds2(coorL,coorR,ob.eGPL.xi,ob.eGPR.xi,ndm);
 
          ob.bGP.mesh = struct('nodes', xlintL', 'conn', 1:nen);
-         tauL = ob.computeTau(ob.bGP, DmatL, ob.ndm, class(ob.bGP));
+         tauL = ob.computeTau(ob.bGP, DmatL, ob.ndm);
          
          ob.bGP.mesh = struct('nodes', xlintR', 'conn', 1:nen);
-         tauR = ob.computeTau(ob.bGP, DmatR, ob.ndm, class(ob.bGP));
+         tauR = ob.computeTau(ob.bGP, DmatR, ob.ndm);
          
          ob.eGPL.mesh = struct('nodes',el.nodes, 'conn',el.conn(el.i, elL));	ob.eGPL.iel = 1;  ob.eGPL.i = gp.i;
          ob.eGPR.mesh = struct('nodes',el.nodes, 'conn',el.conn(el.i, elR));	ob.eGPR.iel = 1;  ob.eGPR.i = gp.i;
          
          TanL = ob.eGPL.dXdxi(:,1:end-1);
          
-         [intedge, ob.c1, nvect] = edgeInt(ob.sGP, TanL, drdrL);
+         [intedge, ob.C1, nvect] = edgeInt(ob.sGP, TanL, drdrL);
          
-         eb = ob.edgeBubbleInt(ob.eGPL.xi, ob.c1, class(ob.eGPL));
-         
+         eb = ob.eGPL.bubb'*ob.C1;
+
          edgeK = (tauL*eb^2 + tauR*eb^2);
          gamL  = eb^2*(edgeK\tauL);
          gamR  = eb^2*(edgeK\tauR);
@@ -195,7 +140,7 @@ classdef DG
          
          NL     = ob.NmatL;         NR = ob.NmatR;
          bnAdN1 = ob.bnAdN1;    bnAdN2 = ob.bnAdN2;
-         c = ob.c1(i);
+         c = ob.C1(i);
          
          mid = size(el.K,1)/2;
          ElemKLL = el.K(    1:mid,     1:mid) + c*( - NL'*bnAdN1 - bnAdN1'*NL + (NL'*ob.ep*NL));
@@ -214,7 +159,7 @@ classdef DG
          
          NL     = ob.NmatL;         NR = ob.NmatR;
          bnAdN1 = ob.bnAdN1;    bnAdN2 = ob.bnAdN2;
-         c = ob.c1(i);
+         c = ob.C1(i);
          
          tvtr  = ob.tvtr;
          jumpu = ob.jumpu;
@@ -239,59 +184,16 @@ classdef DG
          end
       end
       %% Compute tau
-      function tau = computeTau(bGP, D, ndm, elType)
+      function tau = computeTau(bGP, D, ndm)
          ngp = size(bGP.xi,1);
          bGP.iel=1; tau = zeros(ndm, ndm);
          for i = 1:ngp
             bGP.i = i;
-            B = DG.edgeBubbleB(bGP.xi(i,:), bGP.dXdxi, elType);
+            B = bGP.bubbB;
             
-            tau  = tau  + bGP.J*bGP.w* (B'*D*B);
+            tau  = tau + bGP.J*bGP.w* (B'*D*B);
          end
          tau = inv(tau);
-      end
-      %% Compute Edge Bubble shape function' B matrix
-      function B = edgeBubbleB(xi, dXdxi, elType)
-         ndm = length(xi);
-         switch elType
-            case 'T3'
-               r = xi(1); s = xi(2);
-               dbdxi  = 4*[(1-2*r-s), -r];
-               dbdX   = dbdxi / dXdxi;
-            case 'Q4'
-               r = xi(1); s = xi(2);
-               dbdxi  = [r*(s-1), 1/2*(r^2-1)];
-               dbdX   = dbdxi / dXdxi;
-            case 'Q8'
-               r = xi(1); s = xi(2); t = xi(3);
-               dbdxi  =[-2*r*(1-s^2)*(1-t), -2*s*(1-r^2)*(1-t), -(1-r^2)*(1-s^2)];
-               dbdX   = dbdxi / dXdxi;
-         end
-         if ndm == 2
-            B = [...
-               dbdX(1) 0       dbdX(2)
-               0       dbdX(2) dbdX(1)]';
-         elseif ndm == 3
-            B = [...
-               dbdX(1) 0       0       dbdX(2) 0       dbdX(3)
-               0       dbdX(2) 0       dbdX(1) dbdX(3) 0
-               0       0       dbdX(3) 0       dbdX(2) dbdX(1)]';
-         end
-      end
-      %% Compute integral of bubble at the edge
-      function intb = edgeBubbleInt(xi, C1, elType)
-         switch elType
-            case 'T3'
-               r = xi(:,1); s = xi(:,2);
-               bubble = 4*(1-r-s).*r;
-            case 'Q4'
-               r = xi(:,1); s = xi(:,2);
-               bubble = 1/2*(1-s).*(1-r.^2);
-            case 'Q8'
-               r = xi(:,1); s = xi(:,2); t = xi(:,3);
-               bubble = (1-r.^2).*(1-s.^2).*(1-t);
-         end
-         intb = sum(C1.*bubble);
       end
    end
 end

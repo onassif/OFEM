@@ -58,9 +58,9 @@ classdef MTS
       function wbarp = compute_wbarp(ob)
          wp = ob.qs'*ob.gamm;
          wbarp = [...
-               0      wp(3) wp(2)
-               -wp(3)  0     wp(1)
-               -wp(2) -wp(1) 0];
+            0       wp(3) wp(2)
+            -wp(3)  0     wp(1)
+            -wp(2) -wp(1) 0];
       end
       %% Wp
       function Wp = compute_Wp(ob)

@@ -49,13 +49,10 @@ classdef HyperElastic
          
          if ob.ndm == 2
             gp.D = gp.D([1,2,4],[1,2,4]);
-            Dmat = [gp.D, zeros(3,1); zeros(1,4)];
-         elseif ob.ndm == 3
-            Dmat = [gp.D, zeros(6,3); zeros(3,9)];
          end
-         Dgeo = formGeo(gp.sigma);
+         D = formCombD(gp.sigma, gp.D, gp.finiteDisp);
          
-         Kel = el.K + B'*(Dmat+Dgeo)*B *gp.J*gp.w;
+         Kel = el.K + gp.J*gp.w* (B'*D*B);
       end
       %% Element Fint
       function Fint = computeFint(~, gp, el, ~)

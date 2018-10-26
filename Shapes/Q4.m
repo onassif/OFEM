@@ -17,6 +17,8 @@ classdef Q4
    
    properties (SetAccess = private)
       finiteDisp
+      bubb
+      bubbB
       Nmat
       Ninv
       dNdX_list
@@ -135,7 +137,29 @@ classdef Q4
          value =  P*Q';
       end
       
-      %% Set functions      
+      function val = get.bubb(ob)
+         r = ob.xi(:,1); s = ob.xi(:,2);
+         val = 1/2*(1-s).*(1-r.^2);
+      end
+      
+      function val = get.bubbB(ob)
+         r = ob.xi(ob.i,1); s = ob.xi(ob.i,2);
+         dbdxi  = [r*(s-1), 1/2*(r^2-1)];
+         if (ob.finiteDisp)
+            dxdxi = ob.F*ob.dXdxi;
+            dbdx  = dbdxi / dxdxi;
+            val = [...
+               dbdx(1) 0       dbdx(2)  dbdx(2)
+               0       dbdx(2) dbdx(1) -dbdx(1)]';
+         else
+            dbdX  = dbdxi / ob.dXdxi;
+            val = [...
+               dbdX(1) 0       dbdX(2)
+               0       dbdX(2) dbdX(1)]';
+         end
+      end
+      
+      %% Set functions
       function ob = set.mesh(ob, val)
          ob.mesh = val;
          [ob.det_dXdxi_list, ob.dNdX_list, ob.dXdxi_list] = ...
