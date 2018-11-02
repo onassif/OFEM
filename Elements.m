@@ -28,7 +28,6 @@ classdef Elements
       property_num
    end
    properties (SetAccess = private, Hidden)
-      numel
       numnp
       ndm
       ndof
@@ -39,7 +38,6 @@ classdef Elements
       function obj = Elements(elements, nodes, num, U_global, hist)
          obj.elements     = elements(:,1:end-1);
          obj.nodes        = nodes;
-         obj.numel        = num.el;
          obj.numnp        = num.np;
          obj.ndm          = num.ndm;
          obj.ndof         = num.ndof;

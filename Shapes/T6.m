@@ -169,7 +169,7 @@ classdef T6
          dNdxi_list = zeros(nen, ndm, ngp);
          
          for i=1:ngp
-            x1 = ob.xi(i,1);  x2 = ob.xi(i,2);
+            x1 = xi(i,1);  x2 = xi(i,2);
             
             dNdxi_list(:,:,i) =[...
                -3 + 4*(x1+x2), -3 + 4*(x1+x2)

@@ -8,7 +8,6 @@ classdef HyperElastic
       
       lam;
       mu;
-      tau;
       
       I
       I4_dev
@@ -34,7 +33,6 @@ classdef HyperElastic
       end
       %% Sigma & Tangential stiffness
       function [sigma_v, D, ob] = SigmaCmat(ob, gp, ~, ~)
-         
          matE = diag([2,2,2,1,1,1]);
          JxX = det(gp.F);
          

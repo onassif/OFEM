@@ -8,7 +8,6 @@ G          = zeros(numeq,1);
 globl.U    = zeros(numeq,1);
 globl.w    = zeros(numeq,1);
 globl.Fint = zeros(numeq,1);
-step       = cell (n_steps+1,1);
 
 hist.eps   = zeros(numstr, ngp, size(elements,1), 'single');
 hist.stre  = zeros(numstr, ngp, size(elements,1), 'single');
@@ -19,7 +18,7 @@ hist.nodes = nodes;
 maxSharedNode = 0;
 realnumnp = size(nodes,1);
 for i =1: numnp
-  occurances =  length(find(hist.conn==i));
+  occurances =  length(hist.conn(hist.conn==i));
   if occurances > maxSharedNode
      maxSharedNode = occurances;
   end
@@ -28,7 +27,7 @@ hist.nconn = zeros(numnp, maxSharedNode+1);
 for i=1:numnp
    count = 0;
    for j =1:numel
-      if( find(hist.conn(j,:)==i) )
+      if( sum(hist.conn(j,:)==i)>0 )
          count = count+1;
          hist.nconn(i,count) = j;
       end
@@ -36,7 +35,8 @@ for i=1:numnp
    hist.nconn(i,end) = count;
 end
 
-num.el    = numel;
+num.el    = size(elements,1);
+num.els   = numel;
 num.el2   = size(elements,1);
 num.np    = numnp;
 num.nen   = nen;
@@ -129,9 +129,6 @@ end
 
 inpt.BC    = BC;
 inpt.FORCE = FORCE;
-
-num.els = numel;
-num.el  = size(elements,1);
 
 mon_str={'Jan','Feb','Mar','Apr','May','June','Jul','Aug','Sep','Oct','Nov','Dec'};
 current = fix(clock);

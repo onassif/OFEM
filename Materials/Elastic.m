@@ -5,7 +5,6 @@ classdef Elastic
       ndof;
       ngp;
       finiteDisp = 0;
-      linear = true;
       C0;
    end
    %%
