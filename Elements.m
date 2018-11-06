@@ -13,6 +13,7 @@ classdef Elements
    properties (SetAccess = private)
       w
       Ures
+      UresVc
       Umt
       Umt_n
       Uvc
@@ -35,20 +36,20 @@ classdef Elements
    
    methods
       %% Construct
-      function obj = Elements(elements, nodes, num, U_global, hist)
-         obj.elements     = elements(:,1:end-1);
-         obj.nodes        = nodes;
-         obj.numnp        = num.np;
-         obj.ndm          = num.ndm;
-         obj.ndof         = num.ndof;
-         obj.nen          = num.nen;
-         obj.property_num = elements(:,end);
-         obj.U_global     = U_global;
-         obj.conn         = hist.conn;
-         obj.nconn        = hist.nconn;
+      function ob = Elements(elements, nodes, num, U_global, hist)
+         ob.elements     = elements(:,1:end-1);
+         ob.nodes        = nodes;
+         ob.numnp        = num.np;
+         ob.ndm          = num.ndm;
+         ob.ndof         = num.ndof;
+         ob.nen          = num.nen;
+         ob.property_num = elements(:,end);
+         ob.U_global     = U_global;
+         ob.conn         = hist.conn;
+         ob.nconn        = hist.nconn;
          if num.ndof == num.ndm
-            obj.K            = zeros(num.ndof*num.nen, num.ndof*num.nen);
-            obj.Fint         = zeros(num.ndof*num.nen, 1);
+            ob.K            = zeros(num.ndof*num.nen, num.ndof*num.nen);
+            ob.Fint         = zeros(num.ndof*num.nen, 1);
          elseif (num.ndof - num.ndm) == 1
             switch num.nen
                case {3,4}
@@ -58,73 +59,82 @@ classdef Elements
                case 9
                   sz = (num.ndof-1)*num.nen + 4;
             end
-            obj.K            = zeros(sz, sz);
-            obj.Fint         = zeros(sz,  1);
+            ob.K            = zeros(sz, sz);
+            ob.Fint         = zeros(sz,  1);
          else
             error("ndof-ndm > 1")
          end
-         obj.Ures_glb = zeros(num.ndm*num.np,1);
-         obj.w_global = zeros(num.ndm*num.np,1);
+         ob.Ures_glb = zeros(num.ndm*num.np,1);
+         ob.w_global = zeros(num.ndm*num.np,1);
+         ob.U_glb_n  = zeros(num.ndm*num.np,1);
       end
       %% get functions
-      function value = get.coor(obj)
-         value = obj.nodes(nonzeros(obj.elements(obj.i,:)),:);
+      function value = get.coor(ob)
+         value = ob.nodes(nonzeros(ob.elements(ob.i,:)),:);
       end
-      function value = get.Umt(obj)
-         reshaped_U = reshape(obj.U_global(1:obj.ndm*obj.numnp), obj.ndm, obj.numnp);
-         value = reshaped_U(:, nonzeros(obj.elements(obj.i,:)));
+      function value = get.Umt(ob)
+         reshaped_U = reshape(ob.U_global(1:ob.ndm*ob.numnp), ob.ndm, ob.numnp);
+         value = reshaped_U(:, nonzeros(ob.elements(ob.i,:)));
       end
-      function value = get.w(obj)
-         reshaped_w = reshape(obj.w_global(1:obj.ndm*obj.numnp), obj.ndm, obj.numnp);
-         value = reshaped_w(:, nonzeros(obj.elements(obj.i,:)));
+      function value = get.w(ob)
+         reshaped_w = reshape(ob.w_global(1:ob.ndm*ob.numnp), ob.ndm, ob.numnp);
+         value = reshaped_w(:, nonzeros(ob.elements(ob.i,:)));
       end
-      function value = get.Ures(obj)
-         reshaped = reshape(obj.Ures_glb(1:obj.ndm*obj.numnp), obj.ndm, obj.numnp);
-         value = reshaped(:, nonzeros(obj.elements(obj.i,:)));
+      function value = get.Ures(ob)
+         reshaped = reshape(ob.Ures_glb(1:ob.ndm*ob.numnp), ob.ndm, ob.numnp);
+         value = reshaped(:, nonzeros(ob.elements(ob.i,:)));
       end
-      function value = get.Umt_n(obj)
-         reshaped_U = reshape(obj.U_glb_n(1:obj.ndm*obj.numnp), obj.ndm, obj.numnp);
-         value = reshaped_U(:, nonzeros(obj.elements(obj.i,:)));
+      function value = get.Umt_n(ob)
+         reshaped_U = reshape(ob.U_glb_n(1:ob.ndm*ob.numnp), ob.ndm, ob.numnp);
+         value = reshaped_U(:, nonzeros(ob.elements(ob.i,:)));
       end
-      function value = get.Uvc(obj)
-         value = reshape(obj.Umt, numel(obj.Umt), 1);
+      function value = get.Uvc(ob)
+         value = reshape(ob.Umt, numel(ob.Umt), 1);
       end
-      function value = get.Uvc_n(obj)
-         value = reshape(obj.Umt_n, numel(obj.Umt_n), 1);
+      function value = get.Uvc_n(ob)
+         value = reshape(ob.Umt_n, numel(ob.Umt_n), 1);
       end
-      function value = get.im(obj)
-         value = obj.property_num(obj.i);
+      function value = get.UresVc(ob)
+         value = reshape(ob.Ures, numel(ob.Ures), 1);
       end
-      function value = get.indices(obj)
-         indc = nonzeros(obj.elements(obj.i,:))';
-         dofs_col = repmat((1:obj.ndm)', length(indc),1);
+      function value = get.im(ob)
+         value = ob.property_num(ob.i);
+      end
+      function value = get.indices(ob)
+         indc = nonzeros(ob.elements(ob.i,:))';
+         dofs_col = repmat((1:ob.ndm)', length(indc),1);
          
-         repeated_el_conn = repmat(indc, obj.ndm, 1);
+         repeated_el_conn = repmat(indc, ob.ndm, 1);
 
          conns_col= reshape(repeated_el_conn, numel(repeated_el_conn), 1);
          
-         value = sub2ind([obj.ndm  obj.numnp], dofs_col, conns_col);
-         if (obj.ndof - obj.ndm) == 1
-            switch obj.nen
+         value = sub2ind([ob.ndm  ob.numnp], dofs_col, conns_col);
+         if (ob.ndof - ob.ndm) == 1
+            switch ob.nen
                case {3,4}
-                  extra = obj.i;
+                  extra = ob.i;
                case 6
-                  extra = (1 + 3*(obj.i-1):3*obj.i)';
+                  extra = (1 + 3*(ob.i-1):3*ob.i)';
                case 9
-                  extra = (1 + 4*(obj.i-1):4*obj.i)';
+                  extra = (1 + 4*(ob.i-1):4*ob.i)';
             end
-            value = [value; obj.numnp*obj.ndm+extra];
+            value = [value; ob.numnp*ob.ndm+extra];
          end
       end
       
       %% set functions
-      function obj = set.U_global(obj, value)
-         if obj.iter == 0
-            if ~isempty(obj.U_global)
-               obj.U_glb_n  = obj.U_global;
+      function ob = set.U_global(ob, value)
+         if ob.iter == 0
+            if ~isempty(ob.U_global)
+               ob.Ures_glb = value - ob.U_glb_n;
+               ob.U_glb_n  = ob.U_global;
+            else
+               ob.U_glb_n = value;
             end
+         else
+            ob.Ures_glb = value - ob.U_glb_n;
          end
-         obj.U_global = value;
+         ob.U_global = value;
       end
    end
 end

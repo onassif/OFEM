@@ -2,7 +2,7 @@ clear; close all
 % Dialog
 run(ReadInput())
 initialize;
-
+tic
 for step=1:num.steps % Steps loop
    %% Start time loop
    %%% 1n - Load multiplier
@@ -16,15 +16,14 @@ for step=1:num.steps % Steps loop
       %% Start NR loop
       % Clear global K and Fint
       globl.K    = sparse(num.eq, num.eq);
-      globl.Fint = zeros (num.eq,1);
-      dU         = zeros (num.eq,1);
+      globl.Fint = zeros( num.eq,1);
+      dU         = zeros( num.eq,1);
       % Send new U to the element object
       el.U_global = globl.U;
       for iel =1:num.el
          %% Start elements loop
          % Get information related to current element:
          el.i = iel;        gp.iel = iel;        % element number
-         coor = el.coor;                         % element coordinates
          gp.U = el.Umt;     gp.U_n = el.Umt_n;   gp.dU = el.w;% element unknowns (array form, n and n+1)
          el.Fint = zeros(length(el.indices),1);
          el.K    = zeros(length(el.indices), length(el.indices)); 
@@ -45,6 +44,9 @@ for step=1:num.steps % Steps loop
             
             % store states
             hist.eps( :,igp,iel) = gp.eps;
+            if size(hist.stre,1) == 3 && size(gp.sigma,1) == 6
+               gp.sigma = gp.sigma([1,2,4]);
+            end
             hist.stre(:,igp,iel) = gp.sigma;
             hist.D( :,:,igp,iel) = gp.D;
          end
@@ -59,8 +61,15 @@ for step=1:num.steps % Steps loop
          NR.mult, globl.K, Fext, globl.Fint, globl.U, inpt, num.ndm, step, NR.iter, finiteDisp);
       
       %%%   8i. dU and update Ui
-      if el.iter == 0 && step > 1 && extrapolate
-         dU( rmIndc) = (globl.K\G+globl.w(rmIndc));
+      if el.iter == 0 && extrapolate
+         if step == 1
+            ex_del_ModelDx = globl.w(rmIndc);
+            dU( rmIndc) = globl.K\G;
+         end
+         ex_del_ModelDx = globl.U(rmIndc) - ex_del_ModelDx;
+         if step > 1
+            dU( rmIndc) = (globl.K\G  + ex_del_ModelDx);
+         end
       else
          dU( rmIndc) = globl.K\G;
       end
@@ -93,6 +102,7 @@ for step=1:num.steps % Steps loop
    end
    %% Finished NR loop, back to time step loop
 end
+t = toc
 %%%     10. Post Processing
 [hist, num] = WriteReadHistory(hist, num, nodes);
 PostProcess(hist, num, gp);

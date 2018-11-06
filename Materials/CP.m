@@ -1,23 +1,16 @@
 classdef CP
    %Elastic 3D elastic class
    %   Detailed explanation goes here
-   
+   properties
+      de
+      list = struct('D',[], 'Rp',[], 'R', [], 'S',[], 'tauT', []);
+   end
    properties (SetAccess = private)
       ndm;
-      ndof;
-      nen;
       ngp;
       nstr;
-      dNdX;
       Q
       finiteDisp = 1;
-      
-      I
-      linear = false;
-      
-      hard
-      
-      name = 'CP';
       
       schmidt
       nslip
@@ -25,46 +18,31 @@ classdef CP
       qs
       q_cr
       
-      
-      props     = struct('E',[], 'nu',[], 'G',[], 'Bulk',[]);
       angles    = struct('angleConv',[], 'angleType',[], 'val',[]);
-      
-      list = struct('D',[], 'Rp',[], 'R', [], 'S',[], 'tauT', []);
-      de
+
       S
-      
-      
-      gradFeinv
+
       Rp
       R
       Uvc_n
       C0
-      
-      plastic = false;
-      dir;
       
       dt;
       
       slip;
       gRot;
       
-      mu_harden;
-      
       cpM
    end
    properties
-      atol1 = 1.0e-6;
-      rtol1 = 1.0e-12;
-      atol2 = 1e-7;
-      rtol2 = 1.0e-12;
-      atol  = 1e-9;
+      atol1 = 1e-6;	atol2 = 1e-7;
+      rtol1 = 1e-12;	rtol2 = 1e-12;
+      Jtol1 = 1e-4;  Jtol2 = 1e-4;
       miter = 50;
       mmin  = 1;
       c     = 1.0e-4;
       red   = 0.5;
       mls   = 4;
-      Jtol1 = 1e-4;
-      Jtol2 = 1e-4;
       mcuts = 8;
    end
    %%
@@ -73,31 +51,20 @@ classdef CP
       function ob = CP(num, props, cpType, cpProps, angles, slip, time, identity)
          ob.ndm   = num.ndm;
          ob.nstr  = num.str;
-         ob.ndof  = num.ndof;
-         ob.nen   = num.nen;
          ob.ngp   = num.gp;
-         ob.list.D = zeros(num.str, num.str, num.gp, num.el, num.steps+1);
-         ob.list.S = zeros(num.str, num.gp, num.el, num.steps+1);
-         ob.list.tauT = zeros(num.gp, num.el, num.steps+1);
-         ob.gradFeinv = zeros(3, 9, num.el, num.steps+1);
-         ob.list.Rp   = zeros(3, 3, num.gp, num.el, num.steps+1);
-         ob.list.R    = zeros(3, 3, num.gp, num.el, num.steps+1);
+         ob.list.D = zeros(   6, 6, num.gp, num.el2, num.steps+1);
+         ob.list.S = zeros(      6, num.gp, num.el2, num.steps+1);
+         ob.list.tauT = zeros(      num.gp, num.el2, num.steps+1);
+         ob.list.Rp   = zeros(3, 3, num.gp, num.el2, num.steps+1);
+         ob.list.R    = zeros(3, 3, num.gp, num.el2, num.steps+1);
          ob.list.Rp(1,1,:,:,1) = 1;     ob.list.Rp(2,2,:,:,1) = 1;     ob.list.Rp(3,3,:,:,1) = 1;
-         ob.list.R(1,1,:,:,1)  = 1;     ob.list.R(2,2,:,:,1)  = 1;     ob.list.R(3,3,:,:,1)  = 1;
+         ob.list.R( 1,1,:,:,1) = 1;     ob.list.R( 2,2,:,:,1) = 1;     ob.list.R( 3,3,:,:,1) = 1;
          
          ob.Uvc_n = zeros(num.nen*num.ndof, num.el, num.steps+1);
          
-         for i=1:length(props)
-            switch props{i,1}
-               case 'E'
-                  ob.props.E     = props{i,2};
-               case 'nu'
-                  ob.props.nu    = props{i,2};
-               otherwise
-                  error( ['You''ve chosen mm10 material but specified incompatible ',...
-                     'material properties, I''m disapponted']);
-            end
-         end
+         [Bulk, G] = ob.getProps(props);
+         ob.C0     = Bulk*identity.I4_bulk + 2*G*identity.I4_dev;
+         
          for i=1:length(angles)
             switch angles{i,1}
                case 'angleConv'
@@ -113,16 +80,12 @@ classdef CP
          end
          ob.nslip = slip.nslip;
          ob.slip.n  = slip.n;
-         [ob.gRot, ob.schmidt] = ob.compute_gRot_schmidt(ob.angles.val, slip.b, slip.n, slip.nslip);
-         ob.props.G    =   0.5*ob.props.E/(1+  ob.props.nu);
-         ob.props.Bulk = (1/3)*ob.props.E/(1-2*ob.props.nu);
+         [ob.gRot, ob.schmidt] = gRotSchmidt(ob.angles.val, slip.b, slip.n, slip.nslip);
          
          switch cpType
             case 'MTS'
-               ob.cpM = MTS(cpProps, ob.gRot, slip, num.el, num.steps);
+               ob.cpM = MTS(cpProps, ob.gRot, slip, num.el2, num.steps);
          end
-         
-         ob.C0 = ob.props.Bulk*identity.I4_bulk + 2*ob.props.G*identity.I4_dev;
          
          ob.dt = zeros(sum(time(:,2),1), 1);
          for i=1:size(time,1)
@@ -138,14 +101,16 @@ classdef CP
       end
       %% Epsilon
       function [eps, ob] = Strain(ob, gp, el, step)
-         gp.U  = (gp.U_n + (1/2)*gp.dU); % n + 1/2
-         Q     = ob.Qmat(gp.R);
-         if (el.iter==0&&step>1)
-            Un = ob.Uvc_n(:,el.i,step-1);
-         else
-            Un = ob.Uvc_n(:,el.i,step);
+         gp.U  = (gp.U_n + 1/2*gp.dU); % n + 1/2
+         if ob.ndm == 2
+            Q = Qmat([gp.R zeros(2,1);zeros(1,2) 1]);
+            Q = Q([1,2,4],[1,2,4]);
+            ob.de = Q'*gp.B*el.UresVc;
+            ob.de = [ob.de(1) ob.de(2) 0 ob.de(3) 0 0]';
+         elseif ob.ndm == 3
+            Q     = Qmat(gp.R);
+            ob.de = Q'*gp.B*el.UresVc;
          end
-         ob.de = Q'*gp.B*(el.Uvc - Un);
          
          eps = Q'*gp.B*el.Uvc;
          ob.Uvc_n(:,el.i, step+1) = el.Uvc;
@@ -160,28 +125,34 @@ classdef CP
          
          if el.iter == 0 && step > 1
             D = ob.list.D( :,:,gp.i,el.i, step);
-            sigma_v = ob.Qmat(gp.R)*(ob.list.S(:,gp.i,el.i, step) + D*ob.de);
+            Q = Qmat(check2D(gp.R));
+            sigma_v = Q*(ob.list.S(:,gp.i,el.i, step) + D*ob.de);
             ob.S = sigma_v;
+            qbar = computeqbar(Q*ob.list.S(:,gp.i,el.i, step));
          else
-            dt   = ob.dt(step);
+%             dt   = ob.dt(step);
             % Identities
-            ob.Rp = ob.list.Rp(:, :, gp.i, el.i, step);
-            ob.R  = gp.R;
-            % Material properties
+            ob.Rp = ob.list.Rp(:, :, gp.i, el.i, step); %eye(3)
+            ob.R  = check2D(gp.R);
+
             
-            C0        = ob.C0;
+            % Material properties
+            C0   = ob.C0;
             % Gauss-Point properties
-            ms        = ob.ms;
-            q_cr      = ob.q_cr;
+            ms   = ob.ms;
+            q_cr = ob.q_cr;
             ob.cpM.ms   = ob.ms;
             ob.cpM.qs   = ob.qs;
             ob.cpM.q_cr = ob.q_cr;
             % Values from previous step
-            
-            np1.deEff = sqrt( 2/3* (ob.de(1:3)'*ob.de(1:3) + 0.5*ob.de(4:6)'*ob.de(4:6)) );
+            if ob.ndm == 2
+               np1.deEff = sqrt( 2/3* (ob.de(1:2)'*ob.de(1:2) + 0.5*ob.de(3)'*ob.de(3)) );              
+            elseif ob.ndm == 3
+               np1.deEff = sqrt( 2/3* (ob.de(1:3)'*ob.de(1:3) + 0.5*ob.de(4:6)'*ob.de(4:6)) );
+            end
             
             n.tauTilde  = ob.cpM.tauT_n;
-            n.S         = ob.list.S(:,gp.i, gp.iel, step);
+            n.S         = ob.list.S(:,gp.i, gp.iel, step); %zeros(6,1);
             
             frac = 0;
             stp = 1;
@@ -203,7 +174,7 @@ classdef CP
                Wp    = ob.cpM.compute_Wp;
                dtauT = ob.cpM.compute_dtauT;
                
-               R1 = S - n.S - C0*(de - dbarp) + ob.twoSymm(S,Wp);
+               R1 = S - n.S - C0*(de - dbarp) + twoSymm(S,Wp);
                R2 = tauT - n.tauTilde - dtauT;
                R = [R1;R2];
                nrm.iR1 = norm(R1); nrm.iR2 = norm(R2);
@@ -211,8 +182,8 @@ classdef CP
                   dgammdtau  = ob.cpM.compute_dgammdtau;
                   dgammdtauT = ob.cpM.compute_dgammdtauT;
                   
-                  corr = ob.twoSymm(S,q_cr');
-                  J11 = (C0*ms'+corr)*(dgammdtau.*ms) + ob.IW(Wp) + eye(ob.nstr);
+                  corr = twoSymm(S,q_cr');
+                  J11 = (C0*ms'+corr)*(dgammdtau.*ms) + IW(Wp) + eye(6);
                   J12 = (C0*ms'+corr)*dgammdtauT;
                   J21 = ob.cpM.compute_dR2dtau;
                   J22 = ob.cpM.compute_dR2dtauT;
@@ -234,7 +205,7 @@ classdef CP
                      
                      dbarp = ob.cpM.compute_dbarp;
                      Wp    = ob.cpM.compute_Wp;
-                     R1 = S - n.S - C0*(de - dbarp) + ob.twoSymm(S,Wp);
+                     R1 = S - n.S - C0*(de - dbarp) + twoSymm(S,Wp);
                      
                      dtauT = ob.cpM.compute_dtauT;
                      R2 = tauT -n.tauTilde - dtauT;
@@ -275,14 +246,17 @@ classdef CP
                end
                ob.S = S;
             end
-            
+            Q = Qmat(check2D(gp.R));
+
+            sigma_v = Q*ob.S;
+            qbar = computeqbar(sigma_v);
             if deEff == 0
                D = C0;
             else
                dgammde = ob.cpM.compute_dgammde;
                
                dSde    = ob.cpM.compute_dSde(dgammde);
-               JA = ( C0*ms' + ob.twoSymm(S,q_cr') )*dgammde;
+               JA = ( C0*ms' + twoSymm(S,q_cr') )*dgammde;
                JB = J12/J22*dSde';
                JJ = J11 - J12/J22*J21;
                JR = C0 - JA - JB;
@@ -292,24 +266,23 @@ classdef CP
             
             wbarp = ob.cpM.compute_wbarp;
             
-            ob.list.D( :,:,gp.i,el.i, step+1) = D;
-            ob.list.Rp(:,:,gp.i,el.i, step+1) = expm(wbarp)*ob.list.Rp(:,:,gp.i,el.i, step);
-            ob.list.R( :,:,gp.i,el.i, step+1) = gp.R;
-            ob.list.tauT(  gp.i,el.i, step+1) = tauT;
-            ob.list.S(   :,gp.i,el.i, step+1) = ob.S;
-            
-            sigma_v = ob.Qmat(gp.R)*ob.S;
+            ob.list.D( :,:,gp.i,el.i, step+1) = D; % [116770.243255197,57513.7019018134,57513.7019018134,0,0,0[29628.2706766917]]
+            ob.list.Rp(:,:,gp.i,el.i, step+1) = expm(wbarp)*ob.list.Rp(:,:,gp.i,el.i, step); %eye(3)
+            ob.list.R( :,:,gp.i,el.i, step+1) = check2D(gp.R); %eye(3)
+            ob.list.tauT(  gp.i,el.i, step+1) = tauT; %155.1
+            ob.list.S(   :,gp.i,el.i, step+1) = ob.S; %zeros(6,1)
          end
+         D  = Q*D*Q' - qbar;
          
          if gp.i == ob.ngp
             ob.cpM.list = ob.list;
-            ob.cpM = ob.cpM.endGPComp();
+            ob.cpM      = ob.cpM.endGPComp();
          end
       end
       %% Element K
       function Kel = computeK_el(ob, gp, el, step)
          % Definitions
-         Q = ob.Qmat(gp.R);
+         Q = Qmat(check2D(gp.R));
          if el.iter == 0 && step > 1
             S = Q*ob.list.S(:, gp.i, el.i, step);
             gp.U = (gp.U + gp.dU);
@@ -317,33 +290,29 @@ classdef CP
             S = gp.sigma;
          end
          B=gp.Bf;
-         cep  = Q*gp.j*gp.w*gp.D*Q';
-         qbar = gp.j*gp.w*[...
-            2*S(1) 0      0      S(4)            0               S(6)
-            0      2*S(2) 0      S(4)            S(5)            0
-            0      0      2*S(3) 0               S(5)            S(6)
-            S(4)   S(4)   0      1/2*(S(1)+S(2)) 1/2*S(6)        1/2*S(5)
-            0      S(5)   S(5)   1/2*S(6)        1/2*(S(2)+S(3)) 1/2*S(4)
-            S(6)   0      S(6)   1/2*S(5)        1/2*S(4)        1/2*(S(1)+S(3))];
-         Kmat = [cep - qbar, zeros(6,3); zeros(3,9)];
-         Kgeo = gp.j*gp.w*formGeo(S);
+
+         D = formCombD(S, gp.D, gp.finiteDisp);
          %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-         
-         Kel = el.K + (B'*(Kmat+Kgeo)*B);
+         if ob.ndm == 2
+            D = D([1,2,4,7],[1,2,4,7]);
+         end
+         Kel = el.K + gp.j*gp.w* (B'*D*B);
       end
       %% Element Fint
-      function Fint = computeFint(~, gp, el, step)
+      function Fint = computeFint(ob, gp, el, step)
          sigma = [gp.sigma;0;0;0]; % already rotated
          if el.iter == 0 && step > 1
             gp.U = (gp.U + gp.dU);
          end
-         
+         if ob.ndm == 2
+            sigma = sigma([1,2,4,7]);
+         end
          Fint = el.Fint + (gp.Bf'*sigma) *gp.j *gp.w;
       end
       %% m(slip)
       function value = get.ms(ob)
          value = zeros(ob.nslip,6);
-         RE = ob.RT2RVE(ob.Rp');
+         RE = RT2RVE(ob.Rp');
          for s = 1:ob.nslip
             A = 0.5*(ob.schmidt(:,:,s)+ob.schmidt(:,:,s)');
             value(s,:) = [A(1,1) A(2,2) A(3,3) 2*A(1,2) 2*A(2,3) 2*A(1,3)]*RE';
@@ -352,7 +321,7 @@ classdef CP
       %% q(slip)
       function value = get.qs(ob)
          value = zeros(ob.nslip,3);
-         RW  = ob.RT2RVW(ob.Rp');
+         RW  = RT2RVW(ob.Rp');
          for s = 1:ob.nslip
             A = 0.5*(ob.schmidt(:,:,s)-ob.schmidt(:,:,s)');
             value(s,:) = [A(2,3) A(1,3) A(1,2)]*RW';
@@ -361,75 +330,26 @@ classdef CP
       %% q(slip) in current coordinates
       function value = get.q_cr(ob)
          value = zeros(ob.nslip,3);
-         RWC  = ob.RT2RVW(ob.R*ob.Rp');
+         RWC  = RT2RVW(ob.R*ob.Rp');
          for s = 1:ob.nslip
             A = 0.5*(ob.schmidt(:,:,s)-ob.schmidt(:,:,s)');
             value(s,:) = [A(2,3) A(1,3) A(1,2)]*RWC';
          end
       end
    end
+   
    methods (Static)
-      function [gRot, schmidt] = compute_gRot_schmidt(angles, bi, ni, nslip)
-         r = angles(1)*pi()/180;
-         s = angles(2)*pi()/180;
-         t = angles(3)*pi()/180;
-         
-         gRot = [...
-            -sin(r)*sin(t)-cos(r)*cos(t)*cos(s), cos(r)*sin(t)-sin(r)*cos(t)*cos(s), cos(t)*sin(s)
-            +sin(r)*cos(t)-cos(r)*sin(t)*cos(s),-cos(r)*cos(t)-sin(r)*sin(t)*cos(s), sin(t)*sin(s)
-            +cos(r)*sin(s)                     , sin(r)*sin(s)                     , cos(s)       ];
-         
-         bs = bi * gRot;
-         ns = ni * gRot;
-         schmidt = zeros(3,3,nslip);
-         for s = 1:nslip
-            schmidt(:,:,s) = bs(s,:)'*ns(s,:);
+      function [Bulk, G] = getProps(props)
+         for j = 1:length(props)
+            switch props{j,1}
+               case 'E'
+                  E  = props{j,2};
+               case 'nu'
+                  nu = props{j,2};
+            end
          end
-      end
-      function res = twoSymm(S,Wp)
-         res = [...
-            2*S(4)*Wp(3,:) - 2*S(6)*Wp(2,:)
-            2*S(4)*Wp(3,:) - 2*S(5)*Wp(1,:)
-            2*S(6)*Wp(2,:) + 2*S(5)*Wp(1,:)
-            Wp(3,:)*(S(1)-S(2)) + Wp(1,:)*S(6) - Wp(2,:)*S(5)
-            Wp(1,:)*(S(2)-S(3)) + Wp(2,:)*S(4) + Wp(3,:)*S(6)
-            Wp(2,:)*(S(1)-S(3)) + Wp(1,:)*S(4) - Wp(3,:)*S(5)];
-      end
-      function res = IW(W)
-         res = [...
-            0     0     0     2*W(3)   0       -2*W(2)
-            0     0     0     2*W(3)   -2*W(1)  0
-            0     0     0     0         2*W(1)  2*W(2)
-            W(3)  -W(3) 0     0        -1*W(2)  1*W(1)
-            0     W(1)  -W(1) 1*W(2)     0      1*W(3)
-            W(2)  0     -W(2) 1*W(1)   -1*W(3)  0.0000];
-      end
-      function RV  = RT2RVE(R)
-         RV = [...
-            R(1,1)^2      R(1,2)^2      R(1,3)^2      2*R(1,1)*R(1,2)             2*R(1,3)*R(1,2)             2*R(1,1)*R(1,3)
-            R(2,1)^2      R(2,2)^2      R(2,3)^2      2*R(2,1)*R(2,2)             2*R(2,3)*R(2,2)             2*R(2,1)*R(2,3)
-            R(3,1)^2      R(3,2)^2      R(3,3)^2      2*R(3,1)*R(3,2)             2*R(3,3)*R(3,2)             2*R(3,1)*R(3,3)
-            R(1,1)*R(2,1) R(1,2)*R(2,2) R(1,3)*R(2,3) R(1,1)*R(2,2)+R(2,1)*R(1,2) R(1,2)*R(2,3)+R(1,3)*R(2,2) R(1,1)*R(2,3)+R(1,3)*R(2,1)
-            R(2,1)*R(3,1) R(3,2)*R(2,2) R(2,3)*R(3,3) R(2,1)*R(3,2)+R(2,2)*R(3,1) R(2,2)*R(3,3)+R(3,2)*R(2,3) R(2,1)*R(3,3)+R(2,3)*R(3,1)
-            R(1,1)*R(3,1) R(1,2)*R(3,2) R(1,3)*R(3,3) R(1,1)*R(3,2)+R(1,2)*R(3,1) R(1,2)*R(3,3)+R(1,3)*R(3,2) R(1,1)*R(3,3)+R(3,1)*R(1,3)];
-      end
-      function RV = RT2RVW(R)
-         RV = [...
-            R(2,2)*R(3,3)-R(2,3)*R(3,2) R(2,1)*R(3,3)-R(2,3)*R(3,1) R(2,1)*R(3,2)-R(2,2)*R(3,1)
-            R(1,2)*R(3,3)-R(1,3)*R(3,2) R(1,1)*R(3,3)-R(1,3)*R(3,1) R(1,1)*R(3,2)-R(1,2)*R(3,1)
-            R(1,2)*R(2,3)-R(1,3)*R(2,2) R(1,1)*R(2,3)-R(1,3)*R(2,1) R(1,1)*R(2,2)-R(1,2)*R(2,1)];
-      end
-      function value = Qmat(R)
-         R11 = R(1,1); R12 = R(1,2); R13 = R(1,3);
-         R21 = R(2,1); R22 = R(2,2); R23 = R(2,3);
-         R31 = R(3,1); R32 = R(3,2); R33 = R(3,3);
-         value = [...
-            R11^2   	R12^2   	R13^2   	2*R11*R12        	2*R12*R13        	2*R11*R13
-            R21^2   	R22^2   	R23^2   	2*R21*R22        	2*R22*R23        	2*R21*R23
-            R31^2    R32^2   	R33^2   	2*R31*R32        	2*R32*R33        	2*R31*R33
-            R11*R21  R12*R22  R13*R23  R11*R22+R12*R21	R12*R23+R13*R22   R11*R23+R13*R21
-            R21*R31  R32*R22  R23*R33  R21*R32+R22*R31	R22*R33+R23*R32   R21*R33+R23*R31
-            R11*R31  R12*R32  R13*R33  R11*R32+R12*R31	R12*R33+R13*R32   R11*R33+R13*R31];
+         G    = 1/2*E/(1+  nu);
+         Bulk = 1/3*E/(1-2*nu);
       end
    end
 end

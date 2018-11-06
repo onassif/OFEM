@@ -117,15 +117,15 @@ classdef MTS
       end
       %% Get functions
       function val = get.tauT_n(ob)
-         n.tauT  = ob.list.tauT(ob.gp.i, ob.iel, ob.step);
+         n.tauT  = ob.list.tauT(ob.gp.i, ob.iel, ob.step); %0
          tau_y   = ob.pr.tau_ht_y;
          tau_a   = ob.pr.tau_a;
          val = (n.tauT>0)*n.tauT +(n.tauT<=0)*(tau_a+tau_y+0.1);
       end
       
       function val = get.tau_l(ob)
-         R  = ob.list.R( :,:,ob.gp.i,ob.iel,ob.step);
-         Rp = ob.list.Rp(:,:,ob.gp.i,ob.iel,ob.step);
+         R  = ob.list.R( :,:,ob.gp.i,ob.iel,ob.step); %eye(3)
+         Rp = ob.list.Rp(:,:,ob.gp.i,ob.iel,ob.step); %eye(3)
          n_cr = R*Rp'*ob.gRot'*ob.slip.n';
          tm = ob.gradFeinv(:,:, ob.iel, ob.step)*ob.permut*n_cr;
          
@@ -157,7 +157,7 @@ classdef MTS
          Rt  = zeros(ngp,3,3);
          
          % Get R components and stick in the right place
-         jacinv = inv(dXdxi);
+         jacinv = inv(check2D(dXdxi));
          for i = 1:ngp
             Rt(i,:,:) = jacinv*Rp(:,:,i)*R(:,:,i)';
          end
@@ -165,7 +165,10 @@ classdef MTS
          %       Vector:
          LHS = reshape(Rt,ngp,9)';
          RHS = LHS/intermat;
-         
+         if size(RHS,2) == 2
+            RHS = [RHS zeros(9,1)];
+         end
+            
          grads = reshape(RHS,3,3,3);
          
          gradFeInv = reshape(grads(1:3,1:3,1:3), 3, 9);
@@ -229,4 +232,3 @@ classdef MTS
       end
    end
 end
-
