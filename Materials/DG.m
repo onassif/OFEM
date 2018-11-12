@@ -9,7 +9,8 @@ classdef DG
       ngp
       numstr
       finiteDisp = 0;
-      C0;
+      C0L;
+      C0R;
       
       EL;
       ER;
@@ -61,9 +62,16 @@ classdef DG
          ob.muL    = ob.EL/(2*(1+ob.vL));
          ob.muR    = ob.ER/(2*(1+ob.vR));
          
-         G =   0.5*ob.EL/(1+  ob.vL);
-         K = (1/3)*ob.EL/(1-2*ob.vL);
-         ob.C0 = K*identity.I4_bulk + 2*G*identity.I4_dev;
+         GL =   0.5*ob.EL/(1+  ob.vL);
+         GR =   0.5*ob.ER/(1+  ob.vR);
+         KL = (1/3)*ob.EL/(1-2*ob.vL);
+         KR = (1/3)*ob.ER/(1-2*ob.vR);
+         ob.C0L = KL*identity.I4_bulk + 2*GL*identity.I4_dev;
+         ob.C0R = KR*identity.I4_bulk + 2*GR*identity.I4_dev;
+         if ob.ndm == 2
+            ob.C0L = ob.C0L([1,2,4],[1,2,4]);
+            ob.C0R = ob.C0R([1,2,4],[1,2,4]);
+         end
       end
       %% Epsilon
       function [eps, ob] = Strain(ob, ~, ~, ~)
@@ -76,16 +84,9 @@ classdef DG
          elL = 1:nen;
          elR = nen+1:2*nen;
          I = eye(ndm);
-         
-         lamdaL = ob.lamdaL;    lamdaR = ob.lamdaR;
-         muL = ob.muL;          muR = ob.muR;
-         if ndm == 2
-            DmatL = muL*diag([2 2 1]) + lamdaL*[1; 1; 0]*[1 1 0];
-            DmatR = muR*diag([2 2 1]) + lamdaR*[1; 1; 0]*[1 1 0];
-         elseif ndm == 3
-            DmatL = muL*diag([2 2 2 1 1 1]) + lamdaL*[1; 1; 1; 0; 0; 0]*[1 1 1 0 0 0];
-            DmatR = muR*diag([2 2 2 1 1 1]) + lamdaR*[1; 1; 1; 0; 0; 0]*[1 1 1 0 0 0];
-         end
+
+         DmatL = ob.C0L;
+         DmatR = ob.C0R;
          
          ulresL = reshape(el.w(:,elL), numel(el.w(:,elL)),1);
          ulresR = reshape(el.w(:,elR), numel(el.w(:,elL)),1);
