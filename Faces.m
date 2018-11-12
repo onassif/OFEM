@@ -73,24 +73,20 @@ classdef Faces
       end
       %% get functions
       function value = get.faces(obj)
-         comb  = [];
-         value = [];
-         c = nchoosek(obj.nodes, obj.numGP);
-         for i = 1:size(c, 1)
-           cc   = perms(c(i,:)); 
-           comb = [comb; cc];
+         indc = false(size(obj.faceList,1));
+         for i = 1:size(obj.faceList,1)
+            if sum(sum(obj.faceList(i,:) == obj.nodes)) == obj.numGP
+               indc(i) = true;
+            end
          end
-         for i = 1:size(comb,1)
-            t = obj.faceList( sum( obj.faceList==comb(i,:), 2)==obj.numGP, :);
-            value = [value; t];
-         end 
+         value = obj.faceList(indc,:);
       end
       
       function value = get.indices(obj)
          value = zeros(obj.numGP,1);
          face = obj.faces(obj.ifc,:)';
          for i = 1:obj.numGP
-           value(i)= find(obj.nodes == face(i));
+            value(i)= find(obj.nodes == face(i));
          end
       end
    end
