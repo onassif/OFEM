@@ -102,21 +102,21 @@ for i=1:length(material)
    end
 end
 
-hist2.conn  = hist.conn(1:numel,1:nen); 
-hist2.nodes = hist.nodes;
 % gp-related
 switch eltype
    case 'Q4'
-    gp = Q4(el.mat{1}.finiteDisp, hist2);
+    gp = Q4(el.mat{1}.finiteDisp);
    case 'Q9'
-    gp = Q9(el.mat{1}.finiteDisp, hist2);
+    gp = Q9(el.mat{1}.finiteDisp);
    case 'T3'
-    gp = T3(el.mat{1}.finiteDisp, hist2);
+    gp = T3(el.mat{1}.finiteDisp);
    case 'T6'
-    gp = T6(el.mat{1}.finiteDisp, hist2);
+    gp = T6(el.mat{1}.finiteDisp);
    case 'Q8'
-    gp = Q8(el.mat{1}.finiteDisp, hist2);
+    gp = Q8(el.mat{1}.finiteDisp);
 end
+[gp.det_dXdxi_list, gp.dNdX_list, gp.dXdxi_list] = shapeRef(...
+   nodes, elements(1:numel,1:nen), gp.dNdxi_list);
 
 % NR-related
 if exist('time','var') && exist('fctr','var')

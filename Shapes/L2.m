@@ -13,22 +13,23 @@ classdef L2
       mesh
       xi      
       weights = [1 1]';
+      Nmat
+      dNdxi_list
+      d2Ndxi2_list
+      
+      dNdX_list
+      dXdxi_list
+      det_dXdxi_list
    end
    
    properties (SetAccess = private)
       finiteDisp
-      Nmat
       Ninv
-      dNdX_list
       dNdX
       dNdx
-      dNdxi_list
-      d2Ndxi2_list
       dNdxi
       d2Ndxi2
       dXdxi
-      dXdxi_list
-      det_dXdxi_list
       B
       N
       w
@@ -50,9 +51,6 @@ classdef L2
          end
          if nargin == 4
             ob.weights = varargin{4};
-         end
-         if nargin >= 2 && isstruct(varargin{2})
-            ob.mesh = varargin{2};
          end
       end
       %% Get functions
@@ -114,12 +112,6 @@ classdef L2
          value=[dx(1), dx(2)];
       end
       %% Set functions
-      function ob = set.mesh(ob, val)
-         ob.mesh = val; 
-         [ob.det_dXdxi_list, ob.dNdX_list, ob.dXdxi_list] = ...
-            ob.computeJ_and_dNdX(val.nodes, val.conn, ob.dNdxi_list);
-      end
-      
       function ob = set.xi(ob, val)
          ob.xi = val;
          [ob.Nmat, ob.Ninv] = ob.compute_Nmat(val);
@@ -139,32 +131,11 @@ classdef L2
       end
       
       function dNdxi_list = compute_dNdxi()
-         dNdxi_list = 1/2 *[-1, -1; +1, +1];
+         dNdxi_list(:,1,:) = 1/2 *[-1, -1; +1, +1];
       end
       
       function d2Ndxi2_list = compute_d2Ndxi2()
-         d2Ndxi2_list = zeros(2);
-      end
-
-      function [det_dXdxi_list, dNdX_list, dXdxi_list] = computeJ_and_dNdX(nodes, conn, dNdxi_list)
-         numel = size(conn    , 1);
-         nen   = size(conn    , 2);
-         ngp   = size(dNdxi_list, 2);
-         
-         det_dXdxi_list = zeros(ngp, numel);
-         dNdX_list      = zeros(nen, ngp, numel);
-         dXdxi_list     = zeros(ngp, numel);
-         
-         for i = 1:numel
-            coor  = nodes(conn(i,:),:)';
-            for j = 1:ngp
-               dXdxi = coor*dNdxi_list(:,j);
-               det_dXdxi_list(j,i) = det(dXdxi);
-               dNdX_list( :,j,i) = dNdxi_list(:,j) / dXdxi;
-               dXdxi_list(:,j,i) = dXdxi;
-            end
-         end
-      end
-      
+         d2Ndxi2_list(:,1,:) = zeros(2);
+      end      
    end
 end

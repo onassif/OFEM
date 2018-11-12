@@ -13,24 +13,25 @@ classdef T3
       mesh
       xi
       weights = 0.5;
+      Nmat
+      dNdxi_list
+      d2Ndxi2_list
+      
+      dNdX_list
+      dXdxi_list
+      det_dXdxi_list
    end
    
    properties (SetAccess = private)
       finiteDisp
       bubb
       bubbB
-      Nmat
       Ninv
-      dNdX_list
       dNdX
       dNdx
-      dNdxi_list
-      d2Ndxi2_list
       dNdxi
       d2Ndxi2
       dXdxi
-      dXdxi_list
-      det_dXdxi_list
       B
       Bf
       N
@@ -55,9 +56,6 @@ classdef T3
          end
          if nargin == 4
             ob.weights = varargin{4};
-         end
-         if nargin >= 2 && isstruct(varargin{2})
-            ob.mesh = varargin{2};
          end
       end
       %% Get functions
@@ -162,13 +160,7 @@ classdef T3
          end
       end
       
-      %% Set functions
-      function ob = set.mesh(ob, val)
-         ob.mesh = val;
-         [ob.det_dXdxi_list, ob.dNdX_list, ob.dXdxi_list] = ...
-            ob.computeJ_and_dNdX(val.nodes, val.conn, ob.dNdxi_list);
-      end
-      
+      %% Set functions      
       function ob = set.xi(ob, val)
          ob.xi = val;
          [ob.Nmat, ob.Ninv] = ob.compute_Nmat(val);
@@ -196,26 +188,6 @@ classdef T3
             0 0 0
             0 0 0
             0 0 0];
-      end
-      
-      function [det_dXdxi_list, dNdX_list, dXdxi_list] = computeJ_and_dNdX(nodes, conn, dNdxi_list)
-         numel = size(conn    , 1);
-         nen   = size(conn    , 2);
-         ndm   = size(dNdxi_list, 2);
-         ngp   = size(dNdxi_list, 3);
-         
-         det_dXdxi_list = zeros(numel,1);
-         dNdX_list      = zeros(nen, ndm, numel);
-         dXdxi_list     = zeros(ndm, ndm, numel);
-         
-         for i = 1:numel
-            coor  = nodes(conn(i,:),:)';
-            dXdxi = coor*dNdxi_list;
-            det_dXdxi_list(i) = det(dXdxi);
-            
-            dNdX_list(:,:,i) = dNdxi_list / dXdxi;
-            dXdxi_list(:,:,i) = dXdxi;
-         end
       end
       
    end

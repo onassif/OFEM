@@ -102,7 +102,8 @@ for i=1:size(old_FORCE,1)
       fc.nodes = affected_nodes;
       for ifc = 1:size(fc.faces, 1)
          fc.ifc = ifc;
-         fc.gp.mesh = struct('nodes', nde(:,std(nde(fc.faces(1,:),:))>1e-8), 'conn', fc.faces);
+         [fc.gp.det_dXdxi_list, fc.gp.dNdX_list, fc.gp.dXdxi_list] = ...
+            shapeRef(nde(:,std(nde(fc.faces(1,:),:))>1e-8), fc.faces, fc.gp.dNdxi_list);
          for igp = 1:fc.numGP
             fc.gp.i = igp; fc.gp.iel = ifc;
             

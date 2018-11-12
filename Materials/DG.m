@@ -96,14 +96,22 @@ classdef DG
          [xlintL, xlintR, drdrL, ~, ob.eGPL.xi, ob.eGPR.xi] = ...
             intBounds2(coorL,coorR,ob.eGPL.xi,ob.eGPR.xi,ndm);
 
-         ob.bGP.mesh = struct('nodes', xlintL', 'conn', 1:nen);
+
+         [ob.bGP.det_dXdxi_list, ob.bGP.dNdX_list, ob.bGP.dXdxi_list] = shapeRef(...
+            xlintL', 1:nen, ob.bGP.dNdxi_list);
          tauL = ob.computeTau(ob.bGP, DmatL, ob.ndm);
          
-         ob.bGP.mesh = struct('nodes', xlintR', 'conn', 1:nen);
+
+         [ob.bGP.det_dXdxi_list, ob.bGP.dNdX_list, ob.bGP.dXdxi_list] = shapeRef(...
+            xlintR', 1:nen, ob.bGP.dNdxi_list);
          tauR = ob.computeTau(ob.bGP, DmatR, ob.ndm);
          
-         ob.eGPL.mesh = struct('nodes',el.nodes, 'conn',el.conn(el.i, elL));	ob.eGPL.iel = 1;  ob.eGPL.i = gp.i;
-         ob.eGPR.mesh = struct('nodes',el.nodes, 'conn',el.conn(el.i, elR));	ob.eGPR.iel = 1;  ob.eGPR.i = gp.i;
+         ob.eGPL.iel = 1;  ob.eGPL.i = gp.i;
+         ob.eGPR.iel = 1;  ob.eGPR.i = gp.i;
+         [ob.eGPL.det_dXdxi_list, ob.eGPL.dNdX_list, ob.eGPL.dXdxi_list] = shapeRef(...
+            el.nodes, el.conn(el.i, elL), ob.eGPL.dNdxi_list);
+         [ob.eGPR.det_dXdxi_list, ob.eGPR.dNdX_list, ob.eGPR.dXdxi_list] = shapeRef(...
+            el.nodes, el.conn(el.i, elR), ob.eGPR.dNdxi_list);
          
          TanL = ob.eGPL.dXdxi(:,1:end-1);
          

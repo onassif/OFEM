@@ -148,15 +148,15 @@ classdef DGCP
          
          iterset = 3;
          if el.iter < iterset
-            ob.bGP.mesh = struct('nodes', xlintL', 'conn', 1:nen);
-            ob.bGP.iel = 1;
-            ob.bGP.U   = ob.eGPL.U;
+         [ob.bGP.det_dXdxi_list, ob.bGP.dNdX_list, ob.bGP.dXdxi_list] = shapeRef(...
+            xlintL', 1:nen, ob.bGP.dNdxi_list);  
+            ob.bGP.U=ob.eGPL.U;	ob.bGP.iel=1;
             ob.bGP.dU  = el.Ures(:,elL);
             tauL = ob.computeTau(ob.bGP, el.mat{ob.matL}, ob.ndm);
             
-            ob.bGP.mesh = struct('nodes', xlintR', 'conn', 1:nen);
-            ob.bGP.iel = 1;
-            ob.bGP.U   = ob.eGPR.U;
+         [ob.bGP.det_dXdxi_list, ob.bGP.dNdX_list, ob.bGP.dXdxi_list] = shapeRef(...
+            xlintR', 1:nen, ob.bGP.dNdxi_list);  
+            ob.bGP.U=ob.eGPR.U;
             ob.bGP.dU  = el.Ures(:,elR);
             tauR = ob.computeTau(ob.bGP, el.mat{ob.matR}, ob.ndm);
             
@@ -167,10 +167,12 @@ classdef DGCP
             tauR = ob.tauRHist(:, :, gp.i, el.i);
          end
          
-         ob.eGPL.mesh = struct('nodes', el.nodes, 'conn', el.conn(el.i,elL)); ob.eGPL.iel = 1;
-         ob.eGPR.mesh = struct('nodes', el.nodes, 'conn', el.conn(el.i,elR)); ob.eGPR.iel = 1;
-         
-         ob.eGPL.i = gp.i;   ob.eGPR.i = gp.i;
+         ob.eGPL.iel = 1;  ob.eGPL.i = gp.i;
+         ob.eGPR.iel = 1;  ob.eGPR.i = gp.i;
+         [ob.eGPL.det_dXdxi_list, ob.eGPL.dNdX_list, ob.eGPL.dXdxi_list] = shapeRef(...
+            el.nodes, el.conn(el.i, elL), ob.eGPL.dNdxi_list);
+         [ob.eGPR.det_dXdxi_list, ob.eGPR.dNdX_list, ob.eGPR.dXdxi_list] = shapeRef(...
+            el.nodes, el.conn(el.i, elR), ob.eGPR.dNdxi_list);
          
          TanL = ob.eGPL.dXdxi(:,1:end-1);
          TanR = ob.eGPR.dXdxi(:,1:end-1);
