@@ -152,7 +152,7 @@ classdef DGHyper
          coorL = el.nodes(el.conn(el.i, elL),:)';
          coorR = el.nodes(el.conn(el.i, elR),:)';
          [xlintL, xlintR, drdrL, drdrR, ob.eGPL.xi, ob.eGPR.xi] = ...
-            intBounds2(coorL,coorR,ob.eGPL.xi,ob.eGPR.xi,ndm);
+            intBounds2(coorL,coorR,ob.eGPL.xi',ob.eGPR.xi',ndm);
 
          iterset = 3;
          if el.iter < iterset
@@ -188,7 +188,7 @@ classdef DGHyper
          
          [intedge, ob.C1, ~] = edgeInt(ob.sGP, TanL, drdrL);
          
-         eb = ob.eGPL.bubb'*ob.C1;
+         eb = ob.eGPL.bubb*ob.C1;
          
          [ ~, ob.c1L, nvectL] = edgeInt(ob.sGP, tanL, drdrL);
          [ ~, ob.c1R, nvectR] = edgeInt(ob.sGP, tanR, drdrR);
@@ -198,7 +198,7 @@ classdef DGHyper
          gamR   = eb^2*(edgeK\tauR);
          ob.ep = ob.pencoeff*intedge*ob.I/edgeK;
          
-         NL = ob.eGPL.N;  NR = ob.eGPR.N;
+         NL = ob.eGPL.N';  NR = ob.eGPR.N';
          pad = zeros(ndm, nen);
          
          ob.NmatL = reshape([ NL; repmat([pad; NL],ndm-1,1) ], ndm, ndm*nen);
@@ -368,7 +368,7 @@ classdef DGHyper
       end
       %% Compute tau
       function tau = computeTau(bGP, mat, ndm)
-         ngp = size(bGP.xi,1);
+         ngp = size(bGP.xi,2);
          tau = zeros(ndm, ndm);
          for i = 1:ngp
             bGP.i = i;

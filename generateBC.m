@@ -107,7 +107,7 @@ for i=1:size(old_FORCE,1)
          for igp = 1:fc.numGP
             fc.gp.i = igp; fc.gp.iel = ifc;
             
-            nF(fc.indices, 3) = nF(fc.indices, 3) + fc.gp.N'*old_FORCE{i,4}*abs(fc.gp.J)*fc.gp.w;
+            nF(fc.indices, 3) = nF(fc.indices, 3) + fc.gp.N*old_FORCE{i,4}*abs(fc.gp.J)*fc.gp.w;
          end
       end
       new_FORCE = [new_FORCE; nF];

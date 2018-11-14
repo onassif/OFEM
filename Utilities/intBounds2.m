@@ -115,12 +115,14 @@ if ndm == 2
    rL = drdrL*(xiL(:,1)-ro) + eL(1);
    rR = m*(rL-eL(2)) + eR(1);
    
-   xiL = [rL xiL(:,2)];
-   xiR = [rR xiR(:,2)];
+   xiL = [rL xiL(:,2)]';
+   xiR = [rR xiR(:,2)]';
 elseif ndm == 3
    xlintL = coorL;
    xlintR = coorR;
    drdrL = 1;
    drdrR = 1;
+   xiL = xiL';
+   xiR = xiR';
 end
 end

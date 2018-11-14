@@ -113,7 +113,7 @@ classdef MTS
       %% Computations at the element level
       function ob = endGPComp(ob)
          ob.gradFeinv(:,:, ob.iel, ob.step+1) = ob.calcGradFeInv(...
-            ob.list.R(:,:,:,ob.iel,ob.step+1),ob.list.Rp(:,:,:,ob.iel,ob.step),ob.gp.dXdxi_list(:,:,ob.iel), ob.gp.xi');
+            ob.list.R(:,:,:,ob.iel,ob.step+1),ob.list.Rp(:,:,:,ob.iel,ob.step),ob.gp.dXdxi_list(:,:,ob.iel), ob.gp.xi);
       end
       %% Get functions
       function val = get.tauT_n(ob)

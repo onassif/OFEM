@@ -70,6 +70,7 @@ classdef Faces
                end
                obj.gp  = Q4(0);
          end
+         obj.gp = obj.gp.shapeIso();
       end
       %% get functions
       function value = get.faces(obj)

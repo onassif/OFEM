@@ -4,6 +4,7 @@ nen   = size(conn    , 2);
 ndm   = size(dNdxi_list, 2);
 ngp   = size(dNdxi_list, 3);
 
+
 det_dXdxi_list = zeros(ngp, numel);
 dNdX_list      = zeros(nen, ndm, ngp, numel);
 dXdxi_list     = zeros(ndm, ndm, ngp, numel);

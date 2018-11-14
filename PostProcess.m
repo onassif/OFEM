@@ -22,7 +22,6 @@ plotcont(hist, num, mainH, subH)
 
 subplot(2,2,3)
 plotDeformation(hist,num)
-
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -11,7 +11,7 @@ classdef T3
       U_n
       dU
       mesh
-      xi
+      xi = 1/3 .*[1; 1];
       weights = 0.5;
       Nmat
       dNdxi_list
@@ -46,25 +46,11 @@ classdef T3
    methods
       %% Construct
       function ob = T3(varargin)
-         finiteDisp     = varargin{1};
-         ob.finiteDisp = finiteDisp;
-         
-         if nargin >= 3
-            ob.xi = varargin{3};
-         else
-            ob.xi = 1/3 .*[1 1];
-         end
-         if nargin == 4
-            ob.weights = varargin{4};
-         end
+         ob.finiteDisp = varargin{1};
       end
       %% Get functions
       function value = get.N(ob)
-         if size(ob.xi, 1)>1
-            value = ob.Nmat(ob.i,:);
-         else
-            value = ob.Nmat;
-         end
+         value = ob.Nmat(:,ob.i);
       end
       
       function value = get.dNdxi(ob)
@@ -160,35 +146,25 @@ classdef T3
          end
       end
       
-      %% Set functions      
-      function ob = set.xi(ob, val)
-         ob.xi = val;
-         [ob.Nmat, ob.Ninv] = ob.compute_Nmat(val);
-         ob.dNdxi_list      = ob.compute_dNdxi(  );
-         ob.d2Ndxi2_list    = ob.compute_d2Ndxi2();
+      %% xi-dependant functions
+      function ob = shapeIso(ob,varargin)
+         ndm = size(ob.xi,1); 
+         ngp = size(ob.xi,2);
+         nen = 3;
+         x1  = ob.xi(1,:); x2 = ob.xi(2,:);
+
+         ob.Nmat = [1-x1-x2; x1; x2];
+         ob.Ninv = ((ob.Nmat*ob.Nmat')\ob.Nmat)';
+         %
+         vec = ones(1,ngp);
+         ob.dNdxi_list = zeros(nen,ngp,ndm);
+         ob.dNdxi_list(:,:,1) =[-1*vec; +1*vec; 0*vec];
+         ob.dNdxi_list(:,:,2) =[-1*vec;  0*vec; 1*vec];
+         ob.dNdxi_list = permute(ob.dNdxi_list,[1,3,2]);
+
+         %
+         ob.d2Ndxi2_list = zeros(nen,ngp,3);
+         ob.d2Ndxi2_list = permute(ob.d2Ndxi2_list,[1,3,2]);
       end
-   end
-   
-   methods (Static)
-      function [Nmat, Ninv] = compute_Nmat(ob)
-         xi = ob.xi;
-         Nmat = [1-xi(:,1)-xi(:,2), xi(:,1), xi(:,2)];
-         Ninv = ((Nmat*Nmat')\Nmat)';
-      end
-      
-      function dNdxi_list = compute_dNdxi()
-         dNdxi_list =[...
-            -1 -1
-            +1  0
-            +0  1];
-      end
-      
-      function d2Ndxi2_list = compute_d2Ndxi2()
-         d2Ndxi2_list =[...
-            0 0 0
-            0 0 0
-            0 0 0];
-      end
-      
    end
 end

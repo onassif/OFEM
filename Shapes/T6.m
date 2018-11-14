@@ -11,24 +11,27 @@ classdef T6
       U_n
       dU
       mesh
-      xi
+      xi= 1/6*[...
+         4 1 1
+         1 1 4];
       weights = 1/6* [1 1 1]';
+      Nmat
+      dNdxi_list
+      d2Ndxi2_list
+      
+      dNdX_list
+      dXdxi_list
+      det_dXdxi_list
    end
    
    properties (SetAccess = private)
       finiteDisp
-      Nmat
       Ninv
-      dNdX_list
       dNdX
       dNdx
-      dNdxi_list
-      d2Ndxi2_list
       dNdxi
       d2Ndxi2
       dXdxi
-      dXdxi_list
-      det_dXdxi_list
       B
       Bf
       N
@@ -43,23 +46,11 @@ classdef T6
    methods
       %% Construct
       function ob = T6(varargin)
-         finiteDisp     = varargin{1};
-         ob.finiteDisp = finiteDisp;
-         
-         if nargin >= 3
-            ob.xi = varargin{3};
-         else
-            ob.xi = 1/6*[...
-               4 1 1
-               1 1 4]';
-         end
-         if nargin == 4
-            ob.weights = varargin{4};
-         end
+         ob.finiteDisp = varargin{1};
       end
       %% Get functions
       function value = get.N(ob)
-         value = ob.Nmat(ob.i,:);
+         value = ob.Nmat(:,ob.i);
       end
       
       function value = get.dNdxi(ob)
@@ -129,63 +120,47 @@ classdef T6
          value =  P*Q';
       end
       
-      %% Set functions      
-      function ob = set.xi(ob, val)
-         ob.xi = val;
-         [ob.Nmat, ob.Ninv] = ob.compute_Nmat(   val);
-         ob.dNdxi_list      = ob.compute_dNdxi(  val);
-         ob.d2Ndxi2_list    = ob.compute_d2Ndxi2(val);
-      end
-   end
-   
-   methods (Static)
-      function [Nmat, Ninv] = compute_Nmat(xi)
-         x1 = xi(:,1);  x2 = xi(:,2);
+      %% xi-dependant functions
+      function ob = shapeIso(ob,varargin)
+         ndm = size(ob.xi,1);
+         ngp = size(ob.xi,2);
+         nen = 6;
+         x1  = ob.xi(1,:); x2 = ob.xi(2,:);
          
-         Nmat = [...
-            (1-x1-x2).*(2*(1-x1-x2)-1),...
-            x1.*(2*x1-1),...
-            x2.*(2*x2-1),...
-            4*(1-x1-x2).*x1,...
-            4*x1.*x2,...
+         ob.Nmat = [...
+            (1-x1-x2).*(2*(1-x1-x2)-1)
+            x1.*(2*x1-1)
+            x2.*(2*x2-1)
+            4*(1-x1-x2).*x1
+            4*x1.*x2
             4*x2.*(1-x1-x2)];
+         ob.Ninv = ((ob.Nmat*ob.Nmat')\ob.Nmat)';
+         %
+         ob.dNdxi_list = zeros(nen, ngp, ndm);
          
-         Ninv = ((Nmat*Nmat')\Nmat)';
+         ob.dNdxi_list(:,:,1) =[...
+            -3 + 4*(x1+x2)
+            4*x1-1
+            0
+            4-8*x1-4*x2
+            4*x2
+            -4*x2         ];
+         ob.dNdxi_list(:,:,2) =[...
+            -3 + 4*(x1+x2)
+            0
+            4*x2 - 1
+            -4*x1
+            4*x1
+            -8*x2 + 4 - 4*x1];
+         ob.dNdxi_list = permute(ob.dNdxi_list,[1,3,2]);
+         
+         %
+         vec = ones(1,ngp);
+         ob.d2Ndxi2_list = zeros(nen, ngp, 3);
+         ob.d2Ndxi2_list(:,:,1) =[4*vec; 4*vec; 0*vec; -8*vec; 0*vec; 0*vec];
+         ob.d2Ndxi2_list(:,:,2) =[4*vec; 0*vec; 4*vec;  0*vec; 0*vec; -8*vec];
+         ob.d2Ndxi2_list(:,:,3) =[4*vec; 0*vec; 0*vec; -4*vec; 4*vec; -4*vec];
+         ob.d2Ndxi2_list = permute(ob.d2Ndxi2_list,[1,3,2]);
       end
-      
-      function dNdxi_list = compute_dNdxi(xi)
-         ngp = size(xi,1);
-         ndm = size(xi,2);
-         nen = 6;
-         dNdxi_list = zeros(nen, ndm, ngp);
-         
-         for i=1:ngp
-            x1 = xi(i,1);  x2 = xi(i,2);
-            
-            dNdxi_list(:,:,i) =[...
-               -3 + 4*(x1+x2), -3 + 4*(x1+x2)
-               4*x1-1        ,  0
-               0             ,  4*x2 - 1
-               4-8*x1-4*x2   , -4*x1
-               4*x2          ,  4*x1
-               -4*x2         , -8*x2 + 4 - 4*x1];
-         end
-      end
-      
-      function d2Ndxi2_list = compute_d2Ndxi2(xi)
-         ngp = size(xi,1);
-         nen = 6;
-         d2Ndxi2_list = zeros(nen, 3, ngp);
-         
-         for i=1:ngp
-            d2Ndxi2_list(:,:,i) =[...
-               +4,  4,  4
-               +4,  0,  0
-               +0,  4,  0
-               -8,  0, -4
-               +0,  0,  4
-               +0, -8, -4];
-         end
-      end    
    end
 end

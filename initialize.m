@@ -115,6 +115,7 @@ switch eltype
    case 'Q8'
     gp = Q8(el.mat{1}.finiteDisp);
 end
+gp = gp.shapeIso();
 [gp.det_dXdxi_list, gp.dNdX_list, gp.dXdxi_list] = shapeRef(...
    nodes, elements(1:numel,1:nen), gp.dNdxi_list);
 

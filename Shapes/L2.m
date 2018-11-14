@@ -11,7 +11,7 @@ classdef L2
       U_n
       dU
       mesh
-      xi      
+      xi = 1/sqrt(3) .*[-1 1];
       weights = [1 1]';
       Nmat
       dNdxi_list
@@ -23,6 +23,7 @@ classdef L2
    end
    
    properties (SetAccess = private)
+      ndm = 1;
       finiteDisp
       Ninv
       dNdX
@@ -43,27 +44,18 @@ classdef L2
       %% Construct
       function ob = L2(varargin)
          ob.finiteDisp = varargin{1};
-         
-         if nargin >= 3
-            ob.xi = varargin{3};
-         else
-            ob.xi = 1/sqrt(3) .*[-1; 1];
-         end
-         if nargin == 4
-            ob.weights = varargin{4};
-         end
       end
       %% Get functions
       function value = get.N(ob)
-         value = ob.Nmat(ob.i,:);
+         value = ob.Nmat(:,ob.i);
       end
       
       function value = get.dNdxi(ob)
-         value = ob.dNdxi_list(:,ob.i);
+         value = ob.dNdxi_list(:,:,ob.i);
       end
       
       function value = get.d2Ndxi2(ob)
-         value = ob.d2Ndxi2_list(:,ob.i);
+         value = ob.d2Ndxi2_list(:,:,ob.i);
       end
       
       function value = get.dXdxi(ob)
@@ -94,11 +86,11 @@ classdef L2
       function value = get.j(ob)
          value = det(ob.F) * ob.J;
       end
-
+      
       function value = get.dNdx(ob)
          value = ob.dNdX / ob.F;
       end
-
+      
       function value = get.b(ob)
          value = ob.F*ob.F';
       end
@@ -111,31 +103,29 @@ classdef L2
          end
          value=[dx(1), dx(2)];
       end
-      %% Set functions
-      function ob = set.xi(ob, val)
-         ob.xi = val;
-         [ob.Nmat, ob.Ninv] = ob.compute_Nmat(val);
-         ob.dNdxi_list      = ob.compute_dNdxi(  );
-         ob.d2Ndxi2_list    = ob.compute_d2Ndxi2();
-      end
-   end
-   
-   methods (Static)
-      function [Nmat, Ninv] = compute_Nmat(xi)
-         Nmat = 1/2*[(1-xi(:,1)), (1+xi(:,1))];
-         if size(Nmat,1) == size(Nmat,2)
-            Ninv = inv(Nmat);
+      %% xi-dependant functions
+      function ob = shapeIso(ob)
+         ngp = size(ob.xi,2);
+         x1  = ob.xi(1,:);
+         
+         ob.Nmat = 1/2*[...
+            (1-x1)
+            (1+x1)];
+         if size(ob.Nmat,1) == size(ob.Nmat,2)
+            ob.Ninv = inv(ob.Nmat);
          else
-            Ninv = 0;
+            ob.Ninv = 0;
          end
+         vec = ones(1,ngp);
+         ob.dNdxi_list(:,:,1) = 1/2 *[...
+            -1*vec
+            +1*vec];
+         ob.dNdxi_list = permute(ob.dNdxi_list,[1 3 2]);
+
+         ob.d2Ndxi2_list(:,:,1) = [...
+            0*vec
+            0*vec];
+         ob.d2Ndxi2_list = permute(ob.d2Ndxi2_list,[1 3 2]);
       end
-      
-      function dNdxi_list = compute_dNdxi()
-         dNdxi_list(:,1,:) = 1/2 *[-1, -1; +1, +1];
-      end
-      
-      function d2Ndxi2_list = compute_d2Ndxi2()
-         d2Ndxi2_list(:,1,:) = zeros(2);
-      end      
    end
 end
