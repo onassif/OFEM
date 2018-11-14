@@ -125,12 +125,12 @@ classdef T3
       end
       
       function val = get.bubb(ob)
-         r = ob.xi(:,1); s = ob.xi(:,2);
+         r = ob.xi(1,:); s = ob.xi(2,:);
          val = 4*(1-r-s).*r;
       end
       
       function val = get.bubbB(ob)
-         r = ob.xi(ob.i,1); s = ob.xi(ob.i,2);
+         r = ob.xi(1,ob.i); s = ob.xi(2,ob.i);
          dbdxi = 4*[(1-2*r-s), -r];
          if (ob.finiteDisp)
             dxdxi = ob.F*ob.dXdxi;

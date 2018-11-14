@@ -23,7 +23,6 @@ classdef L2
    end
    
    properties (SetAccess = private)
-      ndm = 1;
       finiteDisp
       Ninv
       dNdX
