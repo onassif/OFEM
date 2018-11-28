@@ -18,9 +18,9 @@ if nel == 3 || nel == 6
         y3 = xl(2,3);
 
         %Determine coords using triangular element reference coordinates
-        det = (x1*y2+x3*y1-x3*y2-y1*x2-y3*x1+y3*x2);
-        POUxi(1) = (-y3*x1+x1*yc+x3*y1-y1*xc-x3*yc+y3*xc)/det;
-        POUxi(2) = (-x1*yc-y1*x2+x2*yc+x1*y2+y1*xc-xc*y2)/det;
+        dete = (x1*y2+x3*y1-x3*y2-y1*x2-y3*x1+y3*x2);
+        POUxi(1) = (-y3*x1+x1*yc+x3*y1-y1*xc-x3*yc+y3*xc)/dete;
+        POUxi(2) = (-x1*yc-y1*x2+x2*yc+x1*y2+y1*xc-xc*y2)/dete;
 
 %         %Convert triangle coords to quadrilateral coords
 %         POUxi(1) = 2*xi - 1;
@@ -40,9 +40,9 @@ else %quadrilateral
         y3 = xl(2,4);
 
         %Determine coords using triangular element reference coordinates
-        det = (x1*y2+x3*y1-x3*y2-y1*x2-y3*x1+y3*x2);
-        xi = (-y3*x1+x1*yc+x3*y1-y1*xc-x3*yc+y3*xc)/det;
-        eta = (-x1*yc-y1*x2+x2*yc+x1*y2+y1*xc-xc*y2)/det;
+        dete = (+x1*y2 +x2*y3 +x3*y1 -x3*y2 -y1*x2 -y3*x1);
+        xi   = (+x1*yc +xc*y3 +x3*y1 -x3*yc -y1*xc -y3*x1)/dete;
+        eta  = (+x1*y2 +x2*yc +xc*y1 -xc*y2 -y1*x2 -yc*x1)/dete;
 
         %Convert triangle coords to quadrilateral coords
         POUxi(1) = 2*xi - 1;

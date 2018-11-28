@@ -143,10 +143,7 @@ classdef DGCP
          
          coorL = el.nodes(el.conn(el.i, elL),:)';
          coorR = el.nodes(el.conn(el.i, elR),:)';
-         [xlintL, xlintR, drdrL, drdrR, ob.eGPL.xi, ob.eGPR.xi] = ...
-            intBounds2(coorL,coorR,ob.eGPL.xi',ob.eGPR.xi',ndm);
-         ob.eGPL = ob.eGPL.shapeIso;
-         ob.eGPR = ob.eGPR.shapeIso;
+         [xlintL,xlintR, drdrL,~, ob.eGPL,ob.eGPR] = intBounds2(coorL,coorR, ob.eGPL,ob.eGPR);
          
          iterset = 3;
          if el.iter < iterset

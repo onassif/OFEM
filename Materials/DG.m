@@ -93,9 +93,7 @@ classdef DG
          
          coorL = el.nodes(el.conn(el.i, elL),:)';
          coorR = el.nodes(el.conn(el.i, elR),:)';
-         [xlintL, xlintR, drdrL, ~, ob.eGPL.xi, ob.eGPR.xi] = ...
-            intBounds2(coorL,coorR,ob.eGPL.xi',ob.eGPR.xi',ndm);
-
+         [xlintL,xlintR, drdrL,~, ob.eGPL,ob.eGPR] = intBounds2(coorL,coorR, ob.eGPL,ob.eGPR);
 
          [ob.bGP.det_dXdxi_list, ob.bGP.dNdX_list, ob.bGP.dXdxi_list] = shapeRef(...
             xlintL', 1:nen, ob.bGP.dNdxi_list);
