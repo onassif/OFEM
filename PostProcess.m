@@ -138,19 +138,44 @@ elseif num.nen == 6
 else
    conn = hist.conn(1:num.els,1:num.nen)';
 end
-X = reshape(hist.coor(conn,1,1),   size(conn,1),size(conn,2));
-Y = reshape(hist.coor(conn,2,1),   size(conn,1),size(conn,2));
-C = reshape(hist.strss.P(3,conn,1),size(conn,1),size(conn,2));
-
-patchH = patch(X,Y,C, 'FaceAlpha',.7,'EdgeColor','r',...
-   'Marker', 'o','MarkerFaceColor','r','MarkerSize',3);
+if num.ndm == 2
+   X = reshape(hist.coor(conn,1,1),   num.nen,num.els);
+   Y = reshape(hist.coor(conn,2,1),   num.nen,num.els);
+   C = reshape(hist.strss.P(3,conn,1),num.nen,num.els);
+   patchH = patch(X,Y,C, 'FaceAlpha',.7,'EdgeColor','r',...
+      'Marker', 'o','MarkerFaceColor','r','MarkerSize',3);
+   fac = conn;
+elseif num.ndm == 3
+   if strcmp(hist.eltype,'Q8')
+      fac = zeros(4,num.els*6);
+      for i = 1:num.els
+         fac(:,(i-1)*6+(1:6)) = [...
+            conn(1:4,i), conn(5:8,i),...
+            conn([1,2,6,5],i), conn([3,4,8,7],i),...
+            conn([4,1,5,8],i), conn([5,6,7,8],i)];
+      end
+   elseif strcmp(hist.eltype,'T4')
+      fac = zeros(3,num.els*4);
+      for i = 1:num.els
+         fac(:,(i-1)*4+(1:4)) = [conn([1,2,3],i), conn([1,2,4],i),conn([1,3,4],i), conn([2,3,4],i)];
+      end
+   end
+   X = reshape(hist.coor(fac,1,1),   size(fac,1), size(fac,2));
+   Y = reshape(hist.coor(fac,2,1),   size(fac,1), size(fac,2));
+   Z = reshape(hist.coor(fac,3,1),   size(fac,1), size(fac,2));
+   C = reshape(hist.strss.P(3,fac,1),size(fac,1), size(fac,2));
+   patchH = patch(X,Y,Z,C, 'FaceAlpha',.7,'EdgeColor','r',...
+      'Marker', 'o','MarkerFaceColor','r','MarkerSize',3);
+   view (gca,[0.2 -0.4 0.1])
+   set(gca,'DataAspectRatio',[1 1 1],'PlotBoxAspectRatio',[570.5 570.5 570.5])
+end
 cbH = colorbar;
 cbH.Limits = [min(min(hist.strss.P(3, :,:))) max(max(hist.strss.P(3, :,:)))];
 
 colormap jet
 subH.XLim = [min(min(hist.coor(:,1,:))) max(max(hist.coor(:,1,:)))];
 subH.YLim = [min(min(hist.coor(:,2,:))) max(max(hist.coor(:,2,:)))];
-uifunctions(contH, patchH, cbH, hist, num, conn)
+uifunctions(contH, patchH, cbH, hist, num, fac)
 end
 
 function uifunctions(hFig, patchH, colorbarH, hist, num, conn)
@@ -171,11 +196,11 @@ names = {'Principle stress 1', 'Principle stress 2', 'Principle stress 3',...
 listH=uicontrol('Parent',hFig,'Style','listbox','Units','normalized',...
    'String',names,'Position', [0.6 0.77 0.1 0.19], 'Visible','on');
 
-sliderH.Callback =@(sliderH ,event) ChangeStep(sliderH, slidertext, patchH, hist, conn);
-listH.Callback =@(listH,event) ChangeStress(listH, legH, colorbarH, patchH, hist, slidertext, conn);
+sliderH.Callback =@(sliderH ,event) ChangeStep(sliderH, slidertext, patchH, hist, num, conn);
+listH.Callback =@(listH,event) ChangeStress(listH, legH, colorbarH, patchH, hist, slidertext, num, conn);
 end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function ChangeStep(sliderH, slidertext, h, hist, conn)
+function ChangeStep(sliderH, slidertext, h, hist, num, conn)
 i = sliderH.Value;
 step = int8(i);
 if (step < 1.0001*i && step > 0.9999*i)
@@ -183,6 +208,9 @@ if (step < 1.0001*i && step > 0.9999*i)
    h.XData = reshape(hist.coor(conn,1,step),size(conn,1),size(conn,2));
    h.YData = reshape(hist.coor(conn,2,step),size(conn,1),size(conn,2));
    h.CData = reshape(hist.strss.P(3,conn,step),size(conn,1),size(conn,2));
+   if num.ndm == 3
+      h.ZData = reshape(hist.coor(conn,3,step),size(conn,1),size(conn,2));
+   end
    
    slidertext.String = ['$step~~',num2str(step-1),'$'];
    axis equal

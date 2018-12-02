@@ -169,7 +169,7 @@ classdef T4
             x1
             x2
             x3];
-         ob.Ninv = ((ob.Nmat'*ob.Nmat)\ob.Nmat)';
+         ob.Ninv = ((ob.Nmat'*ob.Nmat)\ob.Nmat);
          %
          vec = ones(1,ngp);
          ob.dNdxi_list = zeros(nen, ngp, ndm);
