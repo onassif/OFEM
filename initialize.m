@@ -15,6 +15,7 @@ hist.D     = zeros(   6,6, ngp, size(elements,1), 'single');
 hist.resid = zeros(max_iter,1,'single');
 hist.conn  = uint32(elements(:,1:end-1));
 hist.nodes = nodes;
+hist.eltype= eltype;
 maxSharedNode = 0;
 realnumnp = size(nodes,1);
 for i =1: numnp
@@ -112,6 +113,8 @@ switch eltype
     gp = T3(el.mat{1}.finiteDisp);
    case 'T6'
     gp = T6(el.mat{1}.finiteDisp);
+   case 'T4'
+    gp = T4(el.mat{1}.finiteDisp);
    case 'Q8'
     gp = Q8(el.mat{1}.finiteDisp);
 end

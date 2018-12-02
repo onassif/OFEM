@@ -154,7 +154,7 @@ classdef T3
          x1  = ob.xi(1,:); x2 = ob.xi(2,:);
 
          ob.Nmat = [1-x1-x2; x1; x2];
-         ob.Ninv = ((ob.Nmat*ob.Nmat')\ob.Nmat)';
+         ob.Ninv = ((ob.Nmat'*ob.Nmat)\ob.Nmat')';
          %
          vec = ones(1,ngp);
          ob.dNdxi_list = zeros(nen,ngp,ndm);

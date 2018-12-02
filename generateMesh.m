@@ -161,8 +161,74 @@ switch elmtype
                sub2ind(sz, [R L R Mi Mi R], [T T B T Mj Mj])];
          end
       end
+      %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% T4 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+   case {'T4'}
+      %%
+      if (isempty(varargin))
+         error("specified 3D element type but didn't specify increments in z direction");
+      end
+      numelz = varargin{1};
+      
+      numnpx = numelx+1;
+      numnpy = numely+1;
+      numnpz = numelz+1;
+      numnp = numnpx * numnpy * numnpz;
+      numel = numelx * numely * numelz*6;
+      nen = 4;
+      ngp = 1;
+      ndm = 3;
+      if (size(coor) == [8 3])
+      elseif (size(coor) == [3 8])
+         coor = coor';
+      else
+         error('wrong coordinates');
+      end
+      
+      incx = (coor(2,1) - coor(1,1))/numelx;
+      incy = (coor(4,2) - coor(2,2))/numely;
+      incz = (coor(6,3) - coor(3,3))/numelz;
+      
+      nde = zeros(numnp, ndm);
+      el0 = ones(numel/6,9);
+      el  = ones(numel,nen+1);
+
+      zdir = coor(3,3);
+      for k=1:numnpz
+         ydir = coor(2,2);
+         for j=1:numnpy
+            xdir = coor(1,1);
+            for i=1:numnpx
+               nde(i+(j-1)*numnpx+(k-1)*numnpx*numnpy, :) = [xdir ydir zdir];
+               xdir = xdir+incx;
+            end
+            ydir = ydir+incy;
+         end
+         zdir = zdir+incz;
+      end
+      
+      sn = [numnpx numnpy numnpz];
+      se = [numelx numely numelz];
+      for k=1:numelz
+         for j=1:numely
+            for i=1:numelx
+               el0(i + se(1)*(j-1) + se(1)*se(2)*(k-1), 1:8)=[...
+                  sub2ind(sn, [i i+1 i+1 i], [j j j+1 j+1], [k   k   k   k  ]),...
+                  sub2ind(sn, [i i+1 i+1 i], [j j j+1 j+1], [k+1 k+1 k+1 k+1])];
+            end
+         end
+      end
+      
+      for i = 1:numel/6
+         el((i-1)*6+(1:6),:) = [...
+            el0(i,1) el0(i,2) el0(i,4) el0(i,8) el0(i,9)
+            el0(i,3) el0(i,4) el0(i,2) el0(i,8) el0(i,9)
+            el0(i,1) el0(i,5) el0(i,2) el0(i,8) el0(i,9)
+            el0(i,6) el0(i,2) el0(i,5) el0(i,8) el0(i,9)
+            el0(i,3) el0(i,2) el0(i,7) el0(i,8) el0(i,9)
+            el0(i,6) el0(i,7) el0(i,2) el0(i,8) el0(i,9)];
+      end
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Q8 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-   case {'Q8','Q8Crys'}
+   case {'Q8'}
       %%
       if (isempty(varargin))
          error("specified 3D element type but didn't specify increments in z direction");
