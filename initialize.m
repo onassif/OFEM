@@ -115,6 +115,8 @@ switch eltype
     gp = T6(el.mat{1}.finiteDisp);
    case 'T4'
     gp = T4(el.mat{1}.finiteDisp);
+   case 'T10'
+    gp = T10(el.mat{1}.finiteDisp);
    case 'Q8'
     gp = Q8(el.mat{1}.finiteDisp);
 end

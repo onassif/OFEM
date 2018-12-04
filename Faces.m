@@ -73,6 +73,19 @@ classdef Faces
                      el(i, [2,3,4])];
                end
                obj.gp = T3(0);
+            case 'T10'
+               obj.numFaces = 4*numel;
+               obj.numGP    = 3;
+               obj.numEN    = 6;
+               obj.faceList = zeros(obj.numFaces, 6);
+               for i = 1:numel
+                  obj.faceList((i-1)*4+(1:4),:) = [...
+                     el(i, [1,3,2,7, 6,5]) 
+                     el(i, [1,3,4,7,10,8]) 
+                     el(i, [2,4,1,9, 8,5])
+                     el(i, [2,3,4,6,10,9])];
+               end
+               obj.gp = T6(0);
             case {'Q8'}
                obj.numFaces = 6*numel;
                obj.numGP    = 4;

@@ -12,7 +12,7 @@ classdef T6
       dU
       mesh
       xi= 1/6*[...
-         4 1 1
+         1 4 1
          1 1 4];
       weights = 1/6* [1 1 1]';
       Nmat
@@ -128,26 +128,26 @@ classdef T6
          x1  = ob.xi(1,:); x2 = ob.xi(2,:);
          
          ob.Nmat = [...
-            (1-x1-x2).*(2*(1-x1-x2)-1)
-            x1.*(2*x1-1)
-            x2.*(2*x2-1)
+            2*x1.^2 + 2*x2.^2 + 4*x1.*x2 - 3*x1 - 3*x2 + 1
+            x1.*(2*x1 - 1)
+            x2.*(2*x2 - 1)
             4*(1-x1-x2).*x1
             4*x1.*x2
             4*x2.*(1-x1-x2)];
-         ob.Ninv = ((ob.Nmat*ob.Nmat')\ob.Nmat)';
+         ob.Ninv = ((ob.Nmat'*ob.Nmat)\ob.Nmat')';
          %
+         vec = ones(1,ngp);
          ob.dNdxi_list = zeros(nen, ngp, ndm);
-         
          ob.dNdxi_list(:,:,1) =[...
             -3 + 4*(x1+x2)
             4*x1-1
-            0
+            0*vec
             4-8*x1-4*x2
             4*x2
             -4*x2         ];
          ob.dNdxi_list(:,:,2) =[...
             -3 + 4*(x1+x2)
-            0
+            0*vec
             4*x2 - 1
             -4*x1
             4*x1
@@ -155,7 +155,6 @@ classdef T6
          ob.dNdxi_list = permute(ob.dNdxi_list,[1,3,2]);
          
          %
-         vec = ones(1,ngp);
          ob.d2Ndxi2_list = zeros(nen, ngp, 3);
          ob.d2Ndxi2_list(:,:,1) =[4*vec; 4*vec; 0*vec; -8*vec; 0*vec; 0*vec];
          ob.d2Ndxi2_list(:,:,2) =[4*vec; 0*vec; 4*vec;  0*vec; 0*vec; -8*vec];

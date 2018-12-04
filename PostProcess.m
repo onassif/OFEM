@@ -159,6 +159,12 @@ elseif num.ndm == 3
       for i = 1:num.els
          fac(:,(i-1)*4+(1:4)) = [conn([1,2,3],i), conn([1,2,4],i),conn([1,3,4],i), conn([2,3,4],i)];
       end
+   elseif strcmp(hist.eltype,'T10')
+      fac = zeros(6,num.els*4);
+      for i = 1:num.els
+         fac(:,(i-1)*4+(1:4)) = [...
+            conn([1,7,3,6,2,5],i),conn([1,7,3,10,4,8],i),conn([2,9,4,8,1,5],i),conn([2,6,3,10,4,9],i)];
+      end
    end
    X = reshape(hist.coor(fac,1,1),   size(fac,1), size(fac,2));
    Y = reshape(hist.coor(fac,2,1),   size(fac,1), size(fac,2));
