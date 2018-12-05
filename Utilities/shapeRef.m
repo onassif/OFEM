@@ -14,8 +14,13 @@ for i = 1:numel
    for j = 1:ngp
       dXdxi = coor*dNdxi_list(:,:,j);
       det_dXdxi_list(j,i) = det(dXdxi);
-      dNdX_list( :,:,j,i) = dNdxi_list(:,:,j) / dXdxi;
-      dXdxi_list(:,:,j,i) = dXdxi;
+      if ndm == 1
+         dNdX_list( :,1,j,i) = dNdxi_list(:,:,j) / dXdxi;
+         dXdxi_list(1,1,j,i) = dXdxi;
+      else
+         dNdX_list( :,:,j,i) = dNdxi_list(:,:,j) / dXdxi;
+         dXdxi_list(:,:,j,i) = dXdxi;
+      end
    end
 end
 end

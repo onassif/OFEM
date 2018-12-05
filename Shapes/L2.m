@@ -70,7 +70,7 @@ classdef L2
       end
       
       function value = get.dNdX(ob)
-         value = ob.dNdX_list(:,ob.i,ob.iel);
+         value = ob.dNdX_list(:,:,ob.i,ob.iel);
       end
       
       function value = get.F(ob)
@@ -104,7 +104,9 @@ classdef L2
       end
       %% xi-dependant functions
       function ob = shapeIso(ob)
+         ndm = size(ob.xi,1);
          ngp = size(ob.xi,2);
+         nen = 2;
          x1  = ob.xi(1,:);
          
          ob.Nmat = 1/2*[...
@@ -116,10 +118,8 @@ classdef L2
             ob.Ninv = 0;
          end
          vec = ones(1,ngp);
-         ob.dNdxi_list(:,:,1) = 1/2 *[...
-            -1*vec
-            +1*vec];
-         ob.dNdxi_list = permute(ob.dNdxi_list,[1 3 2]);
+         ob.dNdxi_list = zeros(nen,ndm,ngp);
+         ob.dNdxi_list(:,1,:) = 1/2 *[-1*vec; +1*vec];
 
          ob.d2Ndxi2_list(:,:,1) = [...
             0*vec
