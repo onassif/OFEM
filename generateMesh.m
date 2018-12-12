@@ -286,12 +286,12 @@ switch elmtype
       
       for i = 1:numel/6
          el((i-1)*6+(1:6),:) = [...
-            el0(i, 1) el0(i, 7) el0(i, 3) el0(i,25) el0(i, 4) el0(i, 5) el0(i, 2) el0(i,13) el0(i,16) el0(i,14) el0(i,28)
-            el0(i, 9) el0(i, 3) el0(i, 7) el0(i,25) el0(i, 6) el0(i, 5) el0(i, 8) el0(i,17) el0(i,14) el0(i,16) el0(i,28)
-            el0(i, 1) el0(i, 3) el0(i,19) el0(i,25) el0(i, 2) el0(i,11) el0(i,10) el0(i,13) el0(i,14) el0(i,22) el0(i,28)
-            el0(i,21) el0(i,19) el0(i, 3) el0(i,25) el0(i,20) el0(i,11) el0(i,12) el0(i,23) el0(i,22) el0(i,14) el0(i,28)
-            el0(i, 9) el0(i,27) el0(i, 3) el0(i,25) el0(i,18) el0(i,15) el0(i, 6) el0(i,17) el0(i,26) el0(i,14) el0(i,28)
-            el0(i,21) el0(i, 3) el0(i,27) el0(i,25) el0(i,12) el0(i,15) el0(i,24) el0(i,23) el0(i,14) el0(i,26) el0(i,28)];
+            el0(i, 1) el0(i, 3) el0(i, 7) el0(i,25) el0(i, 2) el0(i, 5) el0(i, 4) el0(i,13) el0(i,14) el0(i,16) el0(i,28)
+            el0(i, 9) el0(i, 7) el0(i, 3) el0(i,25) el0(i, 8) el0(i, 5) el0(i, 6) el0(i,17) el0(i,16) el0(i,14) el0(i,28)
+            el0(i, 1) el0(i,19) el0(i, 3) el0(i,25) el0(i,10) el0(i,11) el0(i, 2) el0(i,13) el0(i,22) el0(i,14) el0(i,28)
+            el0(i,21) el0(i, 3) el0(i,19) el0(i,25) el0(i,12) el0(i,11) el0(i,20) el0(i,23) el0(i,14) el0(i,22) el0(i,28)
+            el0(i, 9) el0(i, 3) el0(i,27) el0(i,25) el0(i, 6) el0(i,15) el0(i,18) el0(i,17) el0(i,14) el0(i,26) el0(i,28)
+            el0(i,21) el0(i,27) el0(i, 3) el0(i,25) el0(i,24) el0(i,15) el0(i,12) el0(i,23) el0(i,26) el0(i,14) el0(i,28)];
       end
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Q8 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
    case 'Q8'
