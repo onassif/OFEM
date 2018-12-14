@@ -135,13 +135,13 @@ classdef T4
       function val = get.bubb(ob)
          r = ob.xi(1,:); s = ob.xi(2,:); t = ob.xi(3,:);
          u = 1-r-s-t;
-         val = 27*r*s*u;
+         val = 27.*r.*s.*u;
       end
       
       function val = get.bubbB(ob)
          r = ob.xi(1,ob.i); s = ob.xi(2,ob.i); t = ob.xi(3,ob.i);
          u = 1-r-s-t;
-         dbdxi = 27*[(s*u - r*s), (r*u - r*s), -r*s];
+         dbdxi = 27*[(u-r)*s, (u-s)*r, -r*s];
          if (ob.finiteDisp)
             dxdxi = ob.F*ob.dXdxi;
             dbdx  = dbdxi / dxdxi;

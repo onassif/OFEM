@@ -1,4 +1,4 @@
-function [eGPL,eGPR,bGP,sGP,ngp] = DGxi(nen, finiteDisp)
+function [eGPL,eGPR,bGP,sGP,ngp] = DGxi(nen, ndm, finiteDisp)
 %DGxi This computes the isoparametric coordinates related to DG
 
 switch nen
@@ -23,20 +23,44 @@ switch nen
       bGP  = T3(finiteDisp);
       sGP  = L3(0);
    case 4
-      ngp = 3;
-      e_xiL = [-sqrt(0.6)  0   sqrt(0.6); -1 -1 -1];
-      e_xiR = [ sqrt(0.6)  0  -sqrt(0.6); -1 -1 -1];
-      e_w = (1/18).*[5 8 5];
+      if ndm == 2
+         ngp = 3;
+         e_xiL = [-sqrt(0.6)  0   sqrt(0.6); -1 -1 -1];
+         e_xiR = [ sqrt(0.6)  0  -sqrt(0.6); -1 -1 -1];
+         e_w = (1/18).*[5 8 5];
       
-      b_xi = sqrt(0.6)*[...
-         -1 +1 +1 -1 0 +1 0 -1 0
-         -1 -1 +1 +1 -1 0 +1 0 0];
-      b_w = (1/81).*[25 25 25 25 40 40 40 40 64];
+         b_xi = sqrt(0.6)*[...
+            -1 +1 +1 -1 0 +1 0 -1 0
+            -1 -1 +1 +1 -1 0 +1 0 0];
+         b_w = (1/81).*[25 25 25 25 40 40 40 40 64];
       
-      eGPL = Q4(finiteDisp);
-      eGPR = Q4(finiteDisp);
-      bGP  = Q4(finiteDisp);
-      sGP  = L3(0);
+         eGPL = Q4(finiteDisp);
+         eGPR = Q4(finiteDisp);
+         bGP  = Q4(finiteDisp);
+         sGP  = L3(0);
+      elseif ndm == 3
+         ngp = 3;
+         e_xiL = 1/6 .* [...
+            1	4	1
+            1	1	4
+            0	0	0];
+         e_xiR = 1/6 .* [...
+            1	1	4
+            1	4	1
+            0	0	0];
+         e_w = 1/6 .* [1 1 1];
+         
+         b_xi = [...
+            0.1381966011 0.5854101966 0.1381966011 0.1381966011 
+            0.1381966011 0.1381966011 0.5854101966 0.1381966011   
+            0.1381966011 0.1381966011 0.1381966011 0.5854101966];
+         b_w = 1/24 .*[1 1 1 1]; 
+         
+         eGPL = T4(finiteDisp);
+         eGPR = T4(finiteDisp);
+         bGP  = T4(finiteDisp);
+         sGP  = T6(0);
+      end
    case 8
       ngp = 4;
       e_xiL = [...

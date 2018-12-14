@@ -43,12 +43,14 @@ for step=1:num.steps % Steps loop
             el.Fint = el.mat{el.im}.computeFint(gp, el, step);
             
             % store states
-            hist.eps( :,igp,iel) = gp.eps;
-            if size(hist.stre,1) == 3 && size(gp.sigma,1) == 6
-               gp.sigma = gp.sigma([1,2,4]);
+            if igp <= num.gp
+               hist.eps( :,igp,iel) = gp.eps;
+               if size(hist.stre,1) == 3 && size(gp.sigma,1) == 6
+                  gp.sigma = gp.sigma([1,2,4]);
+               end
+               hist.stre(:,igp,iel) = gp.sigma;
+               hist.D( :,:,igp,iel) = gp.D;
             end
-            hist.stre(:,igp,iel) = gp.sigma;
-            hist.D( :,:,igp,iel) = gp.D;
          end
          
          % Assemble to global arrays

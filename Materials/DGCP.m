@@ -88,7 +88,7 @@ classdef DGCP
          ob.ndof   = num.ndof;
          ob.numeq  = num.nen*num.ndm;
          ob.numstr = num.str;
-         [ob.eGPL,ob.eGPR,ob.bGP,ob.sGP,ob.ngp] = DGxi(num.nen,1);
+         [ob.eGPL,ob.eGPR,ob.bGP,ob.sGP,ob.ngp] = DGxi(num.nen,num.ndm,1);
          ob.listL.D = zeros(   6, 6, num.gp, num.el2, num.steps+1);
          ob.listL.S = zeros(      6, num.gp, num.el2, num.steps+1);
          ob.listL.tauT = zeros(      num.gp, num.el2, num.steps+1);

@@ -48,7 +48,7 @@ classdef DG
          ob.ndof  = num.ndof;
          ob.numeq = num.nen*num.ndm;
          ob.numstr= num.str;
-         [ob.eGPL,ob.eGPR,ob.bGP,ob.sGP,ob.ngp] = DGxi(num.nen,0);
+         [ob.eGPL,ob.eGPR,ob.bGP,ob.sGP,ob.ngp] = DGxi(num.nen,num.ndm,0);
          for i = 1:2
             switch props{i,1}
                case 'L'
