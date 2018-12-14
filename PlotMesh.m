@@ -7,100 +7,95 @@ if ~exist('color','var')
    color = 'r';
 end
 switch elmtype
-   case 'Q4'
-      patch(ax,'Vertices',nde(reshape(el(:,1:nen)',numel*nen,1),:),...
-         'Faces',reshape(1:nen*numel,nen,numel)',...
-         'FaceColor','none', 'EdgeColor',color, 'Marker', 'o', 'MarkerFaceColor',color);
+   case {'Q4', 'T3'}
+      conn = el(1:numel,1:nen)';
+      X = reshape(nde(conn,1), nen, numel);
+      Y = reshape(nde(conn,2), nen, numel);
+      patch(ax,'XData',X, 'YData',Y, 'FaceColor','none', 'EdgeColor',color, 'Marker', 'o',...
+         'MarkerFaceColor',color, 'MarkerSize',3);
       
    case 'Q9'
-      el2 = el(:,[1 5 2 6 3 7 4 8 9]);
-      patch(ax,'Vertices',nde(reshape(el2(:,1:nen-1)',numel*(nen-1),1),:),...
-         'Faces',reshape(1:(nen-1)*numel,(nen-1),numel)',...
-         'FaceColor','none', 'EdgeColor', color, 'Marker','o', 'MarkerFaceColor',color);
-      
-   case 'T3'
-      patch(ax,'Vertices',nde(reshape(el(:,1:nen)',numel*nen,1),:),...
-         'Faces',reshape(1:nen*numel,nen,numel)',...
-         'FaceColor','none', 'EdgeColor',color, 'Marker','o', 'MarkerFaceColor',color);
+      conn = el(1:numel,[1 5 2 6 3 7 4 8])';
+      X = reshape(nde(conn,1), nen-1, numel);
+      Y = reshape(nde(conn,2), nen-1, numel);
+      hold on
+      patch(ax,'XData',X, 'YData',Y, 'FaceColor','none', 'EdgeColor',color, 'Marker', 'o',...
+         'MarkerFaceColor',color, 'MarkerSize',3);
+      scatter(nde(el(1:numel,9)',1), nde(el(1:numel,9)',2), 'Marker', 'o',...
+         'MarkerFaceColor',color, 'MarkerEdgeColor',color, 'SizeData', 10);
       
    case 'T6'
-      el2 = el(:,[1 4 2 5 3 6]);
-      patch(ax,'Vertices',nde(reshape(el2(:,1:nen)',numel*(nen),1),:),...
-         'Faces',reshape(1:(nen)*numel,(nen),numel)',...
-         'FaceColor','none', 'EdgeColor',color, 'Marker','o', 'MarkerFaceColor',color);
+      conn = el(:,[1,4,2,5,3,6])';
+      X = reshape(nde(conn,1), nen, numel);
+      Y = reshape(nde(conn,2), nen, numel);
+      patch(ax,'XData',X, 'YData',Y, 'FaceColor','none', 'EdgeColor',color, 'Marker', 'o',...
+         'MarkerFaceColor',color, 'MarkerSize',3);
       
-   case {'T4'}
-      i = [...
-         1 2 4, 1 4 8,...
-         3 4 8, 4 2 8,...
-         1 5 2, 5 2 8,...
-         6 2 8, 6 5 8,...
-         3 2 7, 3 2 8,...
-         6 7 8, 7 2 8];
-      fac = reshape(1:8*numel/6,8,numel/6);
-      fac = reshape(fac(i,:),3,numel*2)';
-      Q8el = zeros(numel/6,8);
-      for i = 1:numel/6
-         Q8el(i,:) = [...
-            el(((i-1)*6+1),1), el(((i-1)*6+1),2), el(((i-1)*6+2),1), el(((i-1)*6+1),3),...
-            el(((i-1)*6+3),2), el(((i-1)*6+4),1), el(((i-1)*6+5),3), el(((i-1)*6+1),4)];
+   case 'T4'
+      fac = zeros(3,numel*4);
+      for i = 1:numel
+         fac(:,(i-1)*4+(1:4)) = [el(i,[1,2,3]); el(i,[1,2,4]); el(i,[1,3,4]); el(i,[2,3,4])]';
       end
-      nodes = nde(reshape(Q8el(:,1:8)',numel/6*8,1),:);
-      patch(ax,'Vertices',nodes, 'Faces',fac,...
-         'FaceColor','none','EdgeColor',color, 'Marker', 'o', 'MarkerFaceColor', color);
-      view (ax,[0.2 -0.4 0.1])
-      set(ax,'DataAspectRatio',[1 1 1],'PlotBoxAspectRatio',[570.5 570.5 570.5])
-   case {'T10'}
-      i = [...
-         01  4  7  5  3  2,  3 14 25 16  7  5, 1 13 25 16 7 4,...
-         09  6  3  5  7  8,  9  8  7 16 25 17,...
-         01  2  3 11 19 10,  3 11 19 22 25 14,...
-         03 12 21 20 19 11, 21 23 25 22 19 20,...
-         03  6  9 18 27 15,  9 18 27 26 25 17,...
-         21 24 27 26 25 23];
-      fac = reshape(1:27*numel/6,27,numel/6);
-      fac = reshape(fac(i,:),6,numel*2)';
-      Q27el = zeros(numel/6,27);
-      for i = 1:numel/6
-         Q27el(i,:) = [...
-            el(((i-1)*6+1),1), el(((i-1)*6+1),5), el(((i-1)*6+1),2),...
-            el(((i-1)*6+1),7), el(((i-1)*6+1),6), el(((i-1)*6+2),7),...
-            el(((i-1)*6+1),3), el(((i-1)*6+2),5), el(((i-1)*6+2),1),...
-            el(((i-1)*6+3),5), el(((i-1)*6+3),6), el(((i-1)*6+4),5),...
-            el(((i-1)*6+1),8), el(((i-1)*6+1),9), el(((i-1)*6+5),6),...
-            el(((i-1)*6+2),9), el(((i-1)*6+2),8), el(((i-1)*6+5),7),...
-            el(((i-1)*6+4),3), el(((i-1)*6+4),7), el(((i-1)*6+4),1),...
-            el(((i-1)*6+3),9), el(((i-1)*6+4),8), el(((i-1)*6+6),5),...
-            el(((i-1)*6+1),4), el(((i-1)*6+6),9), el(((i-1)*6+5),3)];
+      X = reshape(nde(fac,1), size(fac,1), size(fac,2));
+      Y = reshape(nde(fac,2), size(fac,1), size(fac,2));
+      Z = reshape(nde(fac,3), size(fac,1), size(fac,2));
+   
+      patch(ax, 'XData',X, 'YData',Y, 'ZData',Z, 'FaceColor','none', 'EdgeColor',color,...
+         'Marker','o', 'MarkerFaceColor',color, 'MarkerSize',3);
+      view (gca,[0.2 -0.4 0.1])
+      set(gca,'DataAspectRatio',[1 1 1],'PlotBoxAspectRatio',[570.5 570.5 570.5])
+   case 'T10'
+     fac = zeros(6,numel*4);
+      for i = 1:numel
+         fac(:,(i-1)*4+(1:4)) = [...
+            el(i,[1,7,3,6,2,5]);el(i,[1,7,3,10,4,8]);el(i,[2,9,4,8,1,5]);el(i,[2,6,3,10,4,9])]';
       end
-      nodes = nde(reshape(Q27el(:,1:27)',numel/6*27,1),:);
-      patch(ax,'Vertices',nodes, 'Faces',fac,...
-         'FaceColor','none','EdgeColor',color, 'Marker', 'o', 'MarkerFaceColor', color);
-      view (ax,[0.2 -0.4 0.1])
-      set(ax,'DataAspectRatio',[1 1 1],'PlotBoxAspectRatio',[570.5 570.5 570.5])
+      X = reshape(nde(fac,1), size(fac,1), size(fac,2));
+      Y = reshape(nde(fac,2), size(fac,1), size(fac,2));
+      Z = reshape(nde(fac,3), size(fac,1), size(fac,2));
+   
+      patch(ax, 'XData',X, 'YData',Y, 'ZData',Z, 'FaceColor','none', 'EdgeColor',color,...
+         'Marker','o', 'MarkerFaceColor',color, 'MarkerSize',3);
+      view (gca,[0.2 -0.4 0.1])
+      set(gca,'DataAspectRatio',[1 1 1],'PlotBoxAspectRatio',[570.5 570.5 570.5])
       
-   case {'Q8'}
-      i = [1 2 6 5, 2 3 7 6, 3 4 8 7, 4 1 5 8, 1 2 3 4, 5 6 7 8];
-      fac = reshape(1:nen*numel,nen,numel);
-      fac = reshape(fac(i,:),nen/2,6*numel)';
-      patch(ax,'Vertices',nde(reshape(el(:,1:nen)',numel*nen,1),:), 'Faces',fac,...
-         'FaceColor','none','EdgeColor',color, 'Marker', 'o', 'MarkerFaceColor', color);
-      view (ax,[0.2 -0.4 0.1])
-      set(ax,'DataAspectRatio',[1 1 1],'PlotBoxAspectRatio',[570.5 570.5 570.5])
+   case 'Q8'
+      fac = zeros(4,numel*6);
+      for i = 1:numel
+         fac(:,(i-1)*6+(1:6)) = [...
+            el(i,1:4);el(i,5:8);el(i,[1,2,6,5]);el(i,[4,3,7,8]);el(i,[1,5,8,4]);el(i,[2,6,7,3])]';
+      end
+      X = reshape(nde(fac,1), size(fac,1), size(fac,2));
+      Y = reshape(nde(fac,2), size(fac,1), size(fac,2));
+      Z = reshape(nde(fac,3), size(fac,1), size(fac,2));
+   
+      patch(ax, 'XData',X, 'YData',Y, 'ZData',Z, 'FaceColor','none', 'EdgeColor',color,...
+         'Marker','o', 'MarkerFaceColor',color, 'MarkerSize',3);
+      view (gca,[0.2 -0.4 0.1])
+      set(gca,'DataAspectRatio',[1 1 1],'PlotBoxAspectRatio',[570.5 570.5 570.5])
    case 'Q27'
-      i = [...
-         1  2  3  6  9 	8 	7 	4 ,...
-         19 20 21 24 27 26 25 22,...
-         1  2  3  12 21 20 19 10,...
-         7  8  9  18 27 26 25 16,...
-         1  10 19 22 25 16 7  4 ,...
-         3  12 21 24 27 18 9  6 ];
-      fac = reshape(1:nen*numel,nen,numel);
-      fac = reshape(fac(i,:),8,6*numel)';
-      patch(ax,'Vertices',nde(reshape(el(:,1:nen)',numel*nen,1),:), 'Faces',fac,...
-         'FaceColor','none','EdgeColor',color, 'Marker', 'o', 'MarkerFaceColor', color);
-      view (ax,[0.2 -0.4 0.1])
-      set(ax,'DataAspectRatio',[1 1 1],'PlotBoxAspectRatio',[570.5 570.5 570.5])
+      fac = zeros(8,numel*6);
+      cen = zeros(7*numel,3);
+      for i = 1:numel
+         fac(:,(i-1)*6+(1:6)) = [...
+            el(i,[1  2  3  6  9  8  7  4]); el(i,[19 20 21 24 27 26 25 22])
+            el(i,[1  2  3 12 21 20 19 10]); el(i,[ 7  8  9 18 27 26 25 16])
+            el(i,[3 12 21 24 27 18  9  6]); el(i,[ 1 10 19 22 25 16  7  4])]';
+         cen((i-1)*7+(1:7),:) = [...
+            nde(el(i,5) ,:); nde(el(i,23),:)
+            nde(el(i,11),:); nde(el(i,17),:)
+            nde(el(i,15),:); nde(el(i,13),:); nde(el(i,14),:)];
+      end
+      X = reshape(nde(fac,1), size(fac,1), size(fac,2));
+      Y = reshape(nde(fac,2), size(fac,1), size(fac,2));
+      Z = reshape(nde(fac,3), size(fac,1), size(fac,2));
+      hold on
+      patch(ax, 'XData',X, 'YData',Y, 'ZData',Z, 'FaceColor','none', 'EdgeColor',color,...
+         'Marker','o', 'MarkerFaceColor',color, 'MarkerSize',3);
+      scatter3(cen(:,1), cen(:,2), cen(:,3), 'Marker', 'o',...
+         'MarkerFaceColor',color, 'MarkerEdgeColor',color, 'SizeData', 10);
+      view (gca,[0.2 -0.4 0.1])
+      set(gca,'DataAspectRatio',[1 1 1],'PlotBoxAspectRatio',[570.5 570.5 570.5])
       
 end
 axis equal
