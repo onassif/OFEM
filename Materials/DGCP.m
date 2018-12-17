@@ -27,7 +27,6 @@ classdef DGCP
       pencoeff = 4
       eGPL;
       eGPR;
-      sGP;
       bGP;
       el;
       
@@ -88,7 +87,7 @@ classdef DGCP
          ob.ndof   = num.ndof;
          ob.numeq  = num.nen*num.ndm;
          ob.numstr = num.str;
-         [ob.eGPL,ob.eGPR,ob.bGP,ob.sGP,ob.ngp] = DGxi(num.nen,num.ndm,1);
+         [ob.eGPL,ob.eGPR,ob.bGP,ob.ngp] = DGxi(num.nen,num.ndm,1);
          ob.listL.D = zeros(   6, 6, num.gp, num.el2, num.steps+1);
          ob.listL.S = zeros(      6, num.gp, num.el2, num.steps+1);
          ob.listL.tauT = zeros(      num.gp, num.el2, num.steps+1);
@@ -116,8 +115,8 @@ classdef DGCP
          
          ob.I       = eye(ob.ndm);
          ob.I4_bulk = identity.I4_bulk;
-         ob.tauLHist= zeros(ob.ndm, ob.ndm, size(ob.sGP.Nmat,1), num.el);
-         ob.tauRHist= zeros(ob.ndm, ob.ndm, size(ob.sGP.Nmat,1), num.el);
+         ob.tauLHist= zeros(ob.ndm, ob.ndm, ob.ngp, num.el);
+         ob.tauRHist= zeros(ob.ndm, ob.ndm, ob.ngp, num.el);
       end
       %% Epsilon
       function [eps, ob] = Strain(ob, ~, ~, ~)
@@ -179,12 +178,12 @@ classdef DGCP
          tanL = ob.eGPL.F*TanL;
          tanR = ob.eGPR.F*TanR;
          
-         [intedge, ob.C1, ~] = edgeInt(ob.sGP, TanL, drdrL);
+         [intedge, ob.C1, ~] = edgeInt(ob.eGPL, TanL, drdrL);
          
          eb = ob.eGPL.bubb*ob.C1;
          
-         [ ~, ob.c1L, nvectL] = edgeInt(ob.sGP, tanL, drdrL);
-         [ ~, ob.c1R, nvectR] = edgeInt(ob.sGP, tanR, drdrR);
+         [ ~, ob.c1L, nvectL] = edgeInt(ob.eGPL, tanL, drdrL);
+         [ ~, ob.c1R, nvectR] = edgeInt(ob.eGPR, tanR, drdrR);
          
          edgeK = (tauL*eb^2 + tauR*eb^2);
          gamL  = eb^2*(edgeK\tauL);

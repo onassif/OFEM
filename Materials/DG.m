@@ -35,7 +35,6 @@ classdef DG
       pencoeff = 4
       eGPL;
       eGPR;
-      sGP;
       bGP;
       el;
       name = 'DG';
@@ -48,7 +47,7 @@ classdef DG
          ob.ndof  = num.ndof;
          ob.numeq = num.nen*num.ndm;
          ob.numstr= num.str;
-         [ob.eGPL,ob.eGPR,ob.bGP,ob.sGP,ob.ngp] = DGxi(num.nen,num.ndm,0);
+         [ob.eGPL,ob.eGPR,ob.bGP,ob.ngp] = DGxi(num.nen,num.ndm,0);
          for i = 1:2
             switch props{i,1}
                case 'L'
@@ -113,7 +112,7 @@ classdef DG
          
          TanL = ob.eGPL.dXdxi(:,1:end-1);
          
-         [intedge, ob.C1, nvect] = edgeInt(ob.sGP, TanL, drdrL);
+         [intedge, ob.C1, nvect] = edgeInt(ob.eGPL, TanL, drdrL);
          
          eb = ob.eGPL.bubb*ob.C1;
 
