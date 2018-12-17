@@ -138,13 +138,15 @@ classdef T10
       function val = get.bubb(ob)
          r = ob.xi(1,:); s = ob.xi(2,:); t = ob.xi(3,:);
          u = 1-r-s-t;
-         val = 27*r*s*u;
+         val = (1-(2*r-1).^4).*(1-(2*s-1).^4).*(1-(2*u-1).^4);
       end
       
       function val = get.bubbB(ob)
          r = ob.xi(1,ob.i); s = ob.xi(2,ob.i); t = ob.xi(3,ob.i);
-         u = 1-r-s-t;
-         dbdxi = 27*[(s*u - r*s), (r*u - r*s), -r*s];
+         dbdxi = [...
+            - 8*(2*r-1)^3*((2*(r+s+t)-1)^4-1)*((2*s-1)^4-1) - 8*((2*r-1)^4-1)*((2*s-1)^4-1)*(2*(r+s+t)-1)^3,...
+            - 8*(2*s-1)^3*((2*(r+s+t)-1)^4-1)*((2*r-1)^4-1) - 8*((2*r-1)^4-1)*((2*s-1)^4-1)*(2*(r+s+t)-1)^3,...
+            - 8*((2*r-1)^4-1)*((2*s-1)^4-1)*(2*(r+s+t)-1)^3];
          if (ob.finiteDisp)
             dxdxi = ob.F*ob.dXdxi;
             dbdx  = dbdxi / dxdxi;
@@ -180,8 +182,11 @@ classdef T10
             4*x3.*x0
             4*x1.*x3
             4*x2.*x3];
-         
-         ob.Ninv = ((ob.Nmat'*ob.Nmat)\ob.Nmat')';
+         if size(ob.Nmat,2) ~= 13 && size(ob.Nmat,2) ~= 24
+            ob.Ninv = ((ob.Nmat'*ob.Nmat)\ob.Nmat')';
+         else
+            ob.Ninv = 0;
+         end
          %
          vec = ones(1,ngp);
          ob.dNdxi_list = zeros(nen, ngp, ndm);

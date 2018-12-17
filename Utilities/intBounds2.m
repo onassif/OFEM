@@ -290,7 +290,7 @@ elseif ndm == 3
       
       eGPL.xi = [rL; xiL(3,:)];
       eGPR.xi = [rR; xiR(3,:)];
-   elseif nen == 4
+   elseif nen == 4 || nen == 10
       xlintL = coorL;
       xlintR = coorR;
       drdrL = 1;
