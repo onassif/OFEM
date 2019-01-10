@@ -255,7 +255,7 @@ elseif ndm == 3
       end
       
       if	areaL>areaR
-         xlintL =	xlintB;
+         xlintL = xlintB;
          xlintR = xlintS;
          eL = [eB1 eB2 eB3 eB4];
          eR = [eS1 eS2 eS3 eS4];
@@ -266,11 +266,7 @@ elseif ndm == 3
          eL = [eS1 eS2 eS3 eS4];
       end
       if nelB == 8
-         drL = 4;
-         drR = 4;
-         ro = [...
-            -1,-1, 1, 1
-            -1, 1, 1,-1];
+          convert = [1,4,2,3];
       else
          error('Shape not implemented');
       end
@@ -278,88 +274,17 @@ elseif ndm == 3
       [sGPL.det_dXdxi_list, sGPL.dNdX_list, sGPL.dXdxi_list] = shapeRef(eL', 1:4, sGPL.dNdxi_list);
       [sGPR.det_dXdxi_list, sGPR.dNdX_list, sGPR.dXdxi_list] = shapeRef(eR', 1:4, sGPR.dNdxi_list);
       
-%       areaL = polyarea(eL(1,:)',eL(2,:)');
-%       areaR = polyarea(eR(1,:)',eR(2,:)');
-%       drdrL = areaL/drL;
-%       drdrR = areaR/drR;
-      drdrL = abs(sGPL.det_dXdxi_list(eGPL.i));
-      drdrR = abs(sGPR.det_dXdxi_list(eGPR.i));
+      drdrL = abs(sGPL.det_dXdxi_list(convert(eGPL.i)));
+      drdrR = abs(sGPR.det_dXdxi_list(convert(eGPR.i)));
       
-      rL = drdrL*(xiL(1:2,:)-ro) + eL;
+      gp2 = Q4(0);
+      gp2 = gp2.shapeIso();
       
-      gpR = Q4(0);
-      gpR = gpR.shapeIso();
-      [gpR.det_dXdxi_list, gpR.dNdX_list, gpR.dXdxi_list] = shapeRef(...
-         [-1,-1; +1,-1; +1,+1; -1,+1], 1:4, gpR.dNdxi_list);
+      rL = eL*gp2.Nmat;
+      rL = rL(:,convert);
 
-      rR = eR*gpR.Nmat;
-      rR = rR(:,[1,4,2,3]);
-
-%       mx  = abs(eR(:,1)-eR(:,2))/2+ eR(:,1);
-%       mxl = norm(mx - eR(:,1));
-%       my  = abs(eR(:,1)-eR(:,4))/2+ eR(:,1);
-%       myl = norm(my - eR(:,1));
-%       sq3 = 1/sqrt(3);
-%       
-%       rR = [...
-%          mx(1)-sq3*mxl, mx(1)-sq3*mxl, mx(1)+sq3*mxl, mx(1)+sq3*mxl
-%          my(2)-sq3*myl, my(2)+sq3*myl, my(2)-sq3*myl, my(2)+sq3*myl];
-%       
-% %       polyin = polyshape(eR(1,:),eR(2,:));
-% %       [mx,my] = centroid(polyin);
-% 
-%       m12 = (eR(:,1)+eR(:,2))/2;
-%       m23 = (eR(:,2)+eR(:,3))/2;
-%       m34 = (eR(:,3)+eR(:,4))/2;
-%       m41 = (eR(:,4)+eR(:,1))/2;
-%       
-%       pD1 = m12 + sq3*(eR(:,1)-m12);
-%       pD2 = m12 + sq3*(eR(:,2)-m12);
-%       pR2 = m23 + sq3*(eR(:,2)-m23);
-%       pR3 = m23 + sq3*(eR(:,3)-m23);
-%       pU3 = m34 + sq3*(eR(:,3)-m34);
-%       pU4 = m34 + sq3*(eR(:,4)-m34);
-%       pL4 = m41 + sq3*(eR(:,4)-m41);
-%       pL1 = m41 + sq3*(eR(:,1)-m41);
-%       
-%       x1 = pD1(1); y1 = pD1(2);
-%       x2 = pU4(1); y2 = pU4(2);
-%       x3 = pR2(1); y3 = pR2(2);
-%       x4 = pL1(1); y4 = pL1(2);
-%       g1 =  [y2-y1, x1-x2; y4-y3, x3-x4] \ [x1*y2-x2*y1; x3*y4-x4*y3];
-%       
-%       x1 = pD2(1); y1 = pD2(2);
-%       x2 = pU3(1); y2 = pU3(2);
-%       x3 = pR2(1); y3 = pR2(2);
-%       x4 = pL1(1); y4 = pL1(2);
-%       g2 =  [y2-y1, x1-x2; y4-y3, x3-x4] \ [x1*y2-x2*y1; x3*y4-x4*y3];
-%       
-%       x1 = pD2(1); y1 = pD2(2);
-%       x2 = pU3(1); y2 = pU3(2);
-%       x3 = pR3(1); y3 = pR3(2);
-%       x4 = pL4(1); y4 = pL4(2);
-%       g3 =  [y2-y1, x1-x2; y4-y3, x3-x4] \ [x1*y2-x2*y1; x3*y4-x4*y3];
-%       
-%       x1 = pD1(1); y1 = pD1(2);
-%       x2 = pU4(1); y2 = pU4(2);
-%       x3 = pR3(1); y3 = pR3(2);
-%       x4 = pL4(1); y4 = pL4(2);
-%       g4 =  [y2-y1, x1-x2; y4-y3, x3-x4] \ [x1*y2-x2*y1; x3*y4-x4*y3];
-%       
-%       m = sum(eR,2)/4;
-% %       m1_m = norm(m-eR(:,1));    m1_v = (m-eR(:,1))/m1_m;
-% %       m2_m = norm(m-eR(:,2));    m2_v = (m-eR(:,2))/m2_m;
-% %       m3_m = norm(m-eR(:,3));    m3_v = (m-eR(:,3))/m3_m;
-% %       m4_m = norm(m-eR(:,4));    m4_v = (m-eR(:,4))/m4_m;
-% %       
-%       m1= eR(:,1) - m;
-%       m3= eR(:,2) - m;
-%       m4= eR(:,3) - m;
-%       m2= eR(:,4) - m;
-%       
-%       rR = m + sq3*[m1, m2, m3, m4];
-%       rR= [g1 g4 g2 g3];
-      
+      rR = eR*gp2.Nmat;
+      rR = rR(:,convert);    
       
       eGPL.xi = [rL; xiL(3,:)];
       eGPR.xi = [rR; xiR(3,:)];
