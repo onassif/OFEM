@@ -105,12 +105,8 @@ if ndm == 2
       eL = [eS1 eS2];
    end
    if nelB == 4
-      drL = 2;
-      drR = 2;
       ro = -1;
    elseif nelB == 3
-      drL = 1;
-      drR = 1;
       ro = 0;
    end
    
