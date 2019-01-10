@@ -25,6 +25,8 @@ classdef DGCP
       ep
       
       pencoeff = 4
+      sGPL;
+      sGPR;
       eGPL;
       eGPR;
       bGP;
@@ -87,7 +89,7 @@ classdef DGCP
          ob.ndof   = num.ndof;
          ob.numeq  = num.nen*num.ndm;
          ob.numstr = num.str;
-         [ob.eGPL,ob.eGPR,ob.bGP,ob.ngp] = DGxi(num.nen,num.ndm,1);
+         [ob.sGPL,ob.sGPR, ob.eGPL,ob.eGPR, ob.bGP, ob.ngp] = DGxi(num.nen,num.ndm,1);
          ob.listL.D = zeros(   6, 6, num.gp, num.el2, num.steps+1);
          ob.listL.S = zeros(      6, num.gp, num.el2, num.steps+1);
          ob.listL.tauT = zeros(      num.gp, num.el2, num.steps+1);
@@ -123,7 +125,8 @@ classdef DGCP
          eps = zeros(ob.numstr,1);
       end
       %% Tangential stiffness
-      function [sigma_v, D, ob] = SigmaCmat(ob, gp, el, step)
+         ob.eGPL.iel = 1;  ob.eGPL.i = gp.i;
+         ob.eGPR.iel = 1;  ob.eGPR.i = gp.i;
          ndm  = ob.ndm;
          sigma_v = zeros(6,1);
          if ndm == 2
@@ -142,7 +145,7 @@ classdef DGCP
          
          coorL = el.nodes(el.conn(el.i, elL),:)';
          coorR = el.nodes(el.conn(el.i, elR),:)';
-         [xlintL,xlintR, drdrL,~, ob.eGPL,ob.eGPR] = intBounds2(coorL,coorR, ob.eGPL,ob.eGPR);
+         [xlintL,xlintR, drdrL,~, ob.eGPL,ob.eGPR] = intBounds2(coorL,coorR, ob.sGPL,ob.sGPR, ob.eGPL,ob.eGPR);
          
          iterset = 3;
          if el.iter < iterset
@@ -165,8 +168,6 @@ classdef DGCP
             tauR = ob.tauRHist(:, :, gp.i, el.i);
          end
          
-         ob.eGPL.iel = 1;  ob.eGPL.i = gp.i;
-         ob.eGPR.iel = 1;  ob.eGPR.i = gp.i;
          [ob.eGPL.det_dXdxi_list, ob.eGPL.dNdX_list, ob.eGPL.dXdxi_list] = shapeRef(...
             el.nodes, el.conn(el.i, elL), ob.eGPL.dNdxi_list);
          [ob.eGPR.det_dXdxi_list, ob.eGPR.dNdX_list, ob.eGPR.dXdxi_list] = shapeRef(...

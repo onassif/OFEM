@@ -87,7 +87,7 @@ for step=1:num.steps % Steps loop
       % Print iteration information:
       fprintf('step: %4i\t iteration:%2i\t correction: %.10f\t residual: %.10f\n',...
          step, NR.iter, NR.correction, NR.residual);
-      NR.iter = NR.iter + 1; 
+      NR.iter = NR.iter + 1;
       el.iter = NR.iter;
       
       %%%   9i. History arrays

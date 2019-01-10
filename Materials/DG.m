@@ -33,6 +33,8 @@ classdef DG
       linear = true;
       
       pencoeff = 4
+      sGPL;
+      sGPR;
       eGPL;
       eGPR;
       bGP;
@@ -47,7 +49,7 @@ classdef DG
          ob.ndof  = num.ndof;
          ob.numeq = num.nen*num.ndm;
          ob.numstr= num.str;
-         [ob.eGPL,ob.eGPR,ob.bGP,ob.ngp] = DGxi(num.nen,num.ndm,0);
+         [ob.sGPL,ob.sGPR, ob.eGPL,ob.eGPR, ob.bGP, ob.ngp] = DGxi(num.nen,num.ndm,0);
          for i = 1:2
             switch props{i,1}
                case 'L'
@@ -78,6 +80,9 @@ classdef DG
       end
       %% Sigma & Tangential stiffness
       function [sigma_v, D, ob] = SigmaCmat(ob, gp, el, ~)
+         ob.eGPL.iel = 1;  ob.eGPL.i = gp.i;
+         ob.eGPR.iel = 1;  ob.eGPR.i = gp.i;
+         
          ndm  = ob.ndm;
          nen = size(el.conn(el.i,:),2)/2;
          elL = 1:nen;
@@ -92,7 +97,7 @@ classdef DG
          
          coorL = el.nodes(el.conn(el.i, elL),:)';
          coorR = el.nodes(el.conn(el.i, elR),:)';
-         [xlintL,xlintR, drdrL,~, ob.eGPL,ob.eGPR] = intBounds2(coorL,coorR, ob.eGPL,ob.eGPR);
+         [xlintL,xlintR, drdrL,~, ob.eGPL,ob.eGPR] = intBounds2(coorL,coorR, ob.sGPL,ob.sGPR, ob.eGPL,ob.eGPR);
 
          [ob.bGP.det_dXdxi_list, ob.bGP.dNdX_list, ob.bGP.dXdxi_list] = shapeRef(...
             xlintL', 1:nen, ob.bGP.dNdxi_list);
@@ -103,8 +108,6 @@ classdef DG
             xlintR', 1:nen, ob.bGP.dNdxi_list);
          tauR = ob.computeTau(ob.bGP, DmatR, ob.ndm);
          
-         ob.eGPL.iel = 1;  ob.eGPL.i = gp.i;
-         ob.eGPR.iel = 1;  ob.eGPR.i = gp.i;
          [ob.eGPL.det_dXdxi_list, ob.eGPL.dNdX_list, ob.eGPL.dXdxi_list] = shapeRef(...
             el.nodes, el.conn(el.i, elL), ob.eGPL.dNdxi_list);
          [ob.eGPR.det_dXdxi_list, ob.eGPR.dNdX_list, ob.eGPR.dXdxi_list] = shapeRef(...

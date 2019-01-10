@@ -34,6 +34,8 @@ classdef DGHyper
       ep
       
       pencoeff = 4
+      sGPL;
+      sGPR;
       eGPL;
       eGPR;
       bGP;
@@ -96,7 +98,7 @@ classdef DGHyper
          ob.ndof   = num.ndof;
          ob.numeq  = num.nen*num.ndm;
          ob.numstr = num.str;
-         [ob.eGPL,ob.eGPR,ob.bGP,ob.ngp] = DGxi(num.nen,num.ndm,1);
+         [ob.sGPL,ob.sGPR, ob.eGPL,ob.eGPR, ob.bGP, ob.ngp] = DGxi(num.nen,num.ndm,1);
          
          for i = 1:2
             switch props{i,1}
@@ -130,6 +132,8 @@ classdef DGHyper
       end
       %% Sigma & Tangential stiffness
       function [sigma_v, D, ob] = SigmaCmat(ob, gp, el, ~)
+         ob.eGPL.iel = 1;  ob.eGPL.i = gp.i;
+         ob.eGPR.iel = 1;  ob.eGPR.i = gp.i;
          ndm  = ob.ndm;
          if ndm == 2
             P1 = ob.P1_2;  P2 = ob.P2_2;  P3 = ob.P3_2;
@@ -150,7 +154,7 @@ classdef DGHyper
          
          coorL = el.nodes(el.conn(el.i, elL),:)';
          coorR = el.nodes(el.conn(el.i, elR),:)';
-         [xlintL,xlintR, drdrL,drdrR, ob.eGPL,ob.eGPR] = intBounds2(coorL,coorR, ob.eGPL,ob.eGPR);
+         [xlintL,xlintR, drdrL,drdrR, ob.eGPL,ob.eGPR] = intBounds2(coorL,coorR, ob.sGPL,ob.sGPR, ob.eGPL,ob.eGPR);
 
          iterset = 3;
          if el.iter < iterset
@@ -171,8 +175,6 @@ classdef DGHyper
             tauR = ob.tauRHist(:, :, gp.i, el.i);
          end
          
-         ob.eGPL.iel = 1;  ob.eGPL.i = gp.i;
-         ob.eGPR.iel = 1;  ob.eGPR.i = gp.i;
          [ob.eGPL.det_dXdxi_list, ob.eGPL.dNdX_list, ob.eGPL.dXdxi_list] = shapeRef(...
             el.nodes, el.conn(el.i, elL), ob.eGPL.dNdxi_list);
          [ob.eGPR.det_dXdxi_list, ob.eGPR.dNdX_list, ob.eGPR.dXdxi_list] = shapeRef(...

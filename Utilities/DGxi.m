@@ -1,4 +1,4 @@
-function [eGPL,eGPR,bGP,ngp] = DGxi(nen, ndm, finiteDisp)
+function [sGPL,sGPR,eGPL,eGPR,bGP,ngp] = DGxi(nen, ndm, finiteDisp)
 %DGxi This computes the isoparametric coordinates related to DG
 
 switch nen
@@ -17,7 +17,9 @@ switch nen
          0.10128650730 0.79742698540
          0.10128650730 0.10128650730]';
       b_w = [0.1125 0.0662 0.0662 0.0662 0.0630 0.0630 0.0630]';
-      
+ 
+      sGPL = L2(0);
+      sGPR = L2(0);
       eGPL = T3(finiteDisp);
       eGPR = T3(finiteDisp);
       bGP  = T3(finiteDisp);
@@ -33,6 +35,8 @@ switch nen
             -1 -1 +1 +1 -1 0 +1 0 0];
          b_w = (1/81).*[25 25 25 25 40 40 40 40 64];
       
+         sGPL = L3(0);
+         sGPR = L3(0);
          eGPL = Q4(finiteDisp);
          eGPR = Q4(finiteDisp);
          bGP  = Q4(finiteDisp);
@@ -54,6 +58,8 @@ switch nen
             0.1381966011 0.1381966011 0.1381966011 0.5854101966];
          b_w = 1/24 .*[1 1 1 1]; 
          
+         sGPL = T3(0);
+         sGPR = T3(0);
          eGPL = T4(finiteDisp);
          eGPR = T4(finiteDisp);
          bGP  = T4(finiteDisp);
@@ -76,6 +82,8 @@ switch nen
          -1 -1 -1 -1  1  1  1  1];
       b_w = [1 1 1 1 1 1 1 1]';
       
+      sGPL = Q4(0);
+      sGPR = Q4(0);
       eGPL = Q8(finiteDisp);
       eGPR = Q8(finiteDisp);
       bGP  = Q8(finiteDisp);
@@ -100,14 +108,19 @@ switch nen
 %      b_xi = b_xi(:,[3,2,1,4,6,5,7,10,9,8]);
      b_w = [...
         .00665379171 .00665379171 .00665379171 .00665379171 .001679535176 .001679535176 .001679535176 .001679535176 .009226196924 .009226196924 .009226196924 .009226196924 .008035714286 .008035714286 .008035714286 .008035714286 .008035714286 .008035714286 .008035714286 .008035714286 .008035714286 .008035714286 .008035714286 .008035714286]';
-      eGPL = T10(finiteDisp);
-      eGPR = T10(finiteDisp);
-      bGP  = T10(finiteDisp);
+              
+     sGPL = T6(0);
+     sGPR = T6(0); 
+     eGPL = T10(finiteDisp);
+     eGPR = T10(finiteDisp);
+     bGP  = T10(finiteDisp);
 end
 eGPL.xi = e_xiL; eGPL.weights = e_w;
 eGPR.xi = e_xiR; eGPR.weights = e_w;
 bGP.xi  = b_xi ; bGP.weights  = b_w;
 
+sGPL = sGPL.shapeIso();
+sGPR = sGPR.shapeIso();
 eGPL = eGPL.shapeIso();
 eGPR = eGPR.shapeIso();
 bGP  = bGP.shapeIso( );
