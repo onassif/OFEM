@@ -125,6 +125,7 @@ classdef DGCP
          eps = zeros(ob.numstr,1);
       end
       %% Tangential stiffness
+      function [sigma_v, D, ob] = SigmaCmat(ob, gp, el, step)
          ob.eGPL.iel = 1;  ob.eGPL.i = gp.i;
          ob.eGPR.iel = 1;  ob.eGPR.i = gp.i;
          ndm  = ob.ndm;
@@ -145,7 +146,7 @@ classdef DGCP
          
          coorL = el.nodes(el.conn(el.i, elL),:)';
          coorR = el.nodes(el.conn(el.i, elR),:)';
-         [xlintL,xlintR, drdrL,~, ob.eGPL,ob.eGPR] = intBounds2(coorL,coorR, ob.sGPL,ob.sGPR, ob.eGPL,ob.eGPR);
+         [xlintL,xlintR, drdrL,drdrR, ob.eGPL,ob.eGPR] = intBounds2(coorL,coorR, ob.sGPL,ob.sGPR, ob.eGPL,ob.eGPR);
          
          iterset = 3;
          if el.iter < iterset
