@@ -75,11 +75,9 @@ classdef DG
          end
       end
       %% Epsilon
-      function [eps, ob] = Strain(ob, ~, ~, ~)
-         eps = zeros(ob.numstr,1);
-      end
-      %% Sigma & Tangential stiffness
-      function [sigma_v, D, ob] = SigmaCmat(ob, gp, el, ~)
+      function [gp, el, ob] = computeKFM(ob, gp, el, ~)
+         gp.eps = zeros(ob.numstr,1);
+
          ob.eGPL.iel = 1;  ob.eGPL.i = gp.i;
          ob.eGPR.iel = 1;  ob.eGPR.i = gp.i;
          
@@ -140,16 +138,12 @@ classdef DG
          ob.tvtr  = (ob.bnAdN1*ulresL + ob.bnAdN2*ulresR);
          ob.jumpu = ob.NmatR*ulresR - ob.NmatL*ulresL;
          
-         D = zeros(6,6);
-         sigma_v = zeros(ob.numstr,1);
-      end
-      %% Element K
-      function Kel = computeK_el(ob, gp, el, ~)
-         i = gp.i;
-         
+         gp.D = zeros(6,6);
+         gp.sigma = zeros(ob.numstr,1);
+
          NL     = ob.NmatL;         NR = ob.NmatR;
          bnAdN1 = ob.bnAdN1;    bnAdN2 = ob.bnAdN2;
-         c = ob.C1(i);
+         c = ob.C1(gp.i);
          
          mid = size(el.K,1)/2;
          ElemKLL = el.K(    1:mid,     1:mid) + c*( - NL'*bnAdN1 - bnAdN1'*NL + (NL'*ob.ep*NL));
@@ -157,18 +151,9 @@ classdef DG
          ElemKRL = el.K(mid+1:end,     1:mid) + c*( + NR'*bnAdN1 - bnAdN2'*NL - (NR'*ob.ep*NL));
          ElemKRR = el.K(mid+1:end, mid+1:end) + c*( + NR'*bnAdN2 + bnAdN2'*NR + (NR'*ob.ep*NR));
          
-         Kel = [...
+         el.K = [...
             ElemKLL ElemKLR
             ElemKRL ElemKRR];
-         
-      end
-      %% Element Fint
-      function Fint = computeFint(ob, gp, el, ~)
-         i = gp.i;
-         
-         NL     = ob.NmatL;         NR = ob.NmatR;
-         bnAdN1 = ob.bnAdN1;    bnAdN2 = ob.bnAdN2;
-         c = ob.C1(i);
          
          tvtr  = ob.tvtr;
          jumpu = ob.jumpu;
@@ -177,7 +162,7 @@ classdef DG
          ElemFL = el.Fint(    1:mid) + c*( - NL'*(tvtr + ob.ep*jumpu) + bnAdN1'*jumpu);
          ElemFR = el.Fint(mid+1:end) + c*( + NR'*(tvtr + ob.ep*jumpu) + bnAdN2'*jumpu);
          
-         Fint = [ElemFL; ElemFR];
+         el.Fint = [ElemFL; ElemFR];
          
       end
    end
