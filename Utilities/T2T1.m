@@ -6,9 +6,9 @@ if length(A)==2 % 2D
       B = [A(1,1);A(2,2);2*A(1,2)];
    end
 elseif length(A)==3 % 3D
-   if opt==1 
+   if opt==1 % Stress-like voigt
       B = [A(1,1);A(2,2);A(3,3);A(1,2);A(2,3);A(3,1)];
-   elseif opt == 2 
+   elseif opt == 2 %Strain-like voigt
       B = [A(1,1);A(2,2);A(3,3);2*A(1,2);2*A(2,3);2*A(3,1)];
    end
 end

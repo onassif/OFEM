@@ -28,33 +28,30 @@ classdef HyperElastic
          ob.I4_bulk= identity.I4_bulk;
       end
       %% Epsilon
-      function [eps, ob] = Strain(ob, gp, el, ~)
-         eps = gp.B * el.Uvc;
-      end
-      %% Sigma & Tangential stiffness
-      function [sigma_v, D, ob] = SigmaCmat(ob, gp, ~, ~)
+      function [gp, el, ob] = computeKFM(ob, gp, el, ~)
+         
+         % Strain
+         gp.eps = gp.B * el.Uvc;
+
+         % Tangential Stiffness
          matE = diag([2,2,2,1,1,1]);
          JxX = det(gp.F);
+         gp.D = ob.mu*matE + JxX*ob.lam*( (2*JxX-1)*ob.I4_bulk - (JxX-1)*matE );
          
-         D = ob.mu*matE + JxX*ob.lam*( (2*JxX-1)*ob.I4_bulk - (JxX-1)*matE );
+         % Stress
+         sigma    = ob.mu*(gp.b - ob.I) + JxX*ob.lam*(JxX-1)*ob.I;
+         gp.sigma = T2T1(sigma,1);
          
-         sigma   = ob.mu*(gp.b - ob.I) + JxX*ob.lam*(JxX-1)*ob.I;
-         sigma_v = T2T1(sigma,1);
-      end
-      %% Element K
-      function Kel = computeK_el(ob, gp, el, ~)
-         B=gp.Bf;
-         
-         if ob.ndm == 2
-            gp.D = gp.D([1,2,4],[1,2,4]);
+         % K
+         if (ob.ndm == 2)
+            D = formCombD(gp.sigma, gp.D([1,2,4],[1,2,4]), gp.finiteDisp);
+         elseif (ob.ndm == 3)
+            D = formCombD(gp.sigma, gp.D,                  gp.finiteDisp);
          end
-         D = formCombD(gp.sigma, gp.D, gp.finiteDisp);
+         el.K = el.K + gp.J*gp.w* (gp.Bf'*D*gp.Bf);
          
-         Kel = el.K + gp.J*gp.w* (B'*D*B);
-      end
-      %% Element Fint
-      function Fint = computeFint(~, gp, el, ~)
-         Fint = el.Fint + (gp.B'*gp.sigma) *gp.J *gp.w;
+         % F
+         el.Fint = el.Fint + (gp.B'*gp.sigma) *gp.J *gp.w;
       end
    end
    %% Static Methods
