@@ -100,7 +100,7 @@ classdef CP
          
       end
       %% Epsilon
-      function [eps, ob] = Strain(ob, gp, el, step)
+      function [gp, el, ob] = computeKFM(ob, gp, el, step)
          gp.U  = (gp.U_n + 1/2*gp.dU); % n + 1/2
          if ob.ndm == 2
             Q = Qmat([gp.R zeros(2,1);zeros(1,2) 1]);
@@ -112,11 +112,9 @@ classdef CP
             ob.de = Q'*gp.B*el.UresVc;
          end
          
-         eps = Q'*gp.B*el.Uvc;
+         gp.eps = Q'*gp.B*el.Uvc;
          ob.Uvc_n(:,el.i, step+1) = el.Uvc;
-      end
-      %% Sigma & Tangential stiffness
-      function [sigma_v, D, ob] = SigmaCmat(ob, gp, el, step)
+
          ob.cpM.list = ob.list;
          ob.cpM.step = step;
          ob.cpM.iter = el.iter;
@@ -126,8 +124,8 @@ classdef CP
          if el.iter == 0 && step > 1
             D = ob.list.D( :,:,gp.i,el.i, step);
             Q = Qmat(check2D(gp.R));
-            sigma_v = Q*(ob.list.S(:,gp.i,el.i, step) + D*ob.de);
-            ob.S = sigma_v;
+            gp.sigma = Q*(ob.list.S(:,gp.i,el.i, step) + D*ob.de);
+            ob.S = gp.sigma;
             qbar = computeqbar(Q*ob.list.S(:,gp.i,el.i, step));
          else
 %             dt   = ob.dt(step);
@@ -135,7 +133,6 @@ classdef CP
             ob.Rp = ob.list.Rp(:, :, gp.i, el.i, step); %eye(3)
             ob.R  = check2D(gp.R);
 
-            
             % Material properties
             C0   = ob.C0;
             % Gauss-Point properties
@@ -248,8 +245,8 @@ classdef CP
             end
             Q = Qmat(check2D(gp.R));
 
-            sigma_v = Q*ob.S;
-            qbar = computeqbar(sigma_v);
+            gp.sigma = Q*ob.S;
+            qbar = computeqbar(gp.sigma);
             if deEff == 0
                D = C0;
             else
@@ -272,15 +269,13 @@ classdef CP
             ob.list.tauT(  gp.i,el.i, step+1) = tauT; %155.1
             ob.list.S(   :,gp.i,el.i, step+1) = ob.S; %zeros(6,1)
          end
-         D  = Q*D*Q' - qbar;
+         gp.D  = Q*D*Q' - qbar;
          
          if gp.i == ob.ngp
             ob.cpM.list = ob.list;
             ob.cpM      = ob.cpM.endGPComp();
          end
-      end
-      %% Element K
-      function Kel = computeK_el(ob, gp, el, step)
+
          % Definitions
          Q = Qmat(check2D(gp.R));
          if el.iter == 0 && step > 1
@@ -296,10 +291,8 @@ classdef CP
          if ob.ndm == 2
             D = D([1,2,4,7],[1,2,4,7]);
          end
-         Kel = el.K + gp.j*gp.w* (B'*D*B);
-      end
-      %% Element Fint
-      function Fint = computeFint(ob, gp, el, step)
+         el.K = el.K + gp.j*gp.w* (B'*D*B);
+
          sigma = [gp.sigma;0;0;0]; % already rotated
          if el.iter == 0 && step > 1
             gp.U = (gp.U + gp.dU);
@@ -307,7 +300,7 @@ classdef CP
          if ob.ndm == 2
             sigma = sigma([1,2,4,7]);
          end
-         Fint = el.Fint + (gp.Bf'*sigma) *gp.j *gp.w;
+         el.Fint = el.Fint + (gp.Bf'*sigma) *gp.j *gp.w;
       end
       %% m(slip)
       function value = get.ms(ob)
