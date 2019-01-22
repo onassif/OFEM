@@ -67,12 +67,10 @@ classdef ViscoPlastic
          end
       end
       %% Epsilon
-      function [eps, ob] = Strain(ob, gp, el, ~)
-         eps  = gp.B * el.Uvc;
-         ob.e = T1T2(eps,2) - (1/3)*trace(T1T2(eps,2))*ob.I;
-      end
-      %% Sigma & Tangential stiffness
-      function [sigma_v, D, ob] = SigmaCmat(ob, gp, ~, step)
+      function [gp, el, ob] = computeKFM(ob, gp, el, step)
+         gp.eps  = gp.B * el.Uvc;
+         ob.e = T1T2(gp.eps,2) - (1/3)*trace(T1T2(gp.eps,2))*ob.I;
+
          dt   = ob.dt(step);
          % Material properties
          e0   = ob.e0;
@@ -118,23 +116,23 @@ classdef ViscoPlastic
             S  = [np1.S(1,1) np1.S(2,2) np1.S(3,3) np1.S(1,2) np1.S(2,3) np1.S(1,3)];
          end
          % Compute D
-         D =ob.K*ob.I4_bulk          +... % Elastic bulk
-            c1*   (2*ob.G)*ob.I4_dev +... % Elastic deviatoric
-            c1*c3*(2*ob.G)*(S'*S);        % Plastic
+         gp.D = ob.K*ob.I4_bulk          +... % Elastic bulk
+                c1*   (2*ob.G)*ob.I4_dev +... % Elastic deviatoric
+                c1*c3*(2*ob.G)*(S'*S);        % Plastic
          
          % Compute Sigma
-         sigma   = 2*ob.G*(np1.e-np1.ep) + ob.K*sum(gp.eps(1:ob.ndm))*ob.I;
-         sigma_v = T2T1(sigma,1);
-      end
-      %% Element K
-      function Kel = computeK_el(ob, gp, el, ~)
-         if (ob.ndm == 2); gp.D = gp.D([1,2,4],[1,2,4]); end
+         sigma    = 2*ob.G*(np1.e-np1.ep) + ob.K*sum(gp.eps(1:ob.ndm))*ob.I;
+         gp.sigma = T2T1(sigma,1);
+
+         if (ob.ndm == 2)
+            D = gp.D([1,2,4],[1,2,4]);
+         elseif (ob.ndm == 3)
+            D = gp.D;
+         end
          
-         Kel = el.K + (gp.B'*gp.D*gp.B) *gp.J *gp.w;
-      end
-      %% Element Fint
-      function Fint = computeFint(~, gp, el, ~)
-         Fint = el.Fint + (gp.B'*gp.sigma) *gp.J *gp.w;
+         el.K    = el.K + (gp.B'*D*gp.B) *gp.J *gp.w;
+
+         el.Fint = el.Fint + (gp.B'*gp.sigma) *gp.J *gp.w;
       end
    end
    

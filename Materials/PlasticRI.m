@@ -54,8 +54,6 @@ classdef PlasticRI
       function [gp, el, ob] = computeKFM(ob, gp, el, step)
          gp.eps  = gp.B * el.Uvc;
          ob.e = T1T2(gp.eps,2) - (1/3)*trace(T1T2(gp.eps,2))*ob.I;
-
-%       function [sigma_v, D, ob] = SigmaCmat(ob, gp, ~, step)
          
          % Values from previous step
          n.ep      = ob.ep     (:,:, gp.i, gp.iel, step);
@@ -107,7 +105,6 @@ classdef PlasticRI
          sigma    = 2*ob.G*(np1.e - np1.ep) + ob.K*sum(gp.eps(1:ob.ndm))*ob.I;
          gp.sigma = T2T1(sigma,1);
 
-%       function Kel = computeK_el(ob, gp, el, ~)
          if (ob.ndm == 2)
             D = gp.D([1,2,4],[1,2,4]);
          elseif (ob.ndm == 3)
@@ -116,7 +113,6 @@ classdef PlasticRI
          
          el.K = el.K + (gp.B'*D*gp.B) *gp.J *gp.w;
 
-%       function Fint = computeFint(~, gp, el, ~)
          el.Fint = el.Fint + (gp.B'*gp.sigma) *gp.J *gp.w;
       end
    end
