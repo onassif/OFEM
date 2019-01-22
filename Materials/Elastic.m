@@ -22,28 +22,27 @@ classdef Elastic
          
          ob.C0 = K*identity.I4_bulk + 2*G*identity.I4_dev;
       end
-      %% Epsilon
-      function [eps, ob] = Strain(ob, gp, el, ~)
-         eps = gp.B * el.Uvc;
-      end
-      %% Sigma and Tangential stiffness
-      function [sigma_v, D, ob] = SigmaCmat(ob, gp, ~, ~)
-         D = ob.C0;
-         if ob.ndm == 2
-            sigma_v = D([1,2,4],[1,2,4])*gp.eps;
-         elseif ob.ndm == 3
-            sigma_v = D*gp.eps;
-         end
-      end
-      %% Element K
-      function Kel = computeK_el(ob, gp, el, ~)
-         if (ob.ndm == 2); gp.D = gp.D([1,2,4],[1,2,4]); end
+      %% Compute gp K, F and in case of dynamics: M
+      function [gp, el, ob] = computeKFM(ob, gp, el, ~)
          
-         Kel = el.K + (gp.B'*gp.D*gp.B) *gp.J *gp.w;
-      end
-      %% Element Fint
-      function Fint = computeFint(~, gp, el, ~)
-         Fint = el.Fint + (gp.B'*gp.sigma) *gp.J *gp.w;
+         % Strain
+         gp.eps = gp.B * el.Uvc;
+         
+         % Tangential Stiffness
+         if (ob.ndm == 2)
+            gp.D = ob.C0([1,2,4],[1,2,4]); 
+         elseif (ob.ndm == 3) 
+            gp.D = ob.C0;
+         end
+         
+         % Stress
+         gp.sigma = gp.D*gp.eps;
+
+         % K
+         el.K = el.K + (gp.B'*gp.D*gp.B) *gp.J *gp.w;
+
+         % F
+         el.Fint = el.Fint + (gp.B'*gp.sigma) *gp.J *gp.w;
       end
    end
    methods (Static)

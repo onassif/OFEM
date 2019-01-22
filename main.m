@@ -30,17 +30,8 @@ for step=1:num.steps % Steps loop
 
          for igp = 1:el.mat{el.im}.ngp;     gp.i = igp;
             %%   Start Loop over Gauss points
-            %%%   2gp. Strain tensor
-            [gp.eps, el.mat{el.im}]        = el.mat{el.im}.Strain(gp, el, step);
-            
-            %%%   3gp. Stress & Tangential stifness
-            [gp.sigma, gp.D, el.mat{el.im}] = el.mat{el.im}.SigmaCmat(gp, el, step);
-                        
-            %%%   5gp. K
-            el.K    = el.mat{el.im}.computeK_el(gp, el, step);
-            
-            %%%   6gp. Fint
-            el.Fint = el.mat{el.im}.computeFint(gp, el, step);
+            %%%   Compute gp K, F and in case of dynamics: M
+            [gp, el, el.mat{el.im}] = el.mat{el.im}.computeKFM(gp, el, step);
             
             % store states
             if igp <= num.gp
