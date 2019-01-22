@@ -52,19 +52,17 @@ classdef HypoElastic
          
       end
       %% Epsilon
-      function [eps, ob] = Strain(ob, gp, el, ~)
-         eps  = gp.B * el.Uvc;
-         ob.e = T1T2(eps,2) - (1/3)*trace(T1T2(eps,2))*ob.I;
-      end
-      %% Sigma & Tangential stiffness
-      function [sigma_v, D, ob] = SigmaCmat(ob, gp, ~, ~)
+      function [gp, el, ob] = computeKFM(ob, gp, el, ~)
+         gp.eps  = gp.B * el.Uvc;
+         ob.e = T1T2(gp.eps,2) - (1/3)*trace(T1T2(gp.eps,2))*ob.I;
+
          K    = ob.K;
          sig0 = ob.sig0;
          eps0 = ob.eps0;
          nExp = ob.nExp;
          
          e = ob.e;
-         eEff = sqrt( (2/3)*sum(dot(e,e)) );
+         eEff = sqrt( (2/3)*sum(dot(ob.e,ob.e)) );
          sEff = ob.effectivestress(eEff, sig0, eps0, nExp);
          dsde = ob.hardeningslope (eEff, sig0, eps0, nExp);
          
@@ -75,25 +73,25 @@ classdef HypoElastic
          end
          
          if (eEff > 0 )
-            D = 2/3*(sEff/eEff)*ob.I4_dev + 4/9*(dsde-(sEff/eEff))/(eEff^2)*(e*e') + K/3*ob.I4_bulk;
+            gp.D = 2/3*(sEff/eEff)*ob.I4_dev + 4/9*(dsde-(sEff/eEff))/(eEff^2)*(e*e') + K/3*ob.I4_bulk;
             S = 2/3*sEff * ob.e/eEff;
          else
-            D = 2/3*dsde*ob.I4_dev + (K/3)*ob.I4_bulk;
+            gp.D = 2/3*dsde*ob.I4_dev + (K/3)*ob.I4_bulk;
             S = zeros(ob.ndm);
          end
          
          sigma   = S + (1/3)*K*sum(gp.eps(1:ob.ndm))*ob.I;
-         sigma_v = T2T1(sigma,1);
-      end
-      %% Element K
-      function Kel = computeK_el(ob, gp, el, ~)
-         if (ob.ndm == 2); gp.D = gp.D([1,2,4],[1,2,4]); end
+         gp.sigma = T2T1(sigma,1);
+
+         if (ob.ndm == 2)
+            D = gp.D([1,2,4],[1,2,4]);
+         elseif (ob.ndm == 3)
+            D = gp.D;
+         end
          
-         Kel = el.K + (gp.B'*gp.D*gp.B) *gp.J *gp.w;
-      end
-      %% Element Fint
-      function Fint = computeFint(~, gp, el, ~)
-         Fint = el.Fint + (gp.B'*gp.sigma) *gp.J *gp.w;
+         el.K = el.K + (gp.B'*D*gp.B) *gp.J *gp.w;
+
+         el.Fint = el.Fint + (gp.B'*gp.sigma) *gp.J *gp.w;
       end
    end
    
