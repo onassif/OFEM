@@ -27,20 +27,13 @@ classdef HyperElastic
          ob.I4_dev = identity.I4_dev;
          ob.I4_bulk= identity.I4_bulk;
       end
-      %% Epsilon
+      %% Compute gp K, F and in case of dynamics: M
       function [gp, el, ob] = computeKFM(ob, gp, el, ~)
          
          % Strain
          gp.eps = gp.B * el.Uvc;
 
-         % Tangential Stiffness
-         matE = diag([2,2,2,1,1,1]);
-         JxX = det(gp.F);
-         gp.D = ob.mu*matE + JxX*ob.lam*( (2*JxX-1)*ob.I4_bulk - (JxX-1)*matE );
-         
-         % Stress
-         sigma    = ob.mu*(gp.b - ob.I) + JxX*ob.lam*(JxX-1)*ob.I;
-         gp.sigma = T2T1(sigma,1);
+         [gp.sigma, gp.D] = ob.SigmaCmat(ob, gp);
          
          % K
          if (ob.ndm == 2)
@@ -67,6 +60,17 @@ classdef HyperElastic
          end
          lam = nu*E/((1+nu)*(1-2*nu));
          mu  = E/(2*(1+nu));
+      end
+      
+      function [sigma, cmat] = SigmaCmat(ob, gp)
+         % Tangential Stiffness
+         matE = diag([2,2,2,1,1,1]);
+         JxX = det(gp.F);
+         cmat = ob.mu*matE + JxX*ob.lam*( (2*JxX-1)*ob.I4_bulk - (JxX-1)*matE );
+         
+         % Stress
+         sigma    = ob.mu*(gp.b - ob.I) + JxX*ob.lam*(JxX-1)*ob.I;
+         sigma = T2T1(sigma,1);
       end
    end
 end

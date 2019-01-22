@@ -51,7 +51,7 @@ classdef HypoElastic
          ob.I4_bulk= identity.I4_bulk;
          
       end
-      %% Epsilon
+      %% Compute gp K, F and in case of dynamics: M
       function [gp, el, ob] = computeKFM(ob, gp, el, ~)
          gp.eps  = gp.B * el.Uvc;
          ob.e = T1T2(gp.eps,2) - (1/3)*trace(T1T2(gp.eps,2))*ob.I;

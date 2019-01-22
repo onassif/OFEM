@@ -127,11 +127,9 @@ classdef DGHyper
          ob.tauRHist= zeros(ob.ndm, ob.ndm, ob.ngp, num.el);
       end
       %% Epsilon
-      function [eps, ob] = Strain(ob, ~, ~, ~)
-         eps = zeros(ob.numstr,1);
-      end
-      %% Sigma & Tangential stiffness
-      function [sigma_v, D, ob] = SigmaCmat(ob, gp, el, ~)
+      function [gp, el, ob] = computeKFM(ob, gp, el, ~)
+         gp.eps = zeros(ob.numstr,1);
+
          ob.eGPL.iel = 1;  ob.eGPL.i = gp.i;
          ob.eGPR.iel = 1;  ob.eGPR.i = gp.i;
          ndm  = ob.ndm;
@@ -207,8 +205,8 @@ classdef DGHyper
          BmatfL = ob.eGPL.Bf;    BmatfR = ob.eGPR.Bf;
          BmatL  = ob.eGPL.B;     BmatR  = ob.eGPR.B;
          
-         [SL, cmatL] = el.mat{ob.matL}.SigmaCmat(ob.eGPL,0,0);
-         [SR, cmatR] = el.mat{ob.matR}.SigmaCmat(ob.eGPR,0,0);
+         [SL, cmatL] = HyperElastic.SigmaCmat(el.mat{ob.matL}, ob.eGPL);
+         [SR, cmatR] = HyperElastic.SigmaCmat(el.mat{ob.matL}, ob.eGPR);
          if ob.ndm == 2
             cmatL = cmatL([1,2,4],[1,2,4]);    cmatR = cmatR([1,2,4],[1,2,4]);
          end
@@ -310,19 +308,15 @@ classdef DGHyper
          ob.jumpAddL = term5L+term5L'+term7L+term8L;
          ob.jumpAddR = term5R+term5R'+term7R+term8R;
          
-         D       = zeros(6,6);
-         sigma_v = zeros(ob.numstr,1);
-      end
-      %% Element K
-      function Kel = computeK_el(ob, gp, el, ~)
-         i = gp.i;
-         
+         gp.D     = zeros(6,6);
+         gp.sigma = zeros(ob.numstr,1);
+
          NL     = ob.NmatL;         NR = ob.NmatR;
          bnAdN1 = ob.bnAdN1;
          bnAdN2 = ob.bnAdN2;
-         cL = ob.c1L(i);
-         cR = ob.c1R(i);
-         C  = ob.C1(i);
+         cL = ob.c1L(gp.i);
+         cR = ob.c1R(gp.i);
+         C  = ob.C1(gp.i);
          
          mid = size(el.K,1)/2;
          ElemKLL = el.K(    1:mid,     1:mid) + C*(NL'*ob.ep*NL) - cL*NL'*bnAdN1 - cL*bnAdN1'*NL - cL*ob.jumpAddL;
@@ -330,29 +324,16 @@ classdef DGHyper
          ElemKRL = el.K(mid+1:end,     1:mid) - C*(NR'*ob.ep*NL) + cL*NR'*bnAdN1 + cR*bnAdN2'*NL;
          ElemKRR = el.K(mid+1:end, mid+1:end) + C*(NR'*ob.ep*NR) - cR*NR'*bnAdN2 - cR*bnAdN2'*NR + cR*ob.jumpAddR;
          
-         Kel = [...
+         el.K = [...
             ElemKLL ElemKLR
             ElemKRL ElemKRR];
          
-      end
-      %% Element Fint
-      function Fint = computeFint(ob, gp, el, ~)
-         i = gp.i;
-         
-         NL     = ob.NmatL;         NR = ob.NmatR;
-         bnAdN1 = ob.bnAdN1;    bnAdN2 = ob.bnAdN2;
-         cL = ob.c1L(i);
-         cR = ob.c1R(i);
-         C = ob.C1(i);
-         
-         tvtr  = ob.tvtr;
          jumpu = ob.jumpu;
          
-         mid = size(el.Fint,1)/2;
          ElemFL = el.Fint(    1:mid) + C*ob.term30L - cL*bnAdN1'*jumpu - ob.term28L;
          ElemFR = el.Fint(mid+1:end) - C*ob.term30R + cR*bnAdN2'*jumpu + ob.term28R;
          
-         Fint = [ElemFL; ElemFR];
+         el.Fint = [ElemFL; ElemFR];
       end
    end
    methods (Static)
@@ -373,7 +354,7 @@ classdef DGHyper
          for i = 1:ngp
             bGP.i = i;
             B = bGP.bubbB;
-            [S, cmat] = mat.SigmaCmat(bGP,0,0);
+            [S, cmat] = HyperElastic.SigmaCmat(mat, bGP);
             D         = formCombD(S, cmat, bGP.finiteDisp);
             
             tau  = tau + bGP.J*bGP.w* (B'*D*B);
