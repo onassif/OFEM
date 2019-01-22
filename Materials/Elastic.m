@@ -29,17 +29,18 @@ classdef Elastic
          gp.eps = gp.B * el.Uvc;
          
          % Tangential Stiffness
+         gp.D = ob.C0;
          if (ob.ndm == 2)
-            gp.D = ob.C0([1,2,4],[1,2,4]); 
+            D = ob.C0([1,2,4],[1,2,4]); 
          elseif (ob.ndm == 3) 
-            gp.D = ob.C0;
+            D = ob.C0;
          end
          
          % Stress
-         gp.sigma = gp.D*gp.eps;
+         gp.sigma = D*gp.eps;
 
          % K
-         el.K = el.K + (gp.B'*gp.D*gp.B) *gp.J *gp.w;
+         el.K = el.K + (gp.B'*D*gp.B) *gp.J *gp.w;
 
          % F
          el.Fint = el.Fint + (gp.B'*gp.sigma) *gp.J *gp.w;
