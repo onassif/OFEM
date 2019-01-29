@@ -37,6 +37,8 @@ classdef T10
       dXdxi
       B
       Bf
+      NN
+      NN_2
       N
       R
       w
@@ -162,7 +164,80 @@ classdef T10
                0       0       dbdX(3) 0       dbdX(2) dbdX(1)]';
          end
       end
-      
+
+      function val = get.NN(ob)
+         N1 = ob.N(1);  N2 = ob.N(2);  N3 = ob.N(3);  N4 = ob.N(4);	N5  = ob.N(5);
+         N6 = ob.N(6);  N7 = ob.N(7);  N8 = ob.N(8);  N9 = ob.N(9);  N10 = ob.N(10);
+         
+         val = [...
+            N1*N1	 0      0      N1*N2	 0      0      N1*N3	 0      0      N1*N4	 0      0      N1*N5	 0      0      N1*N6	 0      0      N1*N7	 0      0      N1*N8 	0    0      N1*N9	 0      0      N1*N10	0        0
+            0   	 N1*N1  0    	0      N1*N2  0    	0      N1*N3  0    	0      N1*N4  0      0      N1*N5  0      0      N1*N6  0      0      N1*N7  0      0      N1*N8  0      0      N1*N9  0      0        N1*N10	0
+            0      0      N1*N1	0    	 0      N1*N2	0    	 0      N1*N3	0    	 0      N1*N4	0      0      N1*N5	0      0      N1*N6	0      0      N1*N7	0      0      N1*N8	0      0      N1*N9	0        0        N1*N10
+            N2*N1	 0      0      N2*N2	 0      0      N2*N3	 0      0      N2*N4	 0      0      N2*N5	 0      0      N2*N6	 0      0      N2*N7	 0      0      N2*N8	 0      0      N2*N9	 0      0      N2*N10	0        0
+            0   	 N2*N1  0    	0      N2*N2  0    	0      N2*N3  0    	0      N2*N4  0      0      N2*N5  0      0      N2*N6  0      0      N2*N7  0      0      N2*N8  0      0      N2*N9  0      0        N2*N10	0
+            0      0      N2*N1	0    	 0      N2*N2	0    	 0      N2*N3	0    	 0      N2*N4	0      0      N2*N5	0      0      N2*N6	0      0      N2*N7	0      0      N2*N8	0      0      N2*N9	0        0        N2*N10
+            N3*N1	 0      0      N3*N2	 0      0      N3*N3	 0      0      N3*N4	 0      0      N3*N5	 0      0      N3*N6	 0      0      N3*N7	 0      0      N3*N8	 0      0      N3*N9	 0      0      N3*N10	0        0
+            0   	 N3*N1  0    	0      N3*N2  0    	0      N3*N3  0    	0      N3*N4  0      0      N3*N5  0      0      N3*N6  0      0      N3*N7  0      0      N3*N8  0      0      N3*N9  0      0        N3*N10	0
+            0      0      N3*N1	0    	 0      N3*N2	0    	 0      N3*N3	0    	 0      N3*N4	0      0      N3*N5	0      0      N3*N6	0      0      N3*N7	0      0      N3*N8	0      0      N3*N9	0        0        N3*N10
+            N4*N1	 0      0      N4*N2	 0      0      N4*N3	 0      0      N4*N4	 0      0      N4*N5	 0      0      N4*N6	 0      0      N4*N7	 0      0      N4*N8	 0      0      N4*N9	 0      0      N4*N10	0        0
+            0   	 N4*N1  0    	0      N4*N2  0    	0      N4*N3  0    	0      N4*N4  0      0      N4*N5  0      0      N4*N6  0      0      N4*N7  0      0      N4*N8  0      0      N4*N9  0      0        N4*N10	0
+            0      0      N4*N1	0    	 0      N4*N2	0    	 0      N4*N3	0    	 0      N4*N4	0      0      N4*N5	0      0      N4*N6	0      0      N4*N7	0      0      N4*N8	0      0      N4*N9	0        0        N4*N10
+            N5*N1	 0      0      N5*N2	 0      0      N5*N3	 0      0      N5*N4	 0      0      N5*N5	 0      0      N5*N6	 0      0      N5*N7	 0      0      N5*N8	 0      0      N5*N9	 0      0      N5*N10	0        0
+            0   	 N5*N1  0    	0      N5*N2  0    	0      N5*N3  0    	0      N5*N4  0      0      N5*N5  0      0      N5*N6  0      0      N5*N7  0      0      N5*N8  0      0      N5*N9  0      0        N5*N10	0
+            0      0      N5*N1	0    	 0      N5*N2	0    	 0      N5*N3	0    	 0      N5*N4	0      0      N5*N5	0      0      N5*N6	0      0      N5*N7	0      0      N5*N8	0      0      N5*N9	0        0        N5*N10
+            N6*N1	 0      0      N6*N2	 0      0      N6*N3	 0      0      N6*N4	 0      0      N6*N5	 0      0      N6*N6	 0      0      N6*N7	 0      0      N6*N8	 0      0      N6*N9	 0      0      N6*N10	0        0
+            0   	 N6*N1  0    	0      N6*N2  0    	0      N6*N3  0    	0      N6*N4  0      0      N6*N5  0      0      N6*N6  0      0      N6*N7  0      0      N6*N8  0      0      N6*N9  0      0        N6*N10	0
+            0      0      N6*N1	0    	 0      N6*N2	0    	 0      N6*N3	0    	 0      N6*N4	0      0      N6*N5	0      0      N6*N6	0      0      N6*N7	0      0      N6*N8	0      0      N6*N9	0        0        N6*N10
+            N7*N1	 0      0      N7*N2	 0      0      N7*N3	 0      0      N7*N4	 0      0      N7*N5	 0      0      N7*N6	 0      0      N7*N7	 0      0      N7*N8	 0      0      N7*N9	 0      0      N7*N10	0        0
+            0   	 N7*N1  0    	0      N7*N2  0    	0      N7*N3  0    	0      N7*N4  0      0      N7*N5  0      0      N7*N6  0      0      N7*N7  0      0      N7*N8  0      0      N7*N9  0      0        N7*N10	0
+            0      0      N7*N1	0    	 0      N7*N2	0    	 0      N7*N3	0    	 0      N7*N4	0      0      N7*N5	0      0      N7*N6	0      0      N7*N7	0      0      N7*N8	0      0      N7*N9	0        0        N7*N10
+            N8*N1	 0      0      N8*N2	 0      0      N8*N3	 0      0      N8*N4	 0      0      N8*N5	 0      0      N8*N6	 0      0      N8*N7	 0      0      N8*N8	 0      0      N8*N9	 0      0      N8*N10	0        0
+            0   	 N8*N1  0    	0      N8*N2  0    	0      N8*N3  0    	0      N8*N4  0      0      N8*N5  0      0      N8*N6  0      0      N8*N7  0      0      N8*N8  0      0      N8*N9  0      0        N8*N10	0
+            0      0      N8*N1	0    	 0      N8*N2	0    	 0      N8*N3	0    	 0      N8*N4	0      0      N8*N5	0      0      N8*N6	0      0      N8*N7	0      0      N8*N8	0      0      N8*N9	0        0        N8*N10
+            N9*N1  0      0      N9*N2	 0      0      N9*N3	 0      0      N9*N4	 0      0      N9*N5	 0      0      N9*N6	 0      0      N9*N7	 0      0      N9*N8	 0      0      N9*N9	 0      0      N9*N10	0        0
+            0      N9*N1  0    	0      N9*N2  0    	0      N9*N3  0    	0      N9*N4  0      0      N9*N5  0      0      N9*N6  0      0      N9*N7  0      0      N9*N8  0      0      N9*N9  0      0        N9*N10	0
+            0      0      N9*N1	0    	 0      N9*N2	0    	 0      N9*N3	0    	 0      N9*N4	0      0      N9*N5	0      0      N9*N6	0      0      N9*N7	0      0      N9*N8	0      0      N9*N9	0        0        N9*N10
+            N10*N1 0      0      N10*N2 0      0      N10*N3 0      0      N10*N4 0      0      N10*N5 0      0      N10*N6 0      0      N10*N7 0      0      N10*N8 0      0      N10*N9 0      0      N10*N10	0        0
+            0      N10*N1 0    	0      N10*N2 0    	0      N10*N3 0    	0      N10*N4 0      0      N10*N5 0      0      N10*N6 0      0      N10*N7 0      0      N10*N8 0      0      N10*N9 0      0        N10*N10	0
+            0      0      N10*N1	0    	 0      N10*N2	0    	 0      N10*N3	0    	 0      N10*N4	0      0      N10*N5	0      0      N10*N6	0      0      N10*N7	0      0      N10*N8	0      0      N10*N9	0        0        N10*N10];
+      end
+
+      function val = get.NN_2(ob)
+         N1 = ob.N(1);  N2 = ob.N(2);  N3 = ob.N(3);  N4 = ob.N(4);	N5  = ob.N(5);
+         N6 = ob.N(6);  N7 = ob.N(7);  N8 = ob.N(8);  N9 = ob.N(9);  N10 = ob.N(10);
+         
+         val = diag([...
+            N1*N1 + N1*N2 + N1*N3 + N1*N4 + N1*N5 + N1*N6 + N1*N7 + N1*N8 + N1*N9 + N1*N10
+            N1*N1 + N1*N2 + N1*N3 + N1*N4 + N1*N5 + N1*N6 + N1*N7 + N1*N8 + N1*N9 + N1*N10
+            N1*N1 + N1*N2 + N1*N3 + N1*N4 + N1*N5 + N1*N6 + N1*N7 + N1*N8 + N1*N9 + N1*N10
+            N2*N1 + N2*N2 + N2*N3 + N2*N4 + N2*N5 + N2*N6 + N2*N7 + N2*N8 + N2*N9 + N2*N10
+            N2*N1 + N2*N2 + N2*N3 + N2*N4 + N2*N5 + N2*N6 + N2*N7 + N2*N8 + N2*N9 + N2*N10
+            N2*N1 + N2*N2 + N2*N3 + N2*N4 + N2*N5 + N2*N6 + N2*N7 + N2*N8 + N2*N9 + N2*N10
+            N3*N1 + N3*N2 + N3*N3 + N3*N4 + N3*N5 + N3*N6 + N3*N7 + N3*N8 + N3*N9 + N3*N10
+            N3*N1 + N3*N2 + N3*N3 + N3*N4 + N3*N5 + N3*N6 + N3*N7 + N3*N8 + N3*N9 + N3*N10
+            N3*N1 + N3*N2 + N3*N3 + N3*N4 + N3*N5 + N3*N6 + N3*N7 + N3*N8 + N3*N9 + N3*N10
+            N4*N1 + N4*N2 + N4*N3 + N4*N4 + N4*N5 + N4*N6 + N4*N7 + N4*N8 + N4*N9 + N4*N10
+            N4*N1 + N4*N2 + N4*N3 + N4*N4 + N4*N5 + N4*N6 + N4*N7 + N4*N8 + N4*N9 + N4*N10
+            N4*N1 + N4*N2 + N4*N3 + N4*N4 + N4*N5 + N4*N6 + N4*N7 + N4*N8 + N4*N9 + N4*N10
+            N5*N1 + N5*N2 + N5*N3 + N5*N4 + N5*N5 + N5*N6 + N5*N7 + N5*N8 + N5*N9 + N5*N10
+            N5*N1 + N5*N2 + N5*N3 + N5*N4 + N5*N5 + N5*N6 + N5*N7 + N5*N8 + N5*N9 + N5*N10
+            N5*N1 + N5*N2 + N5*N3 + N5*N4 + N5*N5 + N5*N6 + N5*N7 + N5*N8 + N5*N9 + N5*N10
+            N6*N1 + N6*N2 + N6*N3 + N6*N4 + N6*N5 + N6*N6 + N6*N7 + N6*N8 + N6*N9 + N6*N10
+            N6*N1 + N6*N2 + N6*N3 + N6*N4 + N6*N5 + N6*N6 + N6*N7 + N6*N8 + N6*N9 + N6*N10
+            N6*N1 + N6*N2 + N6*N3 + N6*N4 + N6*N5 + N6*N6 + N6*N7 + N6*N8 + N6*N9 + N6*N10
+            N7*N1 + N7*N2 + N7*N3 + N7*N4 + N7*N5 + N7*N6 + N7*N7 + N7*N8 + N7*N9 + N7*N10
+            N7*N1 + N7*N2 + N7*N3 + N7*N4 + N7*N5 + N7*N6 + N7*N7 + N7*N8 + N7*N9 + N7*N10
+            N7*N1 + N7*N2 + N7*N3 + N7*N4 + N7*N5 + N7*N6 + N7*N7 + N7*N8 + N7*N9 + N7*N10
+            N8*N1 + N8*N2 + N8*N3 + N8*N4 + N8*N5 + N8*N6 + N8*N7 + N8*N8 + N8*N9 + N8*N10
+            N8*N1 + N8*N2 + N8*N3 + N8*N4 + N8*N5 + N8*N6 + N8*N7 + N8*N8 + N8*N9 + N8*N10
+            N8*N1 + N8*N2 + N8*N3 + N8*N4 + N8*N5 + N8*N6 + N8*N7 + N8*N8 + N8*N9 + N8*N10
+            N9*N1 + N9*N2 + N9*N3 + N9*N4 + N9*N5 + N9*N6 + N9*N7 + N9*N8 + N9*N9 + N9*N10
+            N9*N1 + N9*N2 + N9*N3 + N9*N4 + N9*N5 + N9*N6 + N9*N7 + N9*N8 + N9*N9 + N9*N10
+            N9*N1 + N9*N2 + N9*N3 + N9*N4 + N9*N5 + N9*N6 + N9*N7 + N9*N8 + N9*N9 + N9*N10
+            N10*N1 + N10*N2 + N10*N3 + N10*N4 + N10*N5 + N10*N6 + N10*N7 + N10*N8 + N10*N9 + N10*N10
+            N10*N1 + N10*N2 + N10*N3 + N10*N4 + N10*N5 + N10*N6 + N10*N7 + N10*N8 + N10*N9 + N10*N10
+            N10*N1 + N10*N2 + N10*N3 + N10*N4 + N10*N5 + N10*N6 + N10*N7 + N10*N8 + N10*N9 + N10*N10]);
+      end      
       %% xi-dependant functions
       function ob = shapeIso(ob)
          x1  = ob.xi(1,:); x2 = ob.xi(2,:); x3 = ob.xi(3,:);

@@ -16,9 +16,13 @@ for step=1:num.steps % Steps loop
       %% Start NR loop
       % Clear global K and Fint
       globl.K    = sparse(num.eq, num.eq);
+      globl.M    = sparse(num.eq, num.eq);
       globl.Fint = zeros( num.eq,1);
-      dU         = zeros( num.eq,1);
       % Send new U to the element object
+      el.Ures_glb = globl.U - el.U_glb_n;
+      if el.iter ==0
+         el.U_glb_n  = el.U_global;
+      end
       el.U_global = globl.U;
       for iel =1:num.el
          %% Start elements loop
@@ -26,7 +30,8 @@ for step=1:num.steps % Steps loop
          el.i = iel;        gp.iel = iel;        % element number
          gp.U = el.Umt;     gp.U_n = el.Umt_n;   gp.dU = el.w;% element unknowns (array form, n and n+1)
          el.Fint = zeros(length(el.indices),1);
-         el.K    = zeros(length(el.indices), length(el.indices)); 
+         el.K    = zeros(length(el.indices), length(el.indices));
+         el.M    = zeros(length(el.indices), length(el.indices));
 
          for igp = 1:el.mat{el.im}.ngp;     gp.i = igp;
             %%   Start Loop over Gauss points
@@ -45,28 +50,16 @@ for step=1:num.steps % Steps loop
          end
          
          % Assemble to global arrays
-         [globl.K, globl.Fint] = Assemble(globl.K, globl.Fint, el);
+         [globl.K, globl.M, globl.Fint] = Assemble(globl.K, globl.M, globl.Fint, el);
       end
       
       %% Finished gauss points loop, back to NR loop
       %%%   7i. Fext and apply constrains
-      [globl.K, Fext, globl.Fint, G, knwndU, rmIndc]  =  ApplyConstraints_and_Loads(...
-         NR.mult, globl.K, Fext, globl.Fint, globl.U, inpt, num.ndm, step, NR.iter, finiteDisp);
+      [globl, Fext, G, knwndU, rmIndc]  =  ApplyConstraints_and_Loads(...
+         NR.mult, globl, Fext, globl.U, inpt, num.ndm, step, NR.iter, finiteDisp);
       
       %%%   8i. dU and update Ui
-      if el.iter == 0 && extrapolate
-         if step == 1
-            ex_del_ModelDx = globl.w(rmIndc);
-            dU( rmIndc) = globl.K\G;
-         end
-         ex_del_ModelDx = globl.U(rmIndc) - ex_del_ModelDx;
-         if step > 1
-            dU( rmIndc) = (globl.K\G  + ex_del_ModelDx);
-         end
-      else
-         dU( rmIndc) = globl.K\G;
-      end
-      dU(~rmIndc) = knwndU;
+      [dU, NR] = NR.solveSystem(globl, G, rmIndc, knwndU, extrapolate);
                         
       globl.w = globl.w*(NR.iter>0) + dU;
       globl.U = globl.U + dU;

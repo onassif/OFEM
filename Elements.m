@@ -3,6 +3,7 @@ classdef Elements
       i
       K
       Fint
+      M
       iter = 0;
       U_global
       w_global
@@ -47,25 +48,10 @@ classdef Elements
          ob.U_global     = U_global;
          ob.conn         = hist.conn;
          ob.nconn        = hist.nconn;
-         if num.ndof == num.ndm
-            ob.K            = zeros(num.ndof*num.nen, num.ndof*num.nen);
-            ob.Fint         = zeros(num.ndof*num.nen, 1);
-         elseif (num.ndof - num.ndm) == 1
-            switch num.nen
-               case {3,4}
-                  sz = (num.ndof-1)*num.nen + 1;
-               case 6
-                  sz = (num.ndof-1)*num.nen + 3;
-               case 9
-                  sz = (num.ndof-1)*num.nen + 4;
-            end
-            ob.K            = zeros(sz, sz);
-            ob.Fint         = zeros(sz,  1);
-         else
-            error("ndof-ndm > 1")
-         end
+
          ob.Ures_glb = zeros(num.ndm*num.np,1);
          ob.w_global = zeros(num.ndm*num.np,1);
+         ob.U_global = zeros(num.ndm*num.np,1);
          ob.U_glb_n  = zeros(num.ndm*num.np,1);
       end
       %% get functions
@@ -122,20 +108,6 @@ classdef Elements
          end
       end
       
-      %% set functions
-      function ob = set.U_global(ob, value)
-         if ob.iter == 0
-            if ~isempty(ob.U_global)
-               ob.Ures_glb = value - ob.U_glb_n;
-               ob.U_glb_n  = ob.U_global;
-            else
-               ob.U_glb_n = value;
-            end
-         else
-            ob.Ures_glb = value - ob.U_glb_n;
-         end
-         ob.U_global = value;
-      end
    end
 end
 

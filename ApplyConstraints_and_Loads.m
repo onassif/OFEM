@@ -1,9 +1,9 @@
-function [K, Fext, Fint, rmG, adG, indc]=ApplyConstraints_and_Loads(mult, K, Fext, Fint, U,...
+function [globl, Fext, rmG, adG, indc]=ApplyConstraints_and_Loads(mult, globl, Fext, U,...
    inpt, ndof, step, iter, finiteDisp)
 
 BC    = inpt.BC;
 FORCE = inpt.FORCE;
-indc = true(size(K,1),1);
+indc = true(size(globl.K,1),1);
 
 %%   Loads
 for i = 1:size(FORCE,1)
@@ -19,7 +19,7 @@ for i = 1:size(FORCE,1)
    f_index = ndof*(index-1) + direction; % A smart way to do it without if-statement
    Fext(f_index) = FORCE(i,3)*mult(FORCE(i,4),2);
 end
-G = Fext - Fint;
+G = Fext - globl.Fint;
 
 %% BC
 for i = 1:size(BC,1)
@@ -31,7 +31,7 @@ for i = 1:size(BC,1)
    indc(k_index) = false;
    
    %       Change the Fs
-   Fint(k_index) = BC(i,3)*mult(BC(i,4),1) - U(k_index);
+   globl.Fint(k_index) = BC(i,3)*mult(BC(i,4),1) - U(k_index);
    G(k_index)    = BC(i,3)*mult(BC(i,4),1) - U(k_index);
 end
 
@@ -39,8 +39,8 @@ end
 rmG = G(indc);
 adG = G(~indc); 
 if step == 1 && iter == 0 && finiteDisp
-   rmG = rmG - K(indc,~indc)*G(~indc);
+   rmG = rmG - globl.K(indc,~indc)*G(~indc);
 end
-K = K(indc,indc);
-
+globl.K = globl.K(indc,indc);
+globl.M = globl.M(indc,indc);
 end

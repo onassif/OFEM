@@ -34,6 +34,8 @@ classdef T3
       dXdxi
       B
       Bf
+      NN
+      NN_2
       N
       R
       w
@@ -146,6 +148,29 @@ classdef T3
          end
       end
       
+      function val = get.NN(ob)
+         N1 = ob.N(1);  N2 = ob.N(2);  N3 = ob.N(3);
+         
+         val = [...
+            N1*N1	0     N1*N2	0     N1*N3	0     
+            0   	N1*N1	0     N1*N2	0     N1*N3
+            N2*N1	0     N2*N2	0     N2*N3	0    
+            0   	N2*N1	0    	N2*N2	0    	N2*N3
+            N3*N1	0     N3*N2	0     N3*N3	0    
+            0   	N3*N1	0    	N3*N2	0    	N3*N3];
+      end
+      
+      function val = get.NN_2(ob)
+         N1 = ob.N(1);  N2 = ob.N(2);  N3 = ob.N(3);
+         
+         val = diag([...
+            N1*N1 + N1*N2 + N1*N3     
+            N1*N1 + N1*N2 + N1*N3
+            N2*N1 + N2*N2 + N2*N3
+            N2*N1 + N2*N2 + N2*N3
+            N3*N1 + N3*N2 + N3*N3  
+            N3*N1 + N3*N2 + N3*N3]);
+      end      
       %% xi-dependant functions
       function ob = shapeIso(ob,varargin)
          ndm = size(ob.xi,1); 

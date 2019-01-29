@@ -1,3 +1,10 @@
+if ~exist('dyn', 'var')
+   dyn = 0;
+else
+   num.dyn_steps = dyn_nsteps;
+   num.dyn_time  = dyn_time;  
+end
+
 %   voigt size
 numstr = (ndm*ndm + ndm) /2;
 
@@ -47,8 +54,10 @@ num.gp    = ngp;
 num.steps = n_steps;
 num.str   = numstr;
 num.ndm   = ndm;
-num.BC    = BC(end,end);
-num.FORCE = FORCE(end,end);
+num.BC    = size(BC,1);
+num.FORCE = size(FORCE,1);
+num.mlLen = max(BC(end,end), FORCE(end,end));
+num.redEq = num.eq - num.BC;
 
 %%%%%%%%%%%%%%%%%%%%% Identities:
 run('identities.m');
@@ -76,7 +85,7 @@ for i=1:length(material)
    end
    switch material(i)
       case 1
-         el.mat{i} = Elastic(num, prps, ident.threeD.second);
+         el.mat{i} = Elastic(num, prps, ident.threeD.second, dyn);
       case 2
          el.mat{i} = HypoElastic(num, prps, ident.threeD.second);
       case 3
@@ -126,11 +135,11 @@ gp = gp.shapeIso();
 
 % NR-related
 if exist('time','var') && exist('fctr','var')
-   NR = NewtonRaphson(NR_tol, max_iter, num, time, fctr);
+   NR = NewtonRaphson(NR_tol, max_iter, num, dyn, time, fctr);
 elseif exist('time','var')
-   NR = NewtonRaphson(NR_tol, max_iter, num, time);
+   NR = NewtonRaphson(NR_tol, max_iter, num, dyn, time);
 else
-   NR = NewtonRaphson(NR_tol, max_iter, num);
+   NR = NewtonRaphson(NR_tol, max_iter, num, dyn);
 end
 
 inpt.BC    = BC;
@@ -147,4 +156,4 @@ if ~exist('extrapolate','var')
    extrapolate = 0;
 end
 clearvars -except dU el elements Fext globl gp hist inpt mat nodes NR num hard slip tempK ...
-   firstInstance finiteDisp extrapolate
+   firstInstance finiteDisp extrapolate dyn

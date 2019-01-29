@@ -34,6 +34,8 @@ classdef T4
       dXdxi
       B
       Bf
+      NN
+      NN_2
       N
       R
       w
@@ -156,6 +158,42 @@ classdef T4
                0       dbdX(2) 0       dbdX(1) dbdX(3) 0
                0       0       dbdX(3) 0       dbdX(2) dbdX(1)]';
          end
+      end
+      
+      function val = get.NN(ob)
+         N1 = ob.N(1);  N2 = ob.N(2);  N3 = ob.N(3);  N4 = ob.N(4);
+         
+         val = [...
+            N1*N1	0     0     N1*N2	0     0     N1*N3	0     0     N1*N4	0     0    
+            0   	N1*N1	0    	0     N1*N2	0    	0     N1*N3	0    	0     N1*N4	0    
+            0     0     N1*N1	0    	0     N1*N2	0    	0     N1*N3	0    	0     N1*N4
+            N2*N1	0     0     N2*N2	0     0     N2*N3	0     0     N2*N4	0     0    
+            0   	N2*N1	0    	0     N2*N2	0    	0     N2*N3	0    	0     N2*N4	0    
+            0     0     N2*N1	0    	0     N2*N2	0    	0     N2*N3	0    	0     N2*N4
+            N3*N1	0     0     N3*N2	0     0     N3*N3	0     0     N3*N4	0     0    
+            0   	N3*N1	0    	0     N3*N2	0    	0     N3*N3	0    	0     N3*N4	0    
+            0     0     N3*N1	0    	0     N3*N2	0    	0     N3*N3	0    	0     N3*N
+            N4*N1	0     0     N4*N2	0     0     N4*N3	0     0     N4*N4	0     0   
+            0   	N4*N1	0    	0     N4*N2	0    	0     N4*N3	0    	0     N4*N4	0    
+            0     0     N4*N1	0    	0     N4*N2	0    	0     N4*N3	0    	0     N4*N4];
+      end
+      
+      function val = get.NN_2(ob)
+         N1 = ob.N(1);  N2 = ob.N(2);  N3 = ob.N(3);  N4 = ob.N(4);
+         
+         val = diag([...
+            N1*N1 + N1*N2 + N1*N3 + N1*N4    
+            N1*N1 + N1*N2 + N1*N3 + N1*N4   
+            N1*N1 + N1*N2 + N1*N3 + N1*N4
+            N2*N1 + N2*N2 + N2*N3 + N2*N4
+            N2*N1 + N2*N2 + N2*N3 + N2*N4
+            N2*N1 + N2*N2 + N2*N3 + N2*N4
+            N3*N1 + N3*N2 + N3*N3 + N3*N4
+            N3*N1 + N3*N2 + N3*N3 + N3*N4
+            N3*N1 + N3*N2 + N3*N3 + N3*N4
+            N4*N1 + N4*N2 + N4*N3 + N4*N4
+            N4*N1 + N4*N2 + N4*N3 + N4*N4
+            N4*N1 + N4*N2 + N4*N3 + N4*N4]);
       end
       
       %% xi-dependant functions

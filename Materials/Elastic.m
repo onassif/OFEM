@@ -6,16 +6,20 @@ classdef Elastic
       ngp;
       finiteDisp = 0;
       C0;
+      dyn;
+      rho;
    end
    %%
    methods
       %% Construct
-      function ob = Elastic(num, props, identity)
+      function ob = Elastic(num, props, identity, dynamic)
          ob.ndm  = num.ndm;
          ob.ndof = num.ndof;
          ob.ngp  = num.gp;
          
-         [E, nu] = ob.getProps(props);
+         ob.dyn = dynamic; 
+         
+         [E, nu, ob.rho] = ob.getProps(props);
          
          G =   0.5*E/(1+  nu);
          K = (1/3)*E/(1-2*nu);
@@ -44,17 +48,29 @@ classdef Elastic
 
          % F
          el.Fint = el.Fint + (gp.B'*gp.sigma) *gp.J *gp.w;
+         
+         % M
+         if ob.dyn == 1
+            el.M = el.M + ob.rho*gp.NN   *gp.J*gp.w; 
+         elseif ob.dyn == 2
+            el.M = el.M + ob.rho*gp.NN_2 *gp.J*gp.w;
+         end
       end
    end
    methods (Static)
-      function [E, nu] = getProps(props)
+      function [E, nu, rho] = getProps(props)
          for j = 1:length(props)
             switch props{j,1}
                case 'E'
                   E = props{j,2};
                case 'nu'
                   nu = props{j,2};
+               case 'rho'
+                  rho = props{j,2};
             end
+         end
+         if ~exist('rho', 'var')
+            rho = 1;
          end
       end
    end
