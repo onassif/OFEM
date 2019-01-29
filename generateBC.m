@@ -96,9 +96,16 @@ for i=1:size(old_FORCE,1)
       else
          affected_nodes = find( nde(:,dir)>=lmt*1.001 & nde(:,dir)<=lmt*0.999 );
       end
-      
+      switch old_FORCE{i,3}
+         case 'u'
+            lDir = 1;
+         case 'v'
+            lDir = 2;
+         case 'w'
+            lDir = 3;
+      end
       lnth = size(affected_nodes);
-      nF = [affected_nodes , dir*ones(lnth), zeros(lnth), i*ones(lnth)];
+      nF = [affected_nodes , lDir*ones(lnth), zeros(lnth), i*ones(lnth)];
       fc.nodes = affected_nodes;
       for ifc = 1:size(fc.faces, 1)
          fc.ifc = ifc;
