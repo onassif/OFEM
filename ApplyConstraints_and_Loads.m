@@ -1,5 +1,5 @@
 function [globl, Fext, rmG, adG, indc]=ApplyConstraints_and_Loads(mult, globl, Fext, U,...
-   inpt, ndof, step, iter, finiteDisp)
+   inpt, ndof, step, iter, finiteDisp, mixed)
 
 BC    = inpt.BC;
 FORCE = inpt.FORCE;
@@ -19,7 +19,11 @@ for i = 1:size(FORCE,1)
    f_index = ndof*(index-1) + direction; % A smart way to do it without if-statement
    Fext(f_index) = FORCE(i,3)*mult(FORCE(i,4),2);
 end
-G = Fext - globl.Fint;
+if iter ~= 0 && mixed
+   G = zeros(size(Fext));
+else
+   G = Fext - globl.Fint;
+end
 
 %% BC
 for i = 1:size(BC,1)

@@ -4,7 +4,7 @@ else
    num.dyn_steps = dyn_nsteps;
    num.dyn_time  = dyn_time;  
 end
-
+mixed = 0;
 %   voigt size
 numstr = (ndm*ndm + ndm) /2;
 
@@ -96,6 +96,7 @@ for i=1:length(material)
          el.mat{i} = PlasticRI(num, prps, ident.threeD.second);
       case 6
          el.mat{i} = MixedElasticPlaneStrain(num, prps, ident.threeD.second);
+         mixed = 1;
       case 7
          el.mat{i} = CP(num, prps, cpType, hardProps, angles, slip, time, ident.threeD.second);
       case 8
@@ -156,4 +157,4 @@ if ~exist('extrapolate','var')
    extrapolate = 0;
 end
 clearvars -except dU el elements Fext globl gp hist inpt mat nodes NR num hard slip tempK ...
-   firstInstance finiteDisp extrapolate dyn
+   firstInstance finiteDisp extrapolate dyn mixed

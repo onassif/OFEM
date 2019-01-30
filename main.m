@@ -19,7 +19,7 @@ for step=1:num.steps % Steps loop
       globl.M    = sparse(num.eq, num.eq);
       globl.Fint = zeros( num.eq,1);
       % Send new U to the element object
-      el.Ures_glb = globl.U - el.U_glb_n;
+      el.Ures_glb = globl.U(1:num.np*num.ndm) - el.U_glb_n;
       if el.iter ==0
          el.U_glb_n  = el.U_global;
       end
@@ -56,7 +56,7 @@ for step=1:num.steps % Steps loop
       %% Finished gauss points loop, back to NR loop
       %%%   7i. Fext and apply constrains
       [globl, Fext, G, knwndU, rmIndc]  =  ApplyConstraints_and_Loads(...
-         NR.mult, globl, Fext, globl.U, inpt, num.ndm, step, NR.iter, finiteDisp);
+         NR.mult, globl, Fext, globl.U, inpt, num.ndm, step, NR.iter, finiteDisp, mixed);
       
       %%%   8i. dU and update Ui
       [dU, NR] = NR.solveSystem(globl, G, rmIndc, knwndU, extrapolate);

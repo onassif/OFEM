@@ -15,6 +15,7 @@ classdef MixedElasticPlaneStrain
       
       npress = 1;
       M = struct('i',[],'N',[]);
+      Cdev
    end
    %%
    methods
@@ -44,39 +45,43 @@ classdef MixedElasticPlaneStrain
          G =   0.5*E/(1+  v);
          K = (1/3)*E/(1-2*v);
          
-         ob.C0 = K*identity.I4_bulk + 2*G*identity.I4_dev;
+         ob.C0   = K*identity.I4_bulk + 2*G*identity.I4_dev;
+         
+         ob.Cdev = 2*G*identity.I4_dev;
          
          ob.Bulk = K;
       end
-      %% Epsilon
-      function [eps, ob] = Strain(ob, gp, el, ~)
-         eps = gp.B * el.Uvc;
-      end
-      %% Sigma & Tangential stiffness
-      function [sigma_v, D, ob] = computeTangentStiffness(ob, gp, ~, ~)
-         D       = ob.C0;
-         sigma_v = ob.C0([1,2,4],[1,2,4])*gp.eps;
-      end
-      %% Element K
-      function kel = computeK_el(ob, gp, el, ~)
-         if (ob.ndm == 2); gp.D = gp.D([1,2,4],[1,2,4]); end
-         dN      = reshape(gp.dNdx',ob.nen*ob.ndm,1);
+      %% Compute gp K, F and in case of dynamics: M
+      function [gp, el, ob] = computeKFM(ob, gp, el, ~)
+         gp.eps = gp.B * el.Uvc;
+
+         gp.D = ob.Cdev;
+         
+         if (ob.ndm == 2)
+            D = gp.D([1,2,4],[1,2,4]);
+            Iv = [1 1 0];
+         else
+            D = gp.D;
+            Iv = [1 1 1 0 0 0];
+         end
+         dN = Iv*gp.B;
+         gp.sigma = D*gp.eps;
+         
          ob.M.i = gp.i;
          K = ob.Bulk;
-         kel = el.K + [...
-            (gp.B'*gp.D*gp.B) - (K*(dN*dN'))    dN*ob.M.N
-            ob.M.N'*dN'                          (1/K)*ob.M.N'*ob.M.N] .*gp.j*gp.w;
-      end
-      %% Element Fint
-      function Fint = computeFint(ob, gp, el, ~)
+
+         el.K = el.K + [...
+            gp.B'*D*gp.B    dN'*ob.M.N
+            ob.M.N'*dN    -(1/K)*ob.M.N'*ob.M.N] .*gp.j*gp.w;
+
+%       function Fint = computeFint(ob, gp, el, ~)
          numU = numel(el.nodes);
-         dN = reshape(gp.dNdx',ob.nen*ob.ndm,1);
-         K = ob.Bulk;
-         
-         Sdev = [gp.sigma(1:2) - 1/3*sum(ob.C0(1:3,1:3)*[gp.eps(1:2);0]); gp.sigma(3)];
+
          p = el.U_global(numU+el.i);
          
-         Fint = el.Fint + [gp.B'*Sdev; 0] *gp.j *gp.w;
+         el.Fint = el.Fint + [...
+            gp.B'*gp.sigma    + dN'*ob.M.N*p 
+            ob.M.N'*Iv*gp.eps - (1/K)*ob.M.N'*ob.M.N*p] *gp.j *gp.w;
       end
    end
    methods (Static)
