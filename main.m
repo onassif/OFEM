@@ -1,7 +1,16 @@
 clear; close all
-addpath('CPmodels\','Hardenings\','Materials\','Shapes\','Slips\','Utilities\');
-% Dialog
+% Import project folders
+addpath( ...
+  'CPmodels\', ...
+  'Hardenings\', ...
+  'Materials\', ...
+  'Shapes\', ...
+  'Slips\', ...
+  'Utilities\');
+
+% Input Dialog
 run(ReadInput())
+
 initialize;
 tic
 for step=1:num.steps % Steps loop
@@ -79,7 +88,7 @@ for step=1:num.steps % Steps loop
       NR.iter, ...
       NR.correction, ...
       NR.residual);
-    
+
     NR.iter = NR.iter + 1;
     el.iter = NR.iter;
       

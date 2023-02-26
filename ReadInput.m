@@ -3,14 +3,13 @@ function scriptStr = ReadInput()
 
   list = dir(inputPath);
 
+  % Get all files of type .m
   indx = 0;
   names = cell(size(list,1),1);
   for i = 1:size(list,1)
-    if size(list(i).name,2) >1
-      if strcmp(list(i).name(end-1:end),'.m')
-        indx = indx+1;
-        names{indx} = list(i).name;
-      end
+    if (~list(i).isdir) && (strcmp(list(i).name(end-1:end),'.m'))
+      indx = indx+1;
+      names{indx} = list(i).name;
     end
   end
 
@@ -25,14 +24,14 @@ function scriptStr = ReadInput()
     'CancelString' , 'Nay');
 
   if ok
-    scriptStr = [inputPath names{Selection}];
+    scriptStr = string([inputPath names{Selection}]);
     fid = fopen([inputPath 'recent.txt'],'w');
-    fprintf(fid, scriptStr);
+    fprintf(fid, names{Selection});
     fclose(fid);
   else
     try
-      fid = fopen(recent,'r');
-      scriptStr = fscanf(fid,'%s');
+      fid = fopen([inputPath 'recent.txt'],'r');
+      scriptStr = [inputPath fscanf(fid,'%s')];
       fclose(fid);
     catch
       error(" You haven't selected a file and there's no recent file saved")
