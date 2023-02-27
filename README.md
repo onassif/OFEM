@@ -96,7 +96,7 @@ regardless of your OS:
 TBW
 
 # Writing input files
-Please try it to figure it yourself for now. I believe in you!!
+Please try to figure it yourself for now. I believe in you!!
 
 # To do list
 * Fix documentation
