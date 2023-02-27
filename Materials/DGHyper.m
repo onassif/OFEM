@@ -1,6 +1,5 @@
 classdef DGHyper
-   %Elastic 3D elastic class
-   %   Detailed explanation goes here
+  % DG with Hyper Elasticity Class
    
    properties (SetAccess = private)
       ndm;

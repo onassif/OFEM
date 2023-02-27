@@ -1,5 +1,5 @@
 classdef CPmini
-   %Elastic 3D elastic class
+   % TODO: Remember what CPmini is about...
    %   Detailed explanation goes here
    properties
       de

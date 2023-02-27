@@ -1,4 +1,5 @@
 classdef DGCP
+% DG with Crystal Plasticity 
    properties (SetAccess = private)
       ndm;
       ndof;

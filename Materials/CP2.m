@@ -1,6 +1,5 @@
 classdef CP2
-   %Elastic 3D elastic class
-   %   Detailed explanation goes here
+   % TODO: Remember the differencebetween CP and CP2 Class
    
    properties (SetAccess = private)
       ndm;
