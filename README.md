@@ -1,7 +1,8 @@
 # OFEM: A Finite Elemnent Analysis Software Utilizing Object-Oriented Programming
 
-** Author: Omar Nassif, Ph.D **
-** For Inquiries, Feel Free To Contact Me At: omar@onassif.com **
+**Author: Omar Nassif, Ph.D**
+
+**For Inquiries, Feel Free To Contact Me At: omar@onassif.com**
 
 # Table of Contents:
 * [About OFEM](#About-OFEM)
@@ -17,13 +18,16 @@
 # About OFEM
 
 OFEM is a solid mechanics software that started as a PhD project that took a form of itself.
+
 The software was developed with an emphasis on readiness and modularity, something I feel is not common in FEA software.
+
 It's a great tool if you're learning FEM or you want to check your results.
 
 
 ## Current Functionality
 Currently All elements are standard FEA Elements (No reduced integration, incompatible modes, etc...)
-** All 2D Elements are Plane-Strain **
+
+**All 2D Elements are Plane-Strain**
 
 ### Current Material Models Supported
 * Linear Elasticity (Infinitesimal Strain Theory) [Configuration](#Configuration).
@@ -78,9 +82,7 @@ Currently All elements are standard FEA Elements (No reduced integration, incomp
 
 ## Quick Start
 Here are the very simple steps for running the bot on Windows, however most of these instructions should be followed
-regardless of your OS (obviously you aren't running .bat files if you aren't on Windows, or using GitHub Desktop if not 
-available on your OS). See [Platform Specific](#Platform-Specific) instructions for help installing Python and
-dependencies in other operating systems:
+regardless of your OS:
 1. [Turn on your computer](https://www.google.com/search?q=how+do+I+turn+on+my+computer)
 2. [Install Matlab](https://www.mathworks.com/products/matlab.html). 
 3. Download GitHub Desktop and Open the OFEM Repository with GitHub Desktop (or download the zip file). 
