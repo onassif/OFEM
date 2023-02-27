@@ -30,7 +30,7 @@ Currently All elements are standard FEA Elements (No reduced integration, incomp
 **All 2D Elements are Plane-Strain**
 
 ### Current Material Models Supported
-* Linear Elasticity (Infinitesimal Strain Theory) [Configuration](#Configuration).
+* Linear Elasticity (Infinitesimal Strain Theory).
   * Material-ID: 1
   * Supported Elements: 
     * 2D: T3,  T6, Q4, Q9
